@@ -1,0 +1,162 @@
+@model IEnumerable<BSMS.BusinessObjects.Models.Alert>
+
+<div class="dropdown">
+    <button type="button" class="btn-bell dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-exclamation-triangle fs-5"></i>
+        @if (ViewBag.UnreadCount > 0)
+        {
+            <span class="dot" style="display:block;"></span>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.65rem;">
+                @(ViewBag.UnreadCount > 9 ? "9+" : ViewBag.UnreadCount.ToString())
+            </span>
+        }
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow" style="width:380px; max-height:450px; overflow-y:auto;">
+        <li class="dropdown-header d-flex justify-content-between align-items-center">
+            <span class="fw-bold">System Alerts</span>
+            @if (ViewBag.UnreadCount > 0)
+            {
+                <span class="badge bg-danger">@ViewBag.UnreadCount unresolved</span>
+            }
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var alert in Model)
+            {
+                <li>
+                    <a class="dropdown-item py-2" href="/Staff/Alerts/Details?id=@alert.AlertId" data-alert-id="@alert.AlertId">
+                        <div class="d-flex gap-2">
+                            <div>
+                                @switch (alert.AlertType.ToString())
+                                {
+                                    case "LowBattery":
+                                        <i class="bi bi-battery-half text-warning fs-5"></i>
+                                        break;
+                                    case "Critical":
+                                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                                        break;
+                                    case "Maintenance":
+                                        <i class="bi bi-tools text-info fs-5"></i>
+                                        break;
+                                    case "HighDemand":
+                                        <i class="bi bi-graph-up-arrow text-primary fs-5"></i>
+                                        break;
+                                    case "SystemError":
+                                        <i class="bi bi-x-circle text-danger fs-5"></i>
+                                        break;
+                                    default:
+                                        <i class="bi bi-info-circle text-secondary fs-5"></i>
+                                        break;
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <span class="badge @(alert.AlertType.ToString() switch {
+                                        "Critical" => "bg-danger",
+                                        "LowBattery" => "bg-warning text-dark",
+                                        "Maintenance" => "bg-info",
+                                        "HighDemand" => "bg-primary",
+                                        _ => "bg-secondary"
+                                    }) mb-1">@alert.AlertType</span>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i> @GetRelativeTime(alert.CreatedAt)
+                                    </small>
+                                </div>
+                                <div class="small fw-semibold">@alert.Message</div>
+                                @if (alert.Station != null)
+                                {
+                                    <div class="small text-muted mt-1">
+                                        <i class="bi bi-geo-alt"></i> @alert.Station.Name
+                                    </div>
+                                }
+                                @if (alert.Battery != null)
+                                {
+                                    <div class="small text-muted">
+                                        <i class="bi bi-battery-charging"></i> Battery: @alert.Battery.Soh
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+            }
+            <li>
+                <a class="dropdown-item text-center small text-primary fw-semibold" href="/Staff/Alerts">
+                    <i class="bi bi-list-ul"></i> View all alerts
+                </a>
+            </li>
+        }
+        else
+        {
+            <li>
+                <div class="dropdown-item text-center text-muted py-4">
+                    <i class="bi bi-check-circle fs-2 text-success"></i>
+                    <div class="mt-2 fw-semibold">All Clear!</div>
+                    <div class="small">No system alerts at this time</div>
+                </div>
+            </li>
+        }
+    </ul>
+</div>
+
+@functions {
+    string GetRelativeTime(DateTime timestamp)
+    {
+        var diff = DateTime.UtcNow - timestamp;
+        
+        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+        
+        return timestamp.ToString("MMM dd");
+    }
+}
+
+<style>
+    .btn-bell {
+        position: relative;
+        background: none;
+        border: none;
+        color: inherit;
+        padding: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-bell:hover {
+        color: var(--bs-warning);
+        transform: scale(1.1);
+    }
+    
+    .btn-bell .dot {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 8px;
+        height: 8px;
+        background: #dc3545;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+    
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+    }
+    
+    .dropdown-item small {
+        font-size: 0.75rem;
+    }
+</style>

@@ -1,0 +1,143 @@
+﻿@using System.Security.Claims
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - EV Battery Swap Management System</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/ev-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/BSMS.WebApp.styles.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+</head>
+<body class="ev-theme-body">
+    <!-- Updated header with EV theme styling -->
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark ev-navbar bg-gradient-ev border-0 shadow-sm">
+            <div class="container-fluid px-4">
+                <!-- Logo redirects based on user role -->
+                @{
+                    var logoPage = "/Index"; // Default for guests/drivers
+                    if (User.Identity?.IsAuthenticated ?? false)
+                    {
+                        var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+                        logoPage = userRole switch
+                        {
+                            "Admin" => "/Admin/Dashboard",
+                            "StationStaff" => "/Staff/Index",
+                            _ => "/Index"
+                        };
+                    }
+                }
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="@logoPage">
+                    <div class="ev-logo">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="8" width="24" height="16" rx="2" fill="none" stroke="#00C853" stroke-width="2" />
+                            <rect x="8" y="12" width="4" height="8" fill="#00C853" opacity="0.9" />
+                            <rect x="14" y="11" width="4" height="9" fill="#00C853" opacity="0.7" />
+                            <rect x="20" y="10" width="4" height="10" fill="#00C853" opacity="0.5" />
+                            <circle cx="28" cy="16" r="1.5" fill="#FFD600" />
+                        </svg>
+                    </div>
+                    <span class="brand-text">BSMS</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1 d-flex justify-content-center"
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+                            @if (role == "Admin")
+                            {
+                            }
+                            else if (role == "StationStaff" || role == "Staff")
+                            {
+                            }
+                        }
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-page="/Privacy">
+                                <i class="bi bi-shield-lock me-1"></i> Privacy
+                            </a>
+                        </li>
+                    </ul>
+
+                    <ul class="navbar-nav ms-auto">
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            var userName = User.Identity?.Name ?? "Guest";
+                            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+                            <div class="header-right">
+                                <!-- System Alert Bell (Staff/Admin only) -->
+                                @await Component.InvokeAsync("StaffAlertBell")
+
+                                <!-- User info -->
+                                <div class="user-info">
+                                    <div class="text">
+                                        <p class="name fw-semibold">@userName</p>
+                                        <small class="role">@role</small>
+                                    </div>
+
+                                    <!-- User icon -->
+                                    <button type="button" class="btn-user rounded-circle">
+                                        <i class="bi bi-person fs-5"></i>
+                                    </button>
+
+                                    <!-- Logout -->
+                                    <form method="get" asp-page="/Auth/Logout" class="m-0">
+                                        <button type="submit" class="btn-logout">
+                                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <form method="get" asp-page="/Auth/Login" class="m-0">
+                                <button type="submit" class="btn-logout">
+                                    <i class="bi bi-box-arrow-left"></i> Đăng nhập
+                                </button>
+                            </form>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Added gradient background container with geometric pattern -->
+    <div class="ev-background">
+        <div class="ev-pattern"></div>
+        <main role="main" class="container-fluid" data-user-authenticated="@(User.Identity?.IsAuthenticated ?? false)">
+            @await Html.PartialAsync("_Alerts")
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Updated footer with EV theme -->
+    <footer class="ev-footer border-top mt-5">
+        <div class="container-fluid px-4">
+            <div class="py-4">
+                <p class="text-center mb-0">&copy; 2025 - EV Battery Swap Management System - <a asp-area="" asp-page="/Privacy" class="ev-footer-link">Privacy</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    @if (User.Identity?.IsAuthenticated ?? false)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+        <script src="~/js/signalr-client.js" asp-append-version="true"></script>
+    }
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

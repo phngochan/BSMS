@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap');
+
+:root{
+  --dd-card-radius: 18px;
+  --dd-shadow: 0 10px 30px var(--ev-shadow);
+}
+
+.dashboard-root{
+  font-family: 'Inter', 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.dd-grid{
+  display:grid;
+  grid-template-columns: 2fr 1fr;
+  gap:1.25rem;
+}
+
+@media (max-width: 992px){
+  .dd-grid{ grid-template-columns: 1fr; }
+}
+
+.dd-card{
+  background:#fff;
+  border-radius: var(--dd-card-radius);
+  box-shadow: var(--dd-shadow);
+  padding:1.25rem;
+}
+
+.dd-card-header{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom: .75rem;
+}
+
+.dd-title{
+  font-weight:700; font-size:1.1rem; color: var(--ev-bg-dark);
+}
+
+.dd-sub{ color:#607d8b; font-size:.9rem; }
+
+/* Battery widget */
+.battery-wrap{ display:flex; gap:1rem; align-items:center; }
+.battery-icon{
+  position:relative;
+  width:140px; height:64px; border:3px solid #cfd8dc; border-radius:14px; overflow:hidden; background:#eceff1;
+}
+.battery-head{ position:absolute; right:-10px; top:18px; width:12px; height:28px; background:#cfd8dc; border-radius:4px; }
+.battery-fill{
+  height:100%; width:0%; background: linear-gradient(90deg, #00c853, #66ff99);
+  transition: width 1s ease;
+}
+.battery-percent{ font-size:2rem; font-weight:700; color:#00c853; }
+.battery-meta{ color:#607d8b; }
+
+/* Stations */
+.station-list{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; }
+.station-card{ background:#fff; border:1px solid #e0e0e0; border-radius:16px; padding: .9rem; box-shadow: 0 6px 16px rgba(0,0,0,.06); }
+.station-title{ font-weight:600; color:#263238; }
+.station-meta{ color:#78909c; font-size:.9rem; }
+.btn-row{ display:flex; gap:.5rem; margin-top:.5rem; }
+.btn-ev-sm{ background-color: var(--ev-primary); color:#fff; border:none; border-radius:10px; padding:.4rem .75rem; font-weight:600; }
+.btn-outline-ev-sm{ background:transparent; border:1px solid var(--ev-primary); color: var(--ev-primary); border-radius:10px; padding:.35rem .7rem; font-weight:600; }
+.btn-ev-sm:hover{ background-color: var(--ev-primary-dark);} 
+.btn-outline-ev-sm:hover{ background: var(--ev-primary); color:#fff; }
+
+/* Reservation */
+.reservation-panel{ display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.timer{ font-size:1.75rem; font-weight:700; color:#2c3e50; letter-spacing:1px; }
+
+/* History */
+.history-list{ width:100%; }
+.history-list th, .history-list td{ padding:.6rem .5rem; }
+.history-list thead { background:#f8f9fa; }
+
+/* Support */
+.support-card{ display:flex; align-items:center; justify-content:space-between; }
+.support-left{ display:flex; align-items:center; gap:.75rem; }
+.support-icon{ width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:12px; background:linear-gradient(135deg, #e8f5e9, #ffffff); color:#00c853; box-shadow: inset 0 2px 6px rgba(0,0,0,.04); }
+.support-action .btn-ev-sm{ box-shadow: 0 8px 22px rgba(0,200,83,.25); }

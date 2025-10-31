@@ -1,0 +1,427 @@
+﻿/* EV Battery Swap Station Management System Theme */
+
+:root {
+    --ev-primary: #00c853;
+    --ev-primary-dark: #00b84d;
+    --ev-primary-light: #66ff99;
+    --ev-accent: #ffd600;
+    --ev-accent-dark: #ffc400;
+    --ev-bg-dark: #1a2332;
+    --ev-bg-gradient-start: #e8f5e9;
+    --ev-bg-gradient-end: #f8f9fa;
+    --ev-text-dark: #263238;
+    --ev-text-light: #eceff1;
+    --ev-border: #b0bec5;
+    --ev-shadow: rgba(0, 200, 83, 0.15);
+
+    /* Mapped variables for component helpers */
+    --foreground: var(--ev-text-light);
+    --muted-foreground: rgba(236, 239, 241, 0.85);
+    --muted: rgba(255, 255, 255, 0.08);
+    --border: rgba(255, 255, 255, 0.15);
+    --accent: var(--ev-accent);
+}
+
+/* Body and Base Styling */
+body.ev-theme-body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    color: var(--ev-text-dark);
+    background: linear-gradient(135deg, var(--ev-bg-gradient-start) 0%, var(--ev-bg-gradient-end) 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navbar Styling */
+.ev-navbar {
+    background: linear-gradient(90deg, var(--ev-bg-dark) 0%, #2c3e50 100%) !important;
+    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 1000;
+}
+
+    .ev-navbar .navbar-brand {
+        font-weight: 700;
+        font-size: 1.5rem;
+        color: var(--ev-primary) !important;
+        transition: all 0.3s ease;
+    }
+
+        .ev-navbar .navbar-brand:hover {
+            color: var(--ev-accent) !important;
+            transform: translateY(-2px);
+        }
+
+.brand-text {
+    background: linear-gradient(90deg, var(--ev-primary), var(--ev-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.5px;
+}
+
+.ev-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ev-navbar .nav-link {
+    color: var(--ev-text-light) !important;
+    position: relative;
+    margin: 0 0.5rem;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+    .ev-navbar .nav-link::after {
+        content: "";
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--ev-primary), var(--ev-accent));
+        transition: width 0.3s ease;
+    }
+
+    .ev-navbar .nav-link:hover::after {
+        width: 100%;
+    }
+
+    .ev-navbar .nav-link:hover {
+        color: var(--ev-primary) !important;
+        cursor: pointer;
+    }
+
+    /* Navbar right section harmonization */
+    .ev-navbar .header-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .ev-navbar .btn-bell,
+    .ev-navbar .btn-user,
+    .ev-navbar .btn-logout {
+        color: var(--ev-text-light);
+        cursor: pointer;
+    }
+
+    .ev-navbar .btn-bell:hover,
+    .ev-navbar .btn-user:hover,
+    .ev-navbar .btn-logout:hover {
+        color: var(--ev-primary);
+        cursor: pointer;
+    }
+
+    .ev-navbar .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-left: 1px solid var(--border);
+        padding-left: 1rem;
+    }
+
+    .ev-navbar .user-info .name {
+        color: var(--ev-text-light);
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .ev-navbar .user-info .role {
+        color: rgba(236, 239, 241, 0.75);
+    }
+
+/* Background Pattern */
+.ev-background {
+    flex: 1;
+    position: relative;
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 50%, #ffffff 100%);
+    overflow: hidden;
+}
+
+.ev-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: linear-gradient( 45deg, transparent 24%, rgba(0, 200, 83, 0.05) 25%, rgba(0, 200, 83, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 200, 83, 0.05) 75%, rgba(0, 200, 83, 0.05) 76%, transparent 77%, transparent ), linear-gradient( -45deg, transparent 24%, rgba(255, 214, 0, 0.03) 25%, rgba(255, 214, 0, 0.03) 26%, transparent 27%, transparent 74%, rgba(255, 214, 0, 0.03) 75%, rgba(255, 214, 0, 0.03) 76%, transparent 77%, transparent );
+    background-size: 60px 60px;
+    background-position: 0 0, 10px 10px;
+    pointer-events: none;
+    opacity: 0.6;
+    animation: drift 20s linear infinite;
+}
+
+@keyframes drift {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(60px, 60px);
+    }
+}
+
+/* Battery Network Pattern Overlay */
+.ev-pattern::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle at 20% 30%, rgba(0, 200, 83, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(255, 214, 0, 0.08) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(0, 200, 83, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+main {
+    position: relative;
+    z-index: 1;
+}
+
+/* Footer Styling */
+.ev-footer {
+    background: linear-gradient(90deg, var(--ev-bg-dark) 0%, #2c3e50 100%);
+    color: var(--ev-text-light);
+    border-top: 2px solid var(--ev-primary) !important;
+    margin-top: auto;
+}
+
+.ev-footer-link {
+    color: var(--ev-primary);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+    .ev-footer-link:hover {
+        color: var(--ev-accent);
+        text-decoration: underline;
+    }
+
+/* Utility Classes */
+.bg-gradient-ev {
+    background: linear-gradient(90deg, var(--ev-bg-dark), #2c3e50) !important;
+}
+
+.text-ev-primary {
+    color: var(--ev-primary) !important;
+}
+
+.text-ev-accent {
+    color: var(--ev-accent) !important;
+}
+
+.btn-ev {
+    background-color: var(--ev-primary);
+    border-color: var(--ev-primary);
+    color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+    .btn-ev:hover {
+        background-color: var(--ev-primary-dark);
+        border-color: var(--ev-primary-dark);
+        box-shadow: 0 4px 12px var(--ev-shadow);
+        transform: translateY(-2px);
+    }
+
+.btn-ev-outline {
+    color: var(--ev-primary);
+    border-color: var(--ev-primary);
+    background-color: transparent;
+}
+
+    .btn-ev-outline:hover {
+        background-color: var(--ev-primary);
+        color: white;
+    }
+
+/* Card Styling */
+.card-ev {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px var(--ev-shadow);
+    background: white;
+    transition: all 0.3s ease;
+}
+
+    .card-ev:hover {
+        box-shadow: 0 8px 32px var(--ev-shadow);
+        transform: translateY(-4px);
+    }
+
+.card-ev-header {
+    background: linear-gradient(90deg, var(--ev-primary), var(--ev-accent));
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 1.5rem !important;
+}
+
+/* Badge Styling */
+.badge-ev {
+    background-color: var(--ev-primary);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.badge-ev-accent {
+    background-color: var(--ev-accent);
+    color: var(--ev-text-dark);
+}
+
+/* Form Input Styling */
+.form-control:focus {
+    border-color: var(--ev-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0, 200, 83, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: var(--ev-primary);
+    border-color: var(--ev-primary);
+}
+
+.form-check-input:focus {
+    border-color: var(--ev-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0, 200, 83, 0.25);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .ev-navbar .navbar-brand {
+        font-size: 1.25rem;
+    }
+
+    .brand-text {
+        display: none;
+    }
+
+    .ev-pattern {
+        background-size: 40px 40px;
+    }
+
+    main {
+        padding: 1rem !important;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .ev-navbar,
+    .ev-footer,
+    .ev-pattern {
+        display: none;
+    }
+}
+
+
+/* Khối bao ngoài bên phải của header */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* ~gap-4 */
+}
+
+/* Nút chuông thông báo */
+.btn-bell {
+    position: relative;
+    padding: 0.5rem; /* p-2 */
+    color: var(--muted-foreground);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+    .btn-bell:hover {
+        color: var(--foreground);
+    }
+
+    /* Dấu chấm thông báo nhỏ */
+    .btn-bell .dot {
+        position: absolute;
+        top: 0.25rem; /* top-1 */
+        right: 0.25rem; /* right-1 */
+        width: 0.5rem; /* h-2 */
+        height: 0.5rem; /* w-2 */
+        background-color: var(--accent);
+        border-radius: 50%;
+    }
+
+/* Khối user info */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* gap-3 */
+    border-left: 1px solid var(--border);
+    padding-left: 1rem; /* pl-4 */
+}
+
+    /* Thông tin người dùng */
+    .user-info .text {
+        text-align: right;
+    }
+
+        .user-info .text p {
+            margin: 0;
+            line-height: 1.2;
+        }
+
+    .user-info .name {
+        font-size: 0.875rem; /* text-sm */
+        font-weight: 500;
+        color: var(--foreground);
+    }
+
+    .user-info .role {
+        font-size: 0.75rem; /* text-xs */
+        color: var(--muted-foreground);
+    }
+
+/* Nút icon user */
+.btn-user {
+    padding: 0.5rem;
+    border: none;
+    background: transparent;
+    border-radius: 0.5rem; /* rounded-lg */
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+    .btn-user:hover {
+        background-color: var(--muted);
+    }
+
+/* Nút logout */
+.btn-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem; /* gap-2 */
+    padding: 0.25rem 0.75rem; /* py-1 px-3 */
+    border: none;
+    border-radius: 0.375rem; /* rounded-md */
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+    .btn-logout:hover {
+        background-color: var(--muted);
+    }
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+    background-color: var(--ev-primary);
+    color: #fff;
+    border-color: var(--ev-primary);
+}
+
+.btn-light:hover {
+    background-color: var(--muted);
+}

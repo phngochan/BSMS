@@ -1,0 +1,36 @@
+@page "{purpose?}"
+@model BSMS.WebApp.Pages.Auth.VerifyOtpModel
+@{
+    ViewData["Title"] = "Verify OTP - BSMS";
+}
+<link rel="stylesheet" href="~/css/auth.css" />
+<div class="auth-container">
+    <div class="pattern-overlay"></div>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <h2 class="auth-title">Enter Verification Code</h2>
+            <p class="auth-subtitle">We've sent a 6-digit code to your email. Please enter it below.</p>
+            <form method="post" class="auth-form">
+                <input type="hidden" asp-for="Purpose" />
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="form-group">
+                    <label class="form-label">OTP Code</label>
+                    <div class="input-wrapper">
+                        <input asp-for="Code" class="form-input" placeholder="e.g. 123456" maxlength="6" />
+                    </div>
+                    <span asp-validation-for="Code" class="text-danger small"></span>
+                </div>
+                <button type="submit" class="auth-button">
+                    <span class="button-text">Verify</span>
+                </button>
+                <div class="divider"><span class="divider-text">or</span></div>
+                <div class="auth-footer">
+                    <a asp-page="/Auth/Login" class="auth-link">Back to login</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
