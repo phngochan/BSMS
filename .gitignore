@@ -1,0 +1,35 @@
+# Build folders
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# Logs
+*.log
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+*.nuspec
+
+# Ignore local config
+appsettings.Development.json
+appsettings.Local.json
+
+# Publish output
+publish/
+*.Publish.xml
+
+# Others
+*.DS_Store
+Thumbs.db
