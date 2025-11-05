@@ -214,9 +214,6 @@ public class BSMSDbContext : DbContext
         {
             entity.HasKey(e => e.StaffId);
             entity.Property(e => e.AssignedAt).HasDefaultValueSql("GETDATE()");
-            entity.Property(e => e.Role)
-                  .HasConversion<string>()
-                  .HasMaxLength(50);
 
             entity.HasOne(ss => ss.User)
                   .WithMany(u => u.StationStaffs)
