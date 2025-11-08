@@ -43,6 +43,11 @@ public class UserService : IUserService
         return await _userRepository.CreateAsync(user);
     }
 
+    public async Task<int> CountUsersAsync()
+    {
+        return await _userRepository.CountAsync();
+    }
+
     public async Task UpdateUserAsync(User user)
     {
         await _userRepository.UpdateAsync(user);

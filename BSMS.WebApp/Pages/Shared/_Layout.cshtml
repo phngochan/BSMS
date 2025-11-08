@@ -54,9 +54,24 @@
                             var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
                             @if (role == "Admin")
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-page="/Admin/Dashboard">
+                                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-page="/Admin/Operations/Index">
+                                        <i class="bi bi-diagram-3 me-1"></i> Điều phối & Giám sát
+                                    </a>
+                                </li>
                             }
                             else if (role == "StationStaff" || role == "Staff")
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-page="/Staff/Index">
+                                        <i class="bi bi-clipboard-check me-1"></i> Ca trực
+                                    </a>
+                                </li>
                             }
                         }
                         <li class="nav-item">
