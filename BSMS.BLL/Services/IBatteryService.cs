@@ -9,6 +9,7 @@ public interface IBatteryService
 {
     Task<IEnumerable<Battery>> GetAvailableBatteriesAsync(int stationId);
     Task<IEnumerable<Battery>> GetAvailableBatteriesByModelAsync(int stationId, string model);
+    Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId);
     Task<IEnumerable<BatteryModelGroupDto>> GetBatteriesGroupedByModelAsync(int stationId);
     Task<Battery?> GetBatteryDetailsAsync(int batteryId);
     Task UpdateBatteryStatusAsync(int batteryId, BatteryStatus newStatus);

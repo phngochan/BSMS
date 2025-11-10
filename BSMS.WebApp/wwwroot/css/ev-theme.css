@@ -91,29 +91,8 @@ body.ev-theme-body {
     }
 
     .ev-navbar .nav-link:hover {
-        color: var(--ev-accent) !important;
-        transform: translateY(-1px);
+        color: var(--ev-primary) !important;
         cursor: pointer;
-    }
-
-    .ev-navbar .nav-link:focus-visible {
-        outline: none;
-        color: var(--ev-accent) !important;
-    }
-
-    .ev-navbar .nav-link.active {
-        color: var(--ev-accent) !important;
-        font-weight: 600;
-    }
-
-    .ev-navbar .nav-link.active::after {
-        width: 100%;
-        background: linear-gradient(90deg, var(--ev-accent), var(--ev-primary));
-    }
-
-    .ev-navbar .nav-link:hover::after,
-    .ev-navbar .nav-link:focus-visible::after {
-        background: linear-gradient(90deg, var(--ev-primary), var(--ev-accent));
     }
 
     /* Navbar right section harmonization */

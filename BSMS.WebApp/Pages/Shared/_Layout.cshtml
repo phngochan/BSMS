@@ -44,33 +44,40 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    @{
-                        var currentPath = Context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
-                        var isDriverDashboardActive = currentPath == "/driver" || currentPath.StartsWith("/driver/index");
-                        var isDriverStationsActive = currentPath.StartsWith("/driver/findstations") || currentPath.StartsWith("/driver/stationdetails");
-                        var isDriverReservationsActive = currentPath.StartsWith("/driver/myreservations") || currentPath.StartsWith("/driver/cancelreservation");
-                    }
                     <ul class="navbar-nav flex-grow-1 d-flex justify-content-center">
                         @if (isAuthenticated && userRole == UserRole.Driver)
                         {
                             <li class="nav-item">
-                                <a class="nav-link@(isDriverDashboardActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/Index">
+                                <a class="nav-link" asp-area="" asp-page="/Driver/Index">
                                     <i class="bi bi-speedometer2 me-1"></i> Bảng điều khiển
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link@(isDriverStationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/FindStations">
+                                <a class="nav-link" asp-area="" asp-page="/Driver/FindStations">
                                     <i class="bi bi-geo-alt me-1"></i> Tìm trạm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/MyReservations">
+                                <a class="nav-link" asp-area="" asp-page="/Driver/MyReservations">
                                     <i class="bi bi-calendar-check me-1"></i> Lịch đặt
                                 </a>
                             </li>
                         }
+                        @if (isAuthenticated && (userRole == UserRole.StationStaff || userRole == UserRole.Admin))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Staff/Index">
+                                    <i class="bi bi-speedometer2 me-1"></i> Bảng điều khiển
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Staff/ConfirmReservation">
+                                    <i class="bi bi-check-circle me-1"></i> Xác nhận đặt chỗ
+                                </a>
+                            </li>
+                        }
                         <li class="nav-item">
-                            <a class="nav-link@(currentPath.StartsWith("/privacy") ? " active" : string.Empty)" asp-area="" asp-page="/Privacy">
+                            <a class="nav-link" asp-area="" asp-page="/Privacy">
                                 <i class="bi bi-shield-lock me-1"></i> Privacy
                             </a>
                         </li>

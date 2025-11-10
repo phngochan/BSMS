@@ -44,6 +44,19 @@ public class BatteryService : IBatteryService
         }
     }
 
+    public async Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId)
+    {
+        try
+        {
+            return await _batteryRepo.GetBatteriesByStationAsync(stationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get batteries for StationId: {StationId}", stationId);
+            throw;
+        }
+    }
+
     public async Task<IEnumerable<BatteryModelGroupDto>> GetBatteriesGroupedByModelAsync(int stationId)
     {
         try

@@ -7,7 +7,47 @@
 }
 
 <div class="container-fluid py-4">
-    <div class="row justify-content-center">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-check"></i> Đặt Chỗ Đang Chờ
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.PendingReservations.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var res in Model.PendingReservations)
+                            {
+                                <a asp-page="/Staff/ConfirmReservation" asp-route-id="@res.ReservationId" 
+                                   class="list-group-item list-group-item-action @(Model.Reservation?.ReservationId == res.ReservationId ? "active" : "")">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">#@res.ReservationId</h6>
+                                            <p class="mb-1 small">@res.User?.FullName</p>
+                                            <p class="mb-0 small text-muted">
+                                                <i class="bi bi-clock"></i> @res.ScheduledTime.ToLocalDateTimeString()
+                                            </p>
+                                        </div>
+                                        <span class="badge bg-success">@res.Status</span>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">Không có đặt chỗ nào đang chờ</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
         <div class="col-lg-8">
             @if (!string.IsNullOrEmpty(Model.ErrorMessage))
             {
@@ -77,26 +117,36 @@
                             </div>
                         </div>
 
-                        @if (Model.Reservation.Status == ReservationStatus.Active && !Model.IsConfirmed)
+                        @if (Model.Reservation.Status == ReservationStatus.Active)
                         {
                             <hr>
-                            <form method="post" class="mt-4">
-                                <input type="hidden" name="id" value="@Model.Reservation.ReservationId" />
+                            <div class="mt-4">
                                 <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-success btn-lg">
-                                        <i class="bi bi-check-circle"></i> Xác Nhận Đặt Chỗ
-                                    </button>
+                                    <form method="post" asp-page-handler="Complete" class="mb-2">
+                                        <input type="hidden" name="id" value="@Model.Reservation.ReservationId" />
+                                        <button type="submit" class="btn btn-success btn-lg w-100" 
+                                                onclick="return confirm('Bạn có chắc chắn muốn hoàn thành đặt chỗ này?');">
+                                            <i class="bi bi-check-circle"></i> Hoàn Thành Đặt Chỗ
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Cancel" class="mb-2">
+                                        <input type="hidden" name="id" value="@Model.Reservation.ReservationId" />
+                                        <button type="submit" class="btn btn-danger btn-lg w-100"
+                                                onclick="return confirm('Bạn có chắc chắn muốn hủy đặt chỗ này?');">
+                                            <i class="bi bi-x-circle"></i> Hủy Đặt Chỗ
+                                        </button>
+                                    </form>
                                     <a asp-page="/Staff/Index" class="btn btn-outline-secondary">
                                         <i class="bi bi-arrow-left"></i> Quay Lại
                                     </a>
                                 </div>
-                            </form>
+                            </div>
                         }
-                        else if (Model.IsConfirmed)
+                        else
                         {
                             <hr>
                             <div class="alert alert-info mt-4">
-                                <i class="bi bi-info-circle"></i> Đặt chỗ đã được xác nhận. Bạn có thể tiếp tục xử lý đổi pin.
+                                <i class="bi bi-info-circle"></i> Đặt chỗ này đã được xử lý. Trạng thái: @Model.Reservation.Status
                             </div>
                             <div class="d-grid gap-2">
                                 <a asp-page="/Staff/Index" class="btn btn-primary">
@@ -111,16 +161,19 @@
             {
                 <div class="card shadow-sm">
                     <div class="card-body text-center py-5">
-                        <i class="bi bi-exclamation-triangle fs-1 text-warning mb-3"></i>
-                        <h5>Không tìm thấy đặt chỗ</h5>
-                        <p class="text-muted">Mã đặt chỗ không hợp lệ hoặc đã bị xóa.</p>
-                        <a asp-page="/Staff/Index" class="btn btn-primary">
-                            <i class="bi bi-arrow-left"></i> Quay Lại
-                        </a>
+                        <i class="bi bi-info-circle fs-1 text-info mb-3"></i>
+                        <h5>Chọn đặt chỗ để xác nhận</h5>
+                        <p class="text-muted">Vui lòng chọn một đặt chỗ từ danh sách bên trái hoặc quét mã QR để xem chi tiết và xác nhận.</p>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-qr-code"></i> Quét mã QR từ khách hàng để truy cập nhanh
+                            </small>
+                        </div>
                     </div>
                 </div>
             }
         </div>
     </div>
 </div>
+
 

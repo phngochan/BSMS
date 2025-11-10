@@ -1,15 +1,18 @@
+using BSMS.BLL.Services;
 using Microsoft.AspNetCore.SignalR;
+using System.Security.Claims;
 
 namespace BSMS.WebApp.Hubs;
 
-/// <summary>
-/// SignalR Hub for real-time notifications in Battery Swap Management System
-/// </summary>
 public class NotificationHub : Hub
 {
-    /// <summary>
-    /// Send notification to specific user
-    /// </summary>
+    private readonly IServiceProvider _serviceProvider;
+
+    public NotificationHub(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
     public async Task SendNotificationToUser(string userId, string message, string type = "info")
     {
         await Clients.User(userId).SendAsync("ReceiveNotification", new
@@ -20,9 +23,6 @@ public class NotificationHub : Hub
         });
     }
 
-    /// <summary>
-    /// Send notification to all users with specific role
-    /// </summary>
     public async Task SendNotificationToRole(string role, string message, string type = "info")
     {
         await Clients.Group(role).SendAsync("ReceiveNotification", new
@@ -33,9 +33,6 @@ public class NotificationHub : Hub
         });
     }
 
-    /// <summary>
-    /// Broadcast notification to all connected clients
-    /// </summary>
     public async Task BroadcastNotification(string message, string type = "info")
     {
         await Clients.All.SendAsync("ReceiveNotification", new
@@ -46,9 +43,6 @@ public class NotificationHub : Hub
         });
     }
 
-    /// <summary>
-    /// Update battery status in real-time
-    /// </summary>
     public async Task UpdateBatteryStatus(string batteryId, string status, int soh)
     {
         await Clients.All.SendAsync("BatteryStatusUpdated", new
@@ -60,9 +54,6 @@ public class NotificationHub : Hub
         });
     }
 
-    /// <summary>
-    /// Notify about new swap transaction
-    /// </summary>
     public async Task NotifySwapTransaction(string stationId, string userId, string status)
     {
         await Clients.Group($"Station_{stationId}").SendAsync("SwapTransactionUpdate", new
@@ -74,17 +65,11 @@ public class NotificationHub : Hub
         });
     }
 
-    /// <summary>
-    /// Join station-specific group for staff
-    /// </summary>
     public async Task JoinStationGroup(string stationId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, $"Station_{stationId}");
     }
 
-    /// <summary>
-    /// Leave station group
-    /// </summary>
     public async Task LeaveStationGroup(string stationId)
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Station_{stationId}");
@@ -92,14 +77,29 @@ public class NotificationHub : Hub
 
     public override async Task OnConnectedAsync()
     {
-        // Get user claims and add to role group
         var httpContext = Context.GetHttpContext();
         if (httpContext?.User.Identity?.IsAuthenticated ?? false)
         {
-            var role = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            var role = httpContext.User.FindFirst(ClaimTypes.Role)?.Value;
             if (!string.IsNullOrEmpty(role))
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, role);
+            }
+
+            if (role == "StationStaff")
+            {
+                var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (int.TryParse(userIdClaim, out var userId))
+                {
+                    using var scope = _serviceProvider.CreateScope();
+                    var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+                    var user = await userService.GetUserWithVehiclesAsync(userId);
+                    var staffStation = user?.StationStaffs?.FirstOrDefault();
+                    if (staffStation?.StationId != null)
+                    {
+                        await Groups.AddToGroupAsync(Context.ConnectionId, $"Station_{staffStation.StationId}");
+                    }
+                }
             }
         }
 

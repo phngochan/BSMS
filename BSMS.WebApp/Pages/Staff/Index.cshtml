@@ -1,7 +1,9 @@
 @page
 @model BSMS.WebApp.Pages.Staff.IndexModel
+@using BSMS.BusinessObjects.Enums
+@using BSMS.WebApp.Helpers
 @{
-    ViewData["Title"] = "Battery Swap Station Staff";
+    ViewData["Title"] = "Bảng điều khiển nhân viên";
 }
 
 <link rel="stylesheet" href="~/css/ev-theme.css" />
@@ -13,7 +15,7 @@
             <div class="card-ev p-3 h-100" style="border-left:6px solid #00C853;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="fw-bold text-ev-primary">Full Batteries</div>
+                        <div class="fw-bold text-ev-primary">Pin đầy</div>
                         <div class="fs-4 fw-bold">@Model.FullCount</div>
                     </div>
                     <div class="text-ev-primary" aria-hidden="true">
@@ -26,7 +28,7 @@
             <div class="card-ev p-3 h-100" style="border-left:6px solid #F1C40F;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="fw-bold" style="color:#C49600;">Charging</div>
+                        <div class="fw-bold" style="color:#C49600;">Đang sạc</div>
                         <div class="fs-4 fw-bold">@Model.ChargingCount</div>
                     </div>
                     <div style="color:#F1C40F;" aria-hidden="true">
@@ -39,7 +41,7 @@
             <div class="card-ev p-3 h-100" style="border-left:6px solid #E74C3C;">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="fw-bold" style="color:#B33A2D;">Maintenance</div>
+                        <div class="fw-bold" style="color:#B33A2D;">Bảo trì</div>
                         <div class="fs-4 fw-bold">@Model.MaintenanceCount</div>
                     </div>
                     <div style="color:#E74C3C;" aria-hidden="true">
@@ -53,7 +55,7 @@
     <!-- Battery Inventory: Detailed table -->
     <div class="card-ev p-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
-            <h5 class="mb-0">Battery Inventory</h5>
+            <h5 class="mb-0">Danh sách pin</h5>
             <div class="d-flex gap-2">
                 <a class="btn btn-ev btn-sm" href="#"><i class="bi bi-arrow-repeat me-1"></i>Refresh</a>
                 <a class="btn btn-ev-outline btn-sm" href="#"><i class="bi bi-download me-1"></i>Export</a>
@@ -63,12 +65,12 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Battery ID</th>
+                        <th>Mã pin</th>
                         <th>Model</th>
-                        <th>Capacity</th>
+                        <th>Dung lượng</th>
                         <th>SoH</th>
-                        <th>Status</th>
-                        <th>Last Updated</th>
+                        <th>Trạng thái</th>
+                        <th>Cập nhật lần cuối</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,20 +82,24 @@
                         <td>@b.Capacity</td>
                         <td>@b.Soh%</td>
                         <td>
-                            @if (b.Status == "Full")
+                            @if (b.Status == BatteryStatus.Full.ToString())
                             {
-                                <span class="badge" style="background-color:#00C853;">Full</span>
+                                <span class="badge" style="background-color:#00C853;">Đầy</span>
                             }
-                            else if (b.Status == "Charging")
+                            else if (b.Status == BatteryStatus.Charging.ToString())
                             {
-                                <span class="badge" style="background-color:#F1C40F; color:#2C3E50;">Charging</span>
+                                <span class="badge" style="background-color:#F1C40F; color:#2C3E50;">Đang sạc</span>
+                            }
+                            else if (b.Status == BatteryStatus.Booked.ToString())
+                            {
+                                <span class="badge" style="background-color:#3498DB;">Đã đặt</span>
                             }
                             else
                             {
-                                <span class="badge" style="background-color:#E74C3C;">Maintenance</span>
+                                <span class="badge" style="background-color:#E74C3C;">Bảo trì</span>
                             }
                         </td>
-                        <td>@b.LastUpdated.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@b.LastUpdated.ToLocalDateTimeString()</td>
                     </tr>
                 }
                 </tbody>

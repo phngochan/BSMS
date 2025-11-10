@@ -1,4 +1,5 @@
 using BSMS.BLL.Services;
+using BSMS.BLL.Services.Background;
 using BSMS.BLL.Services.Implementations;
 using BSMS.BusinessObjects.Configurations;
 using BSMS.DAL.Base;
@@ -41,6 +42,9 @@ builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IBatteryService, BatteryService>();
+
+// Background Services
+builder.Services.AddHostedService<ReservationAutoCancelService>();
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();

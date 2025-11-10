@@ -152,6 +152,45 @@ public class ReservationService : IReservationService
         }
     }
 
+    public async Task<bool> CancelReservationByStaffAsync(int reservationId)
+    {
+        try
+        {
+            var reservation = await _reservationRepo.GetReservationWithDetailsAsync(reservationId);
+
+            if (reservation == null)
+            {
+                _logger.LogWarning("Reservation not found: {ReservationId}", reservationId);
+                return false;
+            }
+
+            if (reservation.Status != ReservationStatus.Active)
+            {
+                _logger.LogWarning("Cannot cancel reservation {ReservationId} with status {Status}",
+                    reservationId, reservation.Status);
+                return false;
+            }
+
+            await _reservationRepo.UpdateStatusAsync(reservationId, ReservationStatus.Cancelled);
+
+            if (reservation.BatteryId.HasValue)
+            {
+                await _batteryService.UpdateBatteryStatusAsync(reservation.BatteryId.Value, BatteryStatus.Full);
+                _logger.LogInformation("Battery status reset to Full: BatteryId={BatteryId}", reservation.BatteryId.Value);
+            }
+
+            _logger.LogInformation("Reservation cancelled by staff: {ReservationId}, UserId: {UserId}",
+                reservationId, reservation.UserId);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to cancel reservation by staff: {ReservationId}", reservationId);
+            throw;
+        }
+    }
+
     public async Task<bool> ConfirmReservationAsync(int reservationId)
     {
         try

@@ -11,6 +11,8 @@ public interface IBatteryRepository : IGenericRepository<Battery>
 
     Task<IEnumerable<Battery>> GetAvailableBatteriesByModelAsync(int stationId, string model);
 
+    Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId);
+
     Task<Battery?> GetBatteryWithStationAsync(int batteryId);
 
     Task<IEnumerable<BatteryModelGroupDto>> GetBatteriesGroupedByModelAsync(int stationId);

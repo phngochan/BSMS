@@ -1,30 +1,61 @@
+using BSMS.BLL.Services;
+using BSMS.BusinessObjects.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using System.Security.Claims;
 
 namespace BSMS.WebApp.Pages.Staff;
 
+[Authorize(Roles = "StationStaff,Admin")]
 public class IndexModel : PageModel
 {
+    private readonly IBatteryService _batteryService;
+    private readonly IUserService _userService;
+
+    public IndexModel(IBatteryService batteryService, IUserService userService)
+    {
+        _batteryService = batteryService;
+        _userService = userService;
+    }
+
     public int FullCount { get; set; }
     public int ChargingCount { get; set; }
     public int MaintenanceCount { get; set; }
+    public int BookedCount { get; set; }
 
     public List<BatteryRow> Batteries { get; set; } = new();
 
-    public void OnGet()
+    public async Task OnGetAsync()
     {
-        // Demo data – replace with service layer calls when available
-        Batteries = new List<BatteryRow>
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
         {
-            new("BAT-001","Panasonic X1","2.3 kWh", 96, "Full", DateTime.Now.AddMinutes(-10)),
-            new("BAT-014","LG Chem S2","2.0 kWh", 88, "Charging", DateTime.Now.AddMinutes(-3)),
-            new("BAT-022","CATL E3","2.4 kWh", 72, "Maintenance", DateTime.Now.AddHours(-1)),
-            new("BAT-035","BYD B1","2.1 kWh", 90, "Full", DateTime.Now.AddMinutes(-25)),
-            new("BAT-041","Samsung SDI M","2.2 kWh", 84, "Charging", DateTime.Now.AddMinutes(-8)),
-        };
+            return;
+        }
 
-        FullCount = Batteries.Count(b => b.Status == "Full");
-        ChargingCount = Batteries.Count(b => b.Status == "Charging");
-        MaintenanceCount = Batteries.Count(b => b.Status == "Maintenance");
+        var user = await _userService.GetUserWithVehiclesAsync(userId);
+        var staffStation = user?.StationStaffs?.FirstOrDefault();
+
+        if (staffStation?.StationId == null)
+        {
+            return;
+        }
+
+        var batteries = await _batteryService.GetBatteriesByStationAsync(staffStation.StationId);
+
+        Batteries = batteries.Select(b => new BatteryRow(
+            $"BAT-{b.BatteryId:D3}",
+            b.Model,
+            $"{b.Capacity} kWh",
+            (int)Math.Round(b.Soh),
+            b.Status.ToString(),
+            b.UpdatedAt
+        )).ToList();
+
+        FullCount = Batteries.Count(b => b.Status == BatteryStatus.Full.ToString());
+        ChargingCount = Batteries.Count(b => b.Status == BatteryStatus.Charging.ToString());
+        MaintenanceCount = Batteries.Count(b => b.Status == BatteryStatus.Defective.ToString());
+        BookedCount = Batteries.Count(b => b.Status == BatteryStatus.Booked.ToString());
     }
 }
 
