@@ -1,0 +1,111 @@
+﻿@page
+@using BSMS.BusinessObjects.Enums
+@model BSMS.WebApp.Pages.Admin.Payments.IndexModel
+@{
+    ViewData["Title"] = "Quản lý giao dịch";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">@ViewData["Title"]</h2>
+
+    <!-- Bộ lọc -->
+    <form method="get" class="mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Người dùng ID</label>
+                <input type="number" name="UserId" class="form-control" value="@Model.UserId" placeholder="VD: 1" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Từ ngày</label>
+                <input type="date" name="Start" class="form-control" value="@(Model.Start?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Đến ngày</label>
+                <input type="date" name="End" class="form-control" value="@(Model.End?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Trạng thái</label>
+                <select name="Status" class="form-select">
+                    <option value="">Tất cả</option>
+                    <option value="paid" selected="@(Model.Status == "paid")">Đã thanh toán</option>
+                    <option value="pending" selected="@(Model.Status == "pending")">Chờ xử lý</option>
+                    <option value="failed" selected="@(Model.Status == "failed")">Thất bại</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">Lọc</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Bảng giao dịch -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            @if (Model.Payments.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Người dùng</th>
+                                <th>Số tiền</th>
+                                <th>Phương thức</th>
+                                <th>Thời gian</th>
+                                <th>Trạng thái</th>
+                                <th>Hóa đơn</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.Payments)
+                            {
+                                <tr>
+                                    <td><strong>#@p.PaymentId</strong></td>
+                                    <td>@(p.User?.FullName ?? $"User {p.UserId}")</td>
+                                    <td class="text-success fw-bold">@p.Amount.ToString("N0")đ</td>
+                                    <td>
+                                        <span class="badge bg-info">@p.Method</span>
+                                    </td>
+                                    <td>@p.PaymentTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        @switch (p.Status)
+                                        {
+                                            case PaymentStatus.Paid:
+                                                <span class="badge bg-success">Đã thanh toán</span>
+                                                break;
+                                            case PaymentStatus.Pending:
+                                                <span class="badge bg-warning">Chờ xử lý</span>
+                                                break;
+                                            case PaymentStatus.Failed:
+                                                <span class="badge bg-danger">Thất bại</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary">@p.Status</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(p.InvoiceUrl))
+                                        {
+                                            <a href="@p.InvoiceUrl" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                Xem
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-center py-5 text-muted">Không có giao dịch nào phù hợp.</p>
+            }
+        </div>
+    </div>
+</div>
