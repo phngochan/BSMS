@@ -1,6 +1,9 @@
 using BSMS.BLL.Services;
 using BSMS.BusinessObjects.Enums;
+using BSMS.BusinessObjects.Models;
+using BSMS.WebApp.ViewModels.Driver;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
 
@@ -12,26 +15,41 @@ public class IndexModel : PageModel
     private readonly ILogger<IndexModel> _logger;
     private readonly IStationService _stationService;
     private readonly IReservationService _reservationService;
+    private readonly IUserService _userService;
 
     public IndexModel(
         ILogger<IndexModel> logger,
         IStationService stationService,
-        IReservationService reservationService)
+        IReservationService reservationService,
+        IUserService userService)
     {
         _logger = logger;
         _stationService = stationService;
         _reservationService = reservationService;
+        _userService = userService;
     }
 
     public List<StationHighlightViewModel> StationHighlights { get; private set; } = new();
     public ReservationSummaryViewModel? ActiveReservation { get; private set; }
     public List<ReservationSummaryViewModel> RecentReservations { get; private set; } = new();
+    public List<SwapHistoryViewModel> RecentSwaps { get; private set; } = new();
+    public List<Vehicle> UserVehicles { get; private set; } = new();
     public int TotalAvailableBatteries { get; private set; }
     public DateTime? LastCompletedSwap { get; private set; }
     public int ActiveReservationSecondsRemaining { get; private set; }
     public string BatteryStatusNote { get; private set; } = "Dữ liệu pin chi tiết sẽ được cập nhật sau.";
+    public BatteryStatusViewModel? BatteryStatus { get; private set; }
 
-    public async Task OnGetAsync()
+    [BindProperty(SupportsGet = true)]
+    public int? SelectedVehicleId { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public double? UserLatitude { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public double? UserLongitude { get; set; }
+
+    public async Task OnGetAsync(int? vehicleId = null, double? lat = null, double? lng = null)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!int.TryParse(userIdClaim, out var userId))
@@ -40,18 +58,40 @@ public class IndexModel : PageModel
             return;
         }
 
+        await LoadUserVehiclesAsync(userId);
+
+        if (UserVehicles.Count > 1 && !vehicleId.HasValue)
+        {
+            SelectedVehicleId = null;
+            BatteryStatusNote = "Vui lòng chọn vehicle để xem battery status.";
+        }
+        else
+        {
+            SelectedVehicleId = vehicleId;
+            if (UserVehicles.Count == 1 && !vehicleId.HasValue)
+            {
+                SelectedVehicleId = UserVehicles.First().VehicleId;
+            }
+        }
+
+        UserLatitude = lat;
+        UserLongitude = lng;
+
         await LoadStationHighlightsAsync();
         await LoadReservationsAsync(userId);
+        await LoadSwapHistoryAsync(userId);
+        
+        if (SelectedVehicleId.HasValue)
+        {
+            await LoadBatteryStatusAsync(userId, SelectedVehicleId);
+        }
     }
 
     private async Task LoadStationHighlightsAsync()
     {
         var stations = await _stationService.GetStationsWithAvailabilityAsync();
 
-        StationHighlights = stations
-            .OrderByDescending(s => s.AvailableBatteries)
-            .ThenBy(s => s.Name)
-            .Take(3)
+        var highlights = stations
             .Select(s => new StationHighlightViewModel
             {
                 StationId = s.StationId,
@@ -60,8 +100,18 @@ public class IndexModel : PageModel
                 AvailableBatteries = s.AvailableBatteries,
                 Capacity = s.Capacity,
                 Latitude = s.Latitude,
-                Longitude = s.Longitude
+                Longitude = s.Longitude,
+                Distance = UserLatitude.HasValue && UserLongitude.HasValue
+                    ? CalculateDistance(UserLatitude.Value, UserLongitude.Value, s.Latitude, s.Longitude)
+                    : null
             })
+            .ToList();
+
+        StationHighlights = highlights
+            .OrderBy(s => s.Distance ?? double.MaxValue)
+            .ThenByDescending(s => s.AvailableBatteries)
+            .ThenBy(s => s.Name)
+            .Take(3)
             .ToList();
 
         TotalAvailableBatteries = StationHighlights.Sum(s => s.AvailableBatteries);
@@ -70,6 +120,27 @@ public class IndexModel : PageModel
         {
             BatteryStatusNote = "Hiện chưa có trạm nào hoạt động.";
         }
+    }
+
+    private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371;
+
+        var dLat = ToRadians(lat2 - lat1);
+        var dLon = ToRadians(lon2 - lon1);
+
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+        return R * c;
+    }
+
+    private double ToRadians(double degrees)
+    {
+        return degrees * Math.PI / 180;
     }
 
     private async Task LoadReservationsAsync(int userId)
@@ -118,25 +189,78 @@ public class IndexModel : PageModel
             BatteryStatusNote = $"Lần đổi pin gần nhất: {LastCompletedSwap.Value:dd/MM/yyyy HH:mm}";
         }
     }
-}
 
-public class StationHighlightViewModel
-{
-    public int StationId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Address { get; set; } = string.Empty;
-    public int AvailableBatteries { get; set; }
-    public int Capacity { get; set; }
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
-}
+    private async Task LoadUserVehiclesAsync(int userId)
+    {
+        var user = await _userService.GetUserWithVehiclesAsync(userId);
+        if (user?.Vehicles != null)
+        {
+            UserVehicles = user.Vehicles.ToList();
+        }
+    }
 
-public class ReservationSummaryViewModel
-{
-    public int ReservationId { get; set; }
-    public int StationId { get; set; }
-    public string StationName { get; set; } = string.Empty;
-    public string StationAddress { get; set; } = string.Empty;
-    public DateTime ScheduledTime { get; set; }
-    public string Status { get; set; } = string.Empty;
+    private async Task LoadSwapHistoryAsync(int userId)
+    {
+        var user = await _userService.GetUserWithTransactionsAsync(userId);
+        if (user?.SwapTransactions != null)
+        {
+            RecentSwaps = user.SwapTransactions
+                .Where(st => st.Status == SwapStatus.Completed)
+                .OrderByDescending(st => st.SwapTime)
+                .Take(5)
+                .Select(st => new SwapHistoryViewModel
+                {
+                    TransactionId = st.TransactionId,
+                    SwapTime = st.SwapTime,
+                    StationName = st.Station?.Name ?? "Unknown",
+                    BatteryTakenModel = st.BatteryTaken?.Model ?? "N/A",
+                    BatteryReturnedModel = st.BatteryReturned?.Model ?? "N/A",
+                    TotalCost = st.TotalCost,
+                    Duration = "N/A"
+                })
+                .ToList();
+        }
+    }
+
+    private async Task LoadBatteryStatusAsync(int userId, int? vehicleId = null)
+    {
+        var user = await _userService.GetUserWithTransactionsAsync(userId);
+        if (user?.SwapTransactions != null)
+        {
+            var query = user.SwapTransactions
+                .Where(st => st.Status == SwapStatus.Completed);
+
+            if (vehicleId.HasValue)
+            {
+                query = query.Where(st => st.VehicleId == vehicleId.Value);
+            }
+
+            var lastSwap = query
+                .OrderByDescending(st => st.SwapTime)
+                .FirstOrDefault();
+
+            if (lastSwap != null && lastSwap.BatteryTaken != null)
+            {
+                var battery = lastSwap.BatteryTaken;
+                var daysSinceSwap = (DateTime.UtcNow - lastSwap.SwapTime).TotalDays;
+
+                var degradationPerDay = 0.1m;
+                var degradation = (decimal)daysSinceSwap * degradationPerDay;
+                var currentSoh = battery.Soh - degradation;
+                currentSoh = Math.Max(0, currentSoh);
+
+                var soh = (int)Math.Round(currentSoh);
+                var estimatedRange = (int)Math.Round(soh * 1.7);
+
+                BatteryStatus = new BatteryStatusViewModel
+                {
+                    Percent = soh,
+                    EstimatedRange = estimatedRange,
+                    LastSwapped = lastSwap.SwapTime
+                };
+
+                LastCompletedSwap = lastSwap.SwapTime;
+            }
+        }
+    }
 }

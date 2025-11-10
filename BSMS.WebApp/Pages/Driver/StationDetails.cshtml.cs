@@ -1,4 +1,6 @@
 using BSMS.BLL.Services;
+using BSMS.WebApp.Helpers;
+using BSMS.WebApp.ViewModels.Driver;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,16 +14,23 @@ public class StationDetailsModel : PageModel
     private readonly IReservationService _reservationService;
     private readonly IStationService _stationService;
     private readonly IBatteryService _batteryService;
+    private readonly IUserService _userService;
 
-    public StationDetailsModel(IReservationService reservationService, IStationService stationService, IBatteryService batteryService)
+    public StationDetailsModel(
+        IReservationService reservationService, 
+        IStationService stationService, 
+        IBatteryService batteryService,
+        IUserService userService)
     {
         _reservationService = reservationService;
         _stationService = stationService;
         _batteryService = batteryService;
+        _userService = userService;
     }
 
     public StationDetailViewModel? Station { get; set; }
     public List<BatteryModelInfo> AvailableBatteryModels { get; set; } = new();
+    public List<BusinessObjects.Models.Vehicle> UserVehicles { get; set; } = new();
 
     [TempData]
     public string? ErrorMessage { get; set; }
@@ -34,7 +43,16 @@ public class StationDetailsModel : PageModel
         var station = await _stationService.GetStationDetailsAsync(id);
         if (station == null) return NotFound();
 
-        // availability via grouped batteries
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (int.TryParse(userIdClaim, out var userId))
+        {
+            var user = await _userService.GetUserWithVehiclesAsync(userId);
+            if (user?.Vehicles != null)
+            {
+                UserVehicles = user.Vehicles.ToList();
+            }
+        }
+
         var grouped = await _batteryService.GetBatteriesGroupedByModelAsync(id);
         var availableCount = grouped.Sum(g => g.AvailableCount);
 
@@ -64,29 +82,33 @@ public class StationDetailsModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(int stationId, DateTime reservationDate, string reservationTime)
+    public async Task<IActionResult> OnPostAsync(int stationId, int vehicleId, DateTime reservationDate, string reservationTime)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!int.TryParse(userIdClaim, out var userId))
         {
-            ErrorMessage = "User not found";
+            ErrorMessage = "Không tìm thấy người dùng";
+            return RedirectToPage(new { id = stationId });
+        }
+
+        if (vehicleId <= 0)
+        {
+            ErrorMessage = "Vui lòng chọn xe";
             return RedirectToPage(new { id = stationId });
         }
 
         try
         {
-            // Parse time
             if (!TimeSpan.TryParse(reservationTime, out var time))
             {
-                ErrorMessage = "Invalid time format";
+                ErrorMessage = "Định dạng giờ không hợp lệ";
                 return RedirectToPage(new { id = stationId });
             }
 
-            // Combine date and time
-            var scheduledTime = reservationDate.Date.Add(time);
+            var scheduledTimeLocal = reservationDate.Date.Add(time);
+            var scheduledTimeUtc = scheduledTimeLocal.ToUtcTime();
 
-            // Validate first
-            var (canCreate, errorMessage) = await _reservationService.ValidateReservationAsync(userId, stationId, scheduledTime);
+            var (canCreate, errorMessage) = await _reservationService.ValidateReservationAsync(userId, vehicleId, stationId, scheduledTimeUtc);
             
             if (!canCreate)
             {
@@ -94,10 +116,9 @@ public class StationDetailsModel : PageModel
                 return RedirectToPage(new { id = stationId });
             }
 
-            // Create reservation
-            var reservation = await _reservationService.CreateReservationAsync(userId, stationId, scheduledTime);
+            var reservation = await _reservationService.CreateReservationAsync(userId, vehicleId, stationId, scheduledTimeUtc);
 
-            SuccessMessage = $"Reservation confirmed for {scheduledTime:MMM dd, yyyy HH:mm}!";
+            SuccessMessage = $"Đặt chỗ thành công cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}!";
             return RedirectToPage("/Driver/MyReservations");
         }
         catch (Exception ex)
@@ -107,23 +128,4 @@ public class StationDetailsModel : PageModel
         }
     }
 
-}
-
-public class StationDetailViewModel
-{
-    public int StationId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Address { get; set; } = string.Empty;
-    public int Capacity { get; set; }
-    public int AvailableBatteries { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
-}
-
-public class BatteryModelInfo
-{
-    public string Model { get; set; } = string.Empty;
-    public int Capacity { get; set; }
-    public int Count { get; set; }
 }

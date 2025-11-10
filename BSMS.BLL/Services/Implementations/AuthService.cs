@@ -1,5 +1,4 @@
-﻿using BSMS.BusinessObjects.DTOs.Auth;
-using BSMS.BusinessObjects.Enums;
+﻿using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Repositories;
 
@@ -15,106 +14,79 @@ public class AuthService : IAuthService
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    public async Task<AuthResult> LoginAsync(string username, string password)
     {
-        var user = await _userRepository.GetByUsernameAsync(request.Username);
+        var user = await _userRepository.GetByUsernameAsync(username);
 
         if (user == null)
         {
-            return new AuthResponse
+            return new AuthResult
             {
                 Success = false,
                 Message = "Invalid username or password"
             };
         }
 
-        if (!_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
+        if (!_passwordHasher.VerifyPassword(password, user.PasswordHash))
         {
-            return new AuthResponse
+            return new AuthResult
             {
                 Success = false,
                 Message = "Invalid username or password"
             };
         }
 
-        return new AuthResponse
+        return new AuthResult
         {
             Success = true,
             Message = "Login successful",
-            User = new UserDto
-            {
-                UserId = user.UserId,
-                Username = user.Username,
-                FullName = user.FullName,
-                Email = user.Email,
-                Role = user.Role
-            }
+            User = user
         };
     }
 
-    public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+    public async Task<AuthResult> RegisterAsync(string username, string email, string fullName, string phone, string password)
     {
-        // Validation
-        if (request.Password != request.ConfirmPassword)
+        if (await _userRepository.IsUsernameExistsAsync(username))
         {
-            return new AuthResponse
-            {
-                Success = false,
-                Message = "Passwords do not match"
-            };
-        }
-
-        if (await _userRepository.IsUsernameExistsAsync(request.Username))
-        {
-            return new AuthResponse
+            return new AuthResult
             {
                 Success = false,
                 Message = "Username already exists"
             };
         }
 
-        if (await _userRepository.IsEmailExistsAsync(request.Email))
+        if (await _userRepository.IsEmailExistsAsync(email))
         {
-            return new AuthResponse
+            return new AuthResult
             {
                 Success = false,
                 Message = "Email already exists"
             };
         }
 
-        // Create user
         var user = new User
         {
-            Username = request.Username,
-            PasswordHash = _passwordHasher.HashPassword(request.Password),
-            FullName = request.FullName,
-            Phone = request.Phone,
-            Email = request.Email,
+            Username = username,
+            PasswordHash = _passwordHasher.HashPassword(password),
+            FullName = fullName,
+            Phone = phone,
+            Email = email,
             Role = UserRole.Driver,
             CreatedAt = DateTime.Now
         };
 
         var createdUser = await _userRepository.CreateAsync(user);
 
-        return new AuthResponse
+        return new AuthResult
         {
             Success = true,
             Message = "Registration successful",
-            User = new UserDto
-            {
-                UserId = createdUser.UserId,
-                Username = createdUser.Username,
-                FullName = createdUser.FullName,
-                Email = createdUser.Email,
-                Role = createdUser.Role
-            }
+            User = createdUser
         };
     }
 
-    public async Task<AuthResponse> ValidateTokenAsync(string token)
+    public async Task<AuthResult> ValidateTokenAsync(string token)
     {
-        // Implement JWT validation nếu dùng JWT
-        // Hoặc validate session nếu dùng Cookie Authentication
         throw new NotImplementedException();
     }
 }

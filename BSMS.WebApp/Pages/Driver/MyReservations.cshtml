@@ -1,14 +1,15 @@
 @page
+@using BSMS.WebApp.Helpers
 @model BSMS.WebApp.Pages.Driver.MyReservationsModel
 @{
-    ViewData["Title"] = "My Reservations";
+    ViewData["Title"] = "Lịch Đặt Của Tôi";
 }
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
             <h2 class="mb-3">
-                <i class="bi bi-calendar-check text-success"></i> My Reservations
+                <i class="bi bi-calendar-check text-success"></i> Lịch Đặt Của Tôi
             </h2>
         </div>
     </div>
@@ -18,11 +19,11 @@
     {
         <div class="row mb-4">
             <div class="col-12">
-                <h5 class="mb-3">Active Reservation</h5>
+                <h5 class="mb-3">Đặt Chỗ Đang Hoạt Động</h5>
                 <div class="card border-success shadow">
                     <div class="card-header bg-success text-white">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-clock-history"></i> Upcoming</span>
+                            <span><i class="bi bi-clock-history"></i> Sắp Tới</span>
                             <span class="badge bg-light text-success">@Model.ActiveReservation.Status</span>
                         </div>
                     </div>
@@ -39,8 +40,8 @@
                                         <div class="d-flex align-items-center">
                                             <i class="bi bi-calendar3 text-success fs-4 me-2"></i>
                                             <div>
-                                                <small class="text-muted d-block">Date & Time</small>
-                                                <strong>@Model.ActiveReservation.ScheduledTime.ToString("MMM dd, yyyy HH:mm")</strong>
+                                                <small class="text-muted d-block">Ngày & Giờ</small>
+                                                <strong>@Model.ActiveReservation.ScheduledTime.ToLocalDateTimeString()</strong>
                                             </div>
                                         </div>
                                     </div>
@@ -48,7 +49,7 @@
                                         <div class="d-flex align-items-center">
                                             <i class="bi bi-hourglass-split text-primary fs-4 me-2"></i>
                                             <div>
-                                                <small class="text-muted d-block">Time Remaining</small>
+                                                <small class="text-muted d-block">Thời Gian Còn Lại</small>
                                                 <strong class="countdown" data-target="@Model.ActiveReservation.ScheduledTime.ToString("o")">
                                                     Calculating...
                                                 </strong>
@@ -60,30 +61,30 @@
                                 <div class="d-flex gap-2 mt-3">
                                     <a href="https://www.google.com/maps/dir/?api=1&destination=@Model.ActiveReservation.StationLatitude,@Model.ActiveReservation.StationLongitude" 
                                        target="_blank" class="btn btn-success">
-                                        <i class="bi bi-map"></i> Navigate
+                                        <i class="bi bi-map"></i> Chỉ Đường
                                     </a>
                                     <button type="button" class="btn btn-outline-primary" onclick="showQRCode()">
-                                        <i class="bi bi-qr-code"></i> Show QR Code
+                                        <i class="bi bi-qr-code"></i> Hiển Thị Mã QR
                                     </button>
                                     <button type="button" class="btn btn-outline-danger" 
                                             onclick="confirmCancel(@Model.ActiveReservation.ReservationId)"
                                             @(Model.CanCancel ? "" : "disabled")>
-                                        <i class="bi bi-x-circle"></i> Cancel
+                                        <i class="bi bi-x-circle"></i> Hủy
                                     </button>
                                 </div>
 
                                 @if (!Model.CanCancel)
                                 {
                                     <small class="text-muted mt-2 d-block">
-                                        <i class="bi bi-info-circle"></i> Cannot cancel less than 1 hour before scheduled time
+                                        <i class="bi bi-info-circle"></i> Không thể hủy trong vòng 1 giờ trước giờ hẹn
                                     </small>
                                 }
                             </div>
                             <div class="col-md-4 text-center">
                                 <div class="p-3 bg-light rounded">
-                                    <p class="mb-2"><strong>Reservation QR Code</strong></p>
+                                    <p class="mb-2"><strong>Mã QR Đặt Chỗ</strong></p>
                                     <div id="qrcode-@Model.ActiveReservation.ReservationId" class="mb-2"></div>
-                                    <small class="text-muted">Show this to staff</small>
+                                    <small class="text-muted">Hiển thị cho nhân viên</small>
                                 </div>
                             </div>
                         </div>
@@ -95,15 +96,15 @@
     else
     {
         <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> You don't have any active reservation.
-            <a asp-page="/Driver/FindStations" class="alert-link">Find a station</a> to book now.
+            <i class="bi bi-info-circle"></i> Bạn chưa có đặt chỗ nào đang hoạt động.
+            <a asp-page="/Driver/FindStations" class="alert-link">Tìm trạm</a> để đặt ngay.
         </div>
     }
 
     <!-- Past Reservations -->
     <div class="row">
         <div class="col-12">
-            <h5 class="mb-3">Past Reservations</h5>
+            <h5 class="mb-3">Lịch Đặt Trước Đây</h5>
 
             @if (Model.PastReservations != null && Model.PastReservations.Any())
             {
@@ -111,11 +112,11 @@
                     <table class="table table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th>Station</th>
-                                <th>Scheduled Time</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                                <th>Actions</th>
+                                <th>Trạm</th>
+                                <th>Giờ Hẹn</th>
+                                <th>Trạng Thái</th>
+                                <th>Ngày Tạo</th>
+                                <th>Thao Tác</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -126,17 +127,17 @@
                                         <strong>@reservation.StationName</strong><br>
                                         <small class="text-muted">@reservation.StationAddress</small>
                                     </td>
-                                    <td>@reservation.ScheduledTime.ToString("MMM dd, yyyy HH:mm")</td>
+                                    <td>@reservation.ScheduledTime.ToLocalDateTimeString()</td>
                                     <td>
                                         <span class="badge @GetStatusBadgeClass(reservation.Status)">
                                             @reservation.Status
                                         </span>
                                     </td>
-                                    <td>@reservation.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                    <td>@reservation.CreatedAt.ToLocalDateString()</td>
                                     <td>
                                         <a asp-page="/Driver/ReservationDetails" asp-route-id="@reservation.ReservationId" 
                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i> View
+                                            <i class="bi bi-eye"></i> Xem
                                         </a>
                                     </td>
                                 </tr>
@@ -150,7 +151,7 @@
                 <div class="card">
                     <div class="card-body text-center py-5">
                         <i class="bi bi-calendar-x fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">No past reservations</p>
+                        <p class="text-muted mt-3">Chưa có lịch đặt nào</p>
                     </div>
                 </div>
             }
@@ -173,12 +174,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-    // Generate QR codes
     @if (Model.ActiveReservation != null)
     {
+        var qrUrl = Url.Page("/Staff/ConfirmReservation", null, new { id = Model.ActiveReservation.ReservationId }, Request.Scheme, Request.Host.Value);
         <text>
         new QRCode(document.getElementById("qrcode-@Model.ActiveReservation.ReservationId"), {
-            text: "RESERVATION:@Model.ActiveReservation.ReservationId",
+            text: "@qrUrl",
             width: 150,
             height: 150
         });
@@ -193,7 +194,7 @@
             const diff = target - now;
 
             if (diff <= 0) {
-                el.textContent = 'Time to go!';
+                el.textContent = 'Đến giờ!';
                 el.classList.add('text-danger');
                 return;
             }
@@ -214,12 +215,12 @@
     updateCountdown();
 
     function confirmCancel(id) {
-        if (confirm('Are you sure you want to cancel this reservation?')) {
+        if (confirm('Bạn có chắc chắn muốn hủy đặt chỗ này không?')) {
             window.location.href = `/Driver/CancelReservation?id=${id}`;
         }
     }
 
     function showQRCode() {
-        alert('Show this QR code to the station staff when you arrive.');
+        alert('Hiển thị mã QR này cho nhân viên trạm khi bạn đến.');
     }
 </script>

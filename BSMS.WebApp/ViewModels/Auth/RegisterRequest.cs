@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
-namespace BSMS.BusinessObjects.DTOs.Auth;
+namespace BSMS.WebApp.ViewModels.Auth;
 
 public class RegisterRequest
 {
@@ -31,3 +31,4 @@ public class RegisterRequest
     [DataType(DataType.Password)]
     public string ConfirmPassword { get; set; } = string.Empty;
 }
+

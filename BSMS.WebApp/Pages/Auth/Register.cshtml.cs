@@ -1,6 +1,6 @@
 using BSMS.BLL.Services;
-using BSMS.BusinessObjects.DTOs.Auth;
 using BSMS.WebApp.Helpers;
+using BSMS.WebApp.ViewModels.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BSMS.WebApp.Pages.Auth;

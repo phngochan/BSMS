@@ -1,6 +1,7 @@
 using BSMS.BLL.Services;
-using BSMS.BusinessObjects.DTOs.Auth;
 using BSMS.BusinessObjects.Enums;
+using BSMS.WebApp.Mappers;
+using BSMS.WebApp.ViewModels.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -51,7 +52,7 @@ public class LoginModel : BasePageModel
 
         try
         {
-            var result = await _authService.LoginAsync(Input);
+            var result = await _authService.LoginAsync(Input.Username, Input.Password);
 
             if (!result.Success)
             {
@@ -59,14 +60,16 @@ public class LoginModel : BasePageModel
                 return Page();
             }
 
+            var user = result.User!;
+
             // Create claims
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, result.User!.UserId.ToString()),
-                new Claim(ClaimTypes.Name, result.User.Username),
-                new Claim(ClaimTypes.Email, result.User.Email),
-                new Claim(ClaimTypes.Role, result.User.Role.ToString()),
-                new Claim("FullName", result.User.FullName)
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                new Claim("FullName", user.FullName)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -87,12 +90,12 @@ public class LoginModel : BasePageModel
             // Log activity to database
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             await _activityLogService!.LogActivityAsync(
-                result.User.UserId,
+                user.UserId,
                 "Login",
                 $"User logged in from IP: {ipAddress}",
                 ipAddress);
 
-            var roleName = result.User.Role;
+            var roleName = user.Role;
 
             if (returnUrl != "/" && !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {

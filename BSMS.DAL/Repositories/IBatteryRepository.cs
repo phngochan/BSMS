@@ -1,3 +1,4 @@
+using BSMS.BusinessObjects.DTOs;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Base;
@@ -17,14 +18,4 @@ public interface IBatteryRepository : IGenericRepository<Battery>
     Task UpdateBatteryStatusAsync(int batteryId, BatteryStatus newStatus);
 
     Task<bool> IsBatteryCompatibleAsync(string batteryModel, string vehicleModel);
-}
-
-public class BatteryModelGroupDto
-{
-    public string Model { get; set; } = string.Empty;
-    public int Capacity { get; set; }
-    public int TotalCount { get; set; }
-    public int AvailableCount { get; set; }
-    public int ChargingCount { get; set; }
-    public int MaintenanceCount { get; set; }
 }

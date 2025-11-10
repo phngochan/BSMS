@@ -1,7 +1,6 @@
-using BSMS.BusinessObjects.Models;
 using BSMS.BLL.Services;
+using BSMS.WebApp.ViewModels.Driver;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSMS.WebApp.Pages.Driver;
@@ -60,7 +59,6 @@ public class FindStationsModel : PageModel
             return;
         }
 
-        // Default: show all active with availability
         var withAvail = await _stationService.GetStationsWithAvailabilityAsync();
         Stations = withAvail.Select(s => new StationViewModel
         {
@@ -74,16 +72,4 @@ public class FindStationsModel : PageModel
             Longitude = s.Longitude
         }).OrderBy(s => s.Name).ToList();
     }
-}
-
-public class StationViewModel
-{
-    public int StationId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Address { get; set; } = string.Empty;
-    public int Capacity { get; set; }
-    public int AvailableBatteries { get; set; }
-    public double Distance { get; set; }
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
 }

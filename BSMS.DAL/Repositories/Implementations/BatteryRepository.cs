@@ -1,3 +1,4 @@
+using BSMS.BusinessObjects.DTOs;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Base;
@@ -76,18 +77,11 @@ public class BatteryRepository : GenericRepository<Battery>, IBatteryRepository
 
     public async Task<bool> IsBatteryCompatibleAsync(string batteryModel, string vehicleModel)
     {
-        // TODO: Implement actual compatibility logic
-        // For now, simple model matching
-        // In production, you'd have a compatibility matrix table
+        await Task.CompletedTask;
 
-        await Task.CompletedTask; // Placeholder for async operation
-
-        // Simple rule: Standard batteries work with all vehicles
         if (batteryModel.Contains("Standard"))
             return true;
 
-        // Extended and Premium require specific vehicle types
-        // This is placeholder logic - implement based on actual requirements
         return true;
     }
 }

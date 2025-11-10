@@ -8,31 +8,77 @@ namespace BSMS.BLL.Services.Implementations;
 public class ReservationService : IReservationService
 {
     private readonly IReservationRepository _reservationRepo;
+    private readonly IStationService _stationService;
+    private readonly IBatteryService _batteryService;
+    private readonly IUserService _userService;
     private readonly ILogger<ReservationService> _logger;
 
     public ReservationService(
         IReservationRepository reservationRepo,
+        IStationService stationService,
+        IBatteryService batteryService,
+        IUserService userService,
         ILogger<ReservationService> logger)
     {
         _reservationRepo = reservationRepo;
+        _stationService = stationService;
+        _batteryService = batteryService;
+        _userService = userService;
         _logger = logger;
     }
 
-    public async Task<Reservation> CreateReservationAsync(int userId, int stationId, DateTime timeSlot)
+    public async Task<Reservation> CreateReservationAsync(int userId, int vehicleId, int stationId, DateTime timeSlot)
     {
         try
         {
-            // Validate first
-            var (canCreate, errorMessage) = await ValidateReservationAsync(userId, stationId, timeSlot);
+            if (timeSlot.Kind != DateTimeKind.Utc)
+            {
+                timeSlot = timeSlot.ToUniversalTime();
+            }
+
+            var (canCreate, errorMessage) = await ValidateReservationAsync(userId, vehicleId, stationId, timeSlot);
             if (!canCreate)
             {
                 throw new InvalidOperationException(errorMessage);
             }
 
+            var user = await _userService.GetUserWithVehiclesAsync(userId);
+            var vehicle = user?.Vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
+            
+            if (vehicle == null)
+            {
+                throw new InvalidOperationException("Xe không tồn tại.");
+            }
+
+            var availableBatteries = await _batteryService.GetAvailableBatteriesAsync(stationId);
+            var compatibleBatteries = new List<Battery>();
+            
+            foreach (var battery in availableBatteries)
+            {
+                if (battery.Model == vehicle.BatteryModel)
+                {
+                    compatibleBatteries.Add(battery);
+                }
+                else if (await _batteryService.CheckCompatibilityAsync(battery.Model, vehicle.BatteryModel))
+                {
+                    compatibleBatteries.Add(battery);
+                }
+            }
+
+            if (!compatibleBatteries.Any())
+            {
+                throw new InvalidOperationException("Không có pin sẵn có tương thích với xe của bạn.");
+            }
+
+            var selectedBattery = compatibleBatteries.First();
+            await _batteryService.UpdateBatteryStatusAsync(selectedBattery.BatteryId, BatteryStatus.Booked);
+
             var reservation = new Reservation
             {
                 UserId = userId,
+                VehicleId = vehicleId,
                 StationId = stationId,
+                BatteryId = selectedBattery.BatteryId,
                 ScheduledTime = timeSlot,
                 Status = ReservationStatus.Active,
                 CreatedAt = DateTime.UtcNow
@@ -40,8 +86,8 @@ public class ReservationService : IReservationService
 
             await _reservationRepo.CreateAsync(reservation);
 
-            _logger.LogInformation("Reservation created: UserId={UserId}, StationId={StationId}, TimeSlot={TimeSlot}",
-                userId, stationId, timeSlot);
+            _logger.LogInformation("Reservation created: UserId={UserId}, StationId={StationId}, BatteryId={BatteryId}, TimeSlot={TimeSlot}",
+                userId, stationId, selectedBattery.BatteryId, timeSlot);
 
             return reservation;
         }
@@ -64,7 +110,6 @@ public class ReservationService : IReservationService
                 return false;
             }
 
-            // Check ownership
             if (reservation.UserId != userId)
             {
                 _logger.LogWarning("User {UserId} attempted to cancel reservation {ReservationId} owned by {OwnerId}",
@@ -72,7 +117,6 @@ public class ReservationService : IReservationService
                 return false;
             }
 
-            // Check status
             if (reservation.Status != ReservationStatus.Active)
             {
                 _logger.LogWarning("Cannot cancel reservation {ReservationId} with status {Status}",
@@ -80,7 +124,6 @@ public class ReservationService : IReservationService
                 return false;
             }
 
-            // Check time constraint (cannot cancel if < 1 hour before time slot)
             var oneHourBefore = reservation.ScheduledTime.AddHours(-1);
             if (DateTime.UtcNow >= oneHourBefore)
             {
@@ -90,6 +133,12 @@ public class ReservationService : IReservationService
             }
 
             await _reservationRepo.UpdateStatusAsync(reservationId, ReservationStatus.Cancelled);
+
+            if (reservation.BatteryId.HasValue)
+            {
+                await _batteryService.UpdateBatteryStatusAsync(reservation.BatteryId.Value, BatteryStatus.Full);
+                _logger.LogInformation("Battery status reset to Full: BatteryId={BatteryId}", reservation.BatteryId.Value);
+            }
 
             _logger.LogInformation("Reservation cancelled: {ReservationId} by User {UserId}",
                 reservationId, userId);
@@ -212,6 +261,14 @@ public class ReservationService : IReservationService
             foreach (var reservation in lateReservations)
             {
                 await _reservationRepo.UpdateStatusAsync(reservation.ReservationId, ReservationStatus.Cancelled);
+
+                if (reservation.BatteryId.HasValue)
+                {
+                    await _batteryService.UpdateBatteryStatusAsync(reservation.BatteryId.Value, BatteryStatus.Full);
+                    _logger.LogInformation("Battery status reset to Full after auto-cancel: BatteryId={BatteryId}", 
+                        reservation.BatteryId.Value);
+                }
+
                 cancelledCount++;
 
                 _logger.LogInformation("Auto-cancelled late reservation: {ReservationId}, UserId: {UserId}",
@@ -227,32 +284,67 @@ public class ReservationService : IReservationService
         }
     }
 
-    public async Task<(bool CanCreate, string? ErrorMessage)> ValidateReservationAsync(int userId, int stationId, DateTime timeSlot)
+    public async Task<(bool CanCreate, string? ErrorMessage)> ValidateReservationAsync(int userId, int vehicleId, int stationId, DateTime timeSlot)
     {
         try
         {
-            // Rule 1: User can only have 1 active reservation
             if (await _reservationRepo.HasActiveReservationAsync(userId))
             {
-                return (false, "You already have an active reservation. Please cancel it before creating a new one.");
+                return (false, "Bạn đã có một đặt chỗ đang hoạt động. Vui lòng hủy trước khi tạo mới.");
             }
 
-            // Rule 2: Time slot must be in the future
             if (timeSlot <= DateTime.UtcNow)
             {
-                return (false, "Time slot must be in the future.");
+                return (false, "Thời gian đặt chỗ phải trong tương lai.");
             }
 
-            // Rule 3: Time slot should be at least 30 minutes from now
             if (timeSlot < DateTime.UtcNow.AddMinutes(30))
             {
-                return (false, "Reservation must be at least 30 minutes in advance.");
+                return (false, "Đặt chỗ phải trước ít nhất 30 phút.");
             }
 
-            // Additional validation can be added here:
-            // - Check if station exists and is active
-            // - Check if station has available batteries
-            // - Check battery compatibility with user's vehicle
+            var station = await _stationService.GetStationDetailsAsync(stationId);
+            if (station == null)
+            {
+                return (false, "Trạm không tồn tại.");
+            }
+
+            if (station.Status != StationStatus.Active)
+            {
+                return (false, "Trạm hiện không hoạt động.");
+            }
+
+            var availableBatteries = await _batteryService.GetAvailableBatteriesAsync(stationId);
+            if (!availableBatteries.Any())
+            {
+                return (false, "Trạm hiện không có pin sẵn có.");
+            }
+
+            var user = await _userService.GetUserWithVehiclesAsync(userId);
+            var vehicle = user?.Vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
+            
+            if (vehicle == null)
+            {
+                return (false, "Xe không tồn tại.");
+            }
+
+            var compatibleBatteries = new List<Battery>();
+            foreach (var battery in availableBatteries)
+            {
+                if (battery.Model == vehicle.BatteryModel)
+                {
+                    compatibleBatteries.Add(battery);
+                }
+                else if (await _batteryService.CheckCompatibilityAsync(battery.Model, vehicle.BatteryModel))
+                {
+                    compatibleBatteries.Add(battery);
+                }
+            }
+
+            if (!compatibleBatteries.Any())
+            {
+                return (false, $"Trạm không có pin tương thích với xe của bạn (Model: {vehicle.BatteryModel}).");
+            }
 
             return (true, null);
         }

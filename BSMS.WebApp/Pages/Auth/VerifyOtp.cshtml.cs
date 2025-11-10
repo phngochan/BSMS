@@ -1,6 +1,6 @@
 using BSMS.BLL.Services;
-using BSMS.BusinessObjects.DTOs.Auth;
 using BSMS.WebApp.Helpers;
+using BSMS.WebApp.ViewModels.Auth;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -59,7 +59,12 @@ public class VerifyOtpModel : BasePageModel
             HttpContext.Session.RemoveOtp("register");
 
             // Proceed to register
-            var result = await _authService.RegisterAsync(pending);
+            var result = await _authService.RegisterAsync(
+                pending.Username,
+                pending.Email,
+                pending.FullName,
+                pending.Phone,
+                pending.Password);
             if (!result.Success)
             {
                 ModelState.AddModelError(string.Empty, result.Message);

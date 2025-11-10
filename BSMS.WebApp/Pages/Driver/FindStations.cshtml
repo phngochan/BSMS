@@ -1,16 +1,16 @@
 @page
 @model BSMS.WebApp.Pages.Driver.FindStationsModel
 @{
-    ViewData["Title"] = "Find Stations";
+    ViewData["Title"] = "Tìm Trạm";
 }
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
             <h2 class="mb-3">
-                <i class="bi bi-geo-alt text-success"></i> Find Charging Stations
+                <i class="bi bi-geo-alt text-success"></i> Tìm Trạm Đổi Pin
             </h2>
-            <p class="text-muted">Find the nearest battery swap station with available batteries</p>
+            <p class="text-muted">Tìm trạm đổi pin gần nhất có pin sẵn có</p>
         </div>
     </div>
 
@@ -27,19 +27,19 @@
                                         <i class="bi bi-search"></i>
                                     </span>
                                     <input type="text" class="form-control" name="location" 
-                                           placeholder="Enter your location or use current location"
+                                           placeholder="Nhập địa chỉ hoặc dùng vị trí hiện tại"
                                            value="@Model.SearchLocation">
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <button type="submit" class="btn btn-success w-100">
-                                    <i class="bi bi-search"></i> Search
+                                    <i class="bi bi-search"></i> Tìm Kiếm
                                 </button>
                             </div>
                         </div>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="useCurrentLocation()">
-                                <i class="bi bi-geo-alt-fill"></i> Use Current Location
+                                <i class="bi bi-geo-alt-fill"></i> Dùng Vị Trí Hiện Tại
                             </button>
                         </div>
                     </form>
@@ -49,17 +49,17 @@
         <div class="col-lg-4">
             <div class="card shadow-sm bg-light">
                 <div class="card-body">
-                    <h6 class="card-title mb-3">Filter By:</h6>
+                    <h6 class="card-title mb-3">Lọc Theo:</h6>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="filterAvailable" checked>
                         <label class="form-check-label" for="filterAvailable">
-                            Available Batteries Only
+                            Chỉ Trạm Có Pin Sẵn
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="filter24h">
                         <label class="form-check-label" for="filter24h">
-                            24/7 Stations
+                            Trạm Hoạt Động 24/7
                         </label>
                     </div>
                 </div>
@@ -83,7 +83,7 @@
                                         <i class="bi bi-geo-alt"></i> @station.Address
                                     </p>
                                 </div>
-                                <span class="badge bg-success">Active</span>
+                                <span class="badge bg-success">Hoạt Động</span>
                             </div>
 
                             <div class="row g-3 mb-3">
@@ -93,7 +93,7 @@
                                             <i class="bi bi-battery-full text-success"></i>
                                         </div>
                                         <div>
-                                            <small class="text-muted d-block">Available</small>
+                                            <small class="text-muted d-block">Có Sẵn</small>
                                             <strong>@station.AvailableBatteries / @station.Capacity</strong>
                                         </div>
                                     </div>
@@ -104,7 +104,7 @@
                                             <i class="bi bi-signpost-2 text-primary"></i>
                                         </div>
                                         <div>
-                                            <small class="text-muted d-block">Distance</small>
+                                            <small class="text-muted d-block">Khoảng Cách</small>
                                             <strong>@string.Format("{0:0.0}", station.Distance) km</strong>
                                         </div>
                                     </div>
@@ -116,11 +116,11 @@
                             <div class="d-flex gap-2">
                                 <a asp-page="/Driver/StationDetails" asp-route-id="@station.StationId" 
                                    class="btn btn-success flex-fill">
-                                    <i class="bi bi-calendar-check"></i> Book Now
+                                    <i class="bi bi-calendar-check"></i> Đặt Ngay
                                 </a>
                                 <a href="https://www.google.com/maps/dir/?api=1&destination=@station.Latitude,@station.Longitude" 
                                    target="_blank" class="btn btn-outline-primary flex-fill">
-                                    <i class="bi bi-map"></i> Navigate
+                                    <i class="bi bi-map"></i> Chỉ Đường
                                 </a>
                             </div>
                         </div>
@@ -134,8 +134,8 @@
                 <div class="card shadow-sm">
                     <div class="card-body text-center py-5">
                         <i class="bi bi-search fs-1 text-muted mb-3"></i>
-                        <h5 class="text-muted">No stations found</h5>
-                        <p class="text-muted">Try adjusting your search location or filters</p>
+                        <h5 class="text-muted">Không tìm thấy trạm</h5>
+                        <p class="text-muted">Thử điều chỉnh vị trí tìm kiếm hoặc bộ lọc</p>
                     </div>
                 </div>
             </div>
@@ -170,10 +170,10 @@
                 const lng = position.coords.longitude;
                 window.location.href = `/Driver/FindStations?lat=${lat}&lng=${lng}`;
             }, function(error) {
-                alert('Unable to get your location. Please enter manually.');
+                alert('Không thể lấy vị trí của bạn. Vui lòng nhập thủ công.');
             });
         } else {
-            alert('Geolocation is not supported by your browser.');
+            alert('Trình duyệt của bạn không hỗ trợ định vị.');
         }
     }
 </script>

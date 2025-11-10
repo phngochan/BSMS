@@ -17,6 +17,7 @@ public class ReservationRepository : GenericRepository<Reservation>, IReservatio
         return await _dbSet
             .Include(r => r.Station)
             .Include(r => r.User)
+            .Include(r => r.Battery)
             .Where(r => r.UserId == userId
                 && (r.Status == ReservationStatus.Active))
             .OrderByDescending(r => r.CreatedAt)
@@ -27,7 +28,9 @@ public class ReservationRepository : GenericRepository<Reservation>, IReservatio
     {
         return await _dbSet
             .Include(r => r.User)
+            .Include(r => r.Vehicle)
             .Include(r => r.Station)
+            .Include(r => r.Battery)
             .FirstOrDefaultAsync(r => r.ReservationId == reservationId);
     }
 
@@ -62,6 +65,7 @@ public class ReservationRepository : GenericRepository<Reservation>, IReservatio
         var cutoffTime = DateTime.UtcNow.AddMinutes(-30);
 
         return await _dbSet
+            .Include(r => r.Battery)
             .Where(r => (r.Status == ReservationStatus.Active)
                 && r.ScheduledTime < cutoffTime)
             .ToListAsync();

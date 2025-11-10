@@ -1,5 +1,6 @@
 using BSMS.BLL.Services;
 using BSMS.BusinessObjects.Enums;
+using BSMS.WebApp.ViewModels.Driver;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Security.Claims;
@@ -28,7 +29,6 @@ public class MyReservationsModel : PageModel
             return;
         }
 
-        // Get active reservation
         var activeReservation = await _reservationService.GetActiveReservationAsync(userId);
         if (activeReservation != null)
         {
@@ -44,11 +44,9 @@ public class MyReservationsModel : PageModel
                 CreatedAt = activeReservation.CreatedAt
             };
 
-            // Check if can cancel (at least 1 hour before scheduled time)
             CanCancel = activeReservation.ScheduledTime > DateTime.UtcNow.AddHours(1);
         }
 
-        // Get past reservations
         var allReservations = await _reservationService.GetMyReservationsAsync(userId, pageNumber: 1, pageSize: 20);
         PastReservations = allReservations
             .Where(r => r.Status != ReservationStatus.Active)
@@ -63,16 +61,4 @@ public class MyReservationsModel : PageModel
             })
             .ToList();
     }
-}
-
-public class ReservationViewModel
-{
-    public int ReservationId { get; set; }
-    public string StationName { get; set; } = string.Empty;
-    public string StationAddress { get; set; } = string.Empty;
-    public double StationLatitude { get; set; }
-    public double StationLongitude { get; set; }
-    public DateTime ScheduledTime { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
 }

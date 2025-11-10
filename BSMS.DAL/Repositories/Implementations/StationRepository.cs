@@ -1,3 +1,4 @@
+using BSMS.BusinessObjects.DTOs;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Base;
@@ -38,8 +39,6 @@ public class StationRepository : GenericRepository<ChangingStation>, IStationRep
 
     public async Task<IEnumerable<ChangingStation>> GetNearbyStationsAsync(double latitude, double longitude, double radiusKm = 10)
     {
-        // Using Haversine formula approximation for nearby search
-        // For production, consider using spatial queries or PostGIS
         var stations = await _dbSet
             .AsNoTracking()
             .Where(s => s.Status == StationStatus.Active)
@@ -95,12 +94,9 @@ public class StationRepository : GenericRepository<ChangingStation>, IStationRep
             .ToListAsync();
     }
 
-    /// <summary>
-    /// Calculate distance between two coordinates using Haversine formula
-    /// </summary>
     private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
     {
-        const double R = 6371; // Earth radius in kilometers
+        const double R = 6371;
 
         var dLat = ToRadians(lat2 - lat1);
         var dLon = ToRadians(lon2 - lon1);

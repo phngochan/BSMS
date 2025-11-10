@@ -1,14 +1,14 @@
 @page
 @model BSMS.WebApp.Pages.Driver.StationDetailsModel
 @{
-    ViewData["Title"] = "Station Details";
+    ViewData["Title"] = "Chi Tiết Trạm";
 }
 
 <div class="container-fluid py-4">
     <!-- Back Button -->
     <div class="mb-3">
         <a asp-page="/Driver/FindStations" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Stations
+            <i class="bi bi-arrow-left"></i> Quay Lại Danh Sách Trạm
         </a>
     </div>
 
@@ -25,13 +25,13 @@
                     </div>
                     <div class="card-body">
                         <div class="mb-4">
-                            <h6 class="text-muted mb-2">Address</h6>
+                            <h6 class="text-muted mb-2">Địa Chỉ</h6>
                             <p class="mb-0"><i class="bi bi-geo-alt"></i> @Model.Station.Address</p>
                         </div>
 
                         <div class="mb-4">
-                            <h6 class="text-muted mb-2">Contact</h6>
-                            <p class="mb-0 text-muted"><em>Not provided</em></p>
+                            <h6 class="text-muted mb-2">Liên Hệ</h6>
+                            <p class="mb-0 text-muted"><em>Chưa cung cấp</em></p>
                         </div>
 
                         <div class="row g-3">
@@ -39,21 +39,21 @@
                                 <div class="stat-card p-3 bg-success bg-opacity-10 rounded text-center">
                                     <i class="bi bi-battery-full fs-2 text-success"></i>
                                     <h3 class="mb-0 mt-2">@Model.Station.AvailableBatteries</h3>
-                                    <small class="text-muted">Available Batteries</small>
+                                    <small class="text-muted">Pin Có Sẵn</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="stat-card p-3 bg-primary bg-opacity-10 rounded text-center">
                                     <i class="bi bi-hdd-stack fs-2 text-primary"></i>
                                     <h3 class="mb-0 mt-2">@Model.Station.Capacity</h3>
-                                    <small class="text-muted">Total Capacity</small>
+                                    <small class="text-muted">Tổng Dung Lượng</small>
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="stat-card p-3 bg-info bg-opacity-10 rounded text-center">
                                     <i class="bi bi-activity fs-2 text-info"></i>
                                     <h3 class="mb-0 mt-2">@Model.Station.Status</h3>
-                                    <small class="text-muted">Status</small>
+                                    <small class="text-muted">Trạng Thái</small>
                                 </div>
                             </div>
                         </div>
@@ -61,7 +61,7 @@
                         <div class="mt-4">
                             <a href="https://www.google.com/maps/dir/?api=1&destination=@Model.Station.Latitude,@Model.Station.Longitude" 
                                target="_blank" class="btn btn-outline-primary w-100">
-                                <i class="bi bi-map"></i> Get Directions
+                                <i class="bi bi-map"></i> Chỉ Đường
                             </a>
                         </div>
                     </div>
@@ -70,7 +70,7 @@
                 <!-- Available Batteries -->
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0">Available Battery Models</h5>
+                        <h5 class="mb-0">Mẫu Pin Có Sẵn</h5>
                     </div>
                     <div class="card-body">
                         @if (Model.AvailableBatteryModels.Any())
@@ -83,7 +83,7 @@
                                             <div>
                                                 <h6 class="mb-1">@battery.Model</h6>
                                                 <small class="text-muted">
-                                                    Capacity: @battery.Capacity kWh | Available: @battery.Count units
+                                                    Dung lượng: @battery.Capacity kWh | Có sẵn: @battery.Count pin
                                                 </small>
                                             </div>
                                             <span class="badge bg-success">@battery.Count</span>
@@ -94,7 +94,7 @@
                         }
                         else
                         {
-                            <p class="text-muted text-center py-3">No batteries available at the moment</p>
+                            <p class="text-muted text-center py-3">Hiện không có pin nào</p>
                         }
                     </div>
                 </div>
@@ -105,7 +105,7 @@
                 <div class="card shadow sticky-top" style="top: 20px;">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
-                            <i class="bi bi-calendar-check"></i> Book a Time Slot
+                            <i class="bi bi-calendar-check"></i> Đặt Lịch Hẹn
                         </h5>
                     </div>
                     <div class="card-body">
@@ -128,22 +128,46 @@
                         <form method="post">
                             <input type="hidden" name="StationId" value="@Model.Station.StationId" />
 
+                            <!-- Vehicle Selector -->
+                            @if (Model.UserVehicles.Any())
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Chọn Xe</label>
+                                    <select class="form-select" name="VehicleId" required>
+                                        <option value="">-- Chọn Xe --</option>
+                                        @foreach (var vehicle in Model.UserVehicles)
+                                        {
+                                            <option value="@vehicle.VehicleId">
+                                                @vehicle.Vin - @vehicle.BatteryModel
+                                            </option>
+                                        }
+                                    </select>
+                                    <small class="text-muted">Chọn xe để đặt chỗ đổi pin</small>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> Bạn chưa có xe nào. Vui lòng thêm xe trước khi đặt chỗ.
+                                </div>
+                            }
+
                             <!-- Date Picker -->
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Select Date</label>
+                                <label class="form-label fw-semibold">Chọn Ngày</label>
                                 <input type="date" class="form-control" name="ReservationDate" 
                                        value="@DateTime.Today.ToString("yyyy-MM-dd")"
                                        min="@DateTime.Today.ToString("yyyy-MM-dd")"
                                        max="@DateTime.Today.AddDays(7).ToString("yyyy-MM-dd")"
                                        required />
-                                <small class="text-muted">You can book up to 7 days in advance</small>
+                                <small class="text-muted">Bạn có thể đặt trước tối đa 7 ngày</small>
                             </div>
 
                             <!-- Time Picker -->
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Select Time</label>
+                                <label class="form-label fw-semibold">Chọn Giờ (Giờ địa phương)</label>
                                 <select class="form-select" name="ReservationTime" required>
-                                    <option value="">Choose a time...</option>
+                                    <option value="">Chọn giờ...</option>
                                     @for (int hour = 8; hour < 20; hour++)
                                     {
                                         var time = $"{hour:00}:00";
@@ -152,33 +176,33 @@
                                         <option value="@timeHalf">@timeHalf</option>
                                     }
                                 </select>
-                                <small class="text-muted">Available slots: 08:00 - 20:00</small>
+                                <small class="text-muted">Khung giờ có sẵn: 08:00 - 20:00 (Giờ Việt Nam)</small>
                             </div>
 
                             <!-- Info Box -->
                             <div class="alert alert-info">
                                 <small>
                                     <i class="bi bi-info-circle"></i> 
-                                    <strong>Important:</strong>
+                                    <strong>Quan Trọng:</strong>
                                     <ul class="mb-0 mt-2 ps-3">
-                                        <li>You can only have 1 active reservation</li>
-                                        <li>Book at least 30 minutes in advance</li>
-                                        <li>Cannot cancel less than 1 hour before</li>
-                                        <li>Reservation auto-cancels if you're 30+ min late</li>
+                                        <li>Bạn chỉ có thể có 1 đặt chỗ đang hoạt động</li>
+                                        <li>Đặt trước ít nhất 30 phút</li>
+                                        <li>Không thể hủy trong vòng 1 giờ trước giờ hẹn</li>
+                                        <li>Đặt chỗ tự động hủy nếu bạn đến muộn hơn 30 phút</li>
                                     </ul>
                                 </small>
                             </div>
 
                             <!-- Submit Button -->
                             <button type="submit" class="btn btn-success w-100 btn-lg" 
-                                    @(Model.Station.AvailableBatteries <= 0 ? "disabled" : "")>
-                                <i class="bi bi-check-circle"></i> Confirm Reservation
+                                    @(Model.Station.AvailableBatteries <= 0 || !Model.UserVehicles.Any() ? "disabled" : "")>
+                                <i class="bi bi-check-circle"></i> Xác Nhận Đặt Chỗ
                             </button>
 
                             @if (Model.Station.AvailableBatteries <= 0)
                             {
                                 <small class="text-danger d-block text-center mt-2">
-                                    <i class="bi bi-exclamation-triangle"></i> No batteries available
+                                    <i class="bi bi-exclamation-triangle"></i> Không có pin sẵn có
                                 </small>
                             }
                         </form>
@@ -190,7 +214,7 @@
     else
     {
         <div class="alert alert-danger">
-            <i class="bi bi-exclamation-triangle"></i> Station not found.
+            <i class="bi bi-exclamation-triangle"></i> Không tìm thấy trạm.
         </div>
     }
 </div>

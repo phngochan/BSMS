@@ -1,3 +1,5 @@
+using BSMS.BLL.Mappers;
+using BSMS.BusinessObjects.DTOs;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Repositories;
 using Microsoft.Extensions.Logging;
@@ -65,18 +67,16 @@ public class StationService : IStationService
                 .Join(stationsWithAvailability,
                     s => s.StationId,
                     sa => sa.StationId,
-                    (s, sa) => new StationWithDistanceDto
-                    {
-                        StationId = s.StationId,
-                        Name = s.Name,
-                        Address = s.Address,
-                        Latitude = s.Latitude,
-                        Longitude = s.Longitude,
-                        Capacity = s.Capacity,
-                        Status = s.Status.ToString(),
-                        AvailableBatteries = sa.AvailableBatteries,
-                        Distance = CalculateDistance(latitude, longitude, s.Latitude, s.Longitude)
-                    })
+                    (s, sa) => StationMapper.ToStationWithDistanceDto(
+                        s.StationId,
+                        s.Name,
+                        s.Address,
+                        s.Latitude,
+                        s.Longitude,
+                        s.Capacity,
+                        s.Status.ToString(),
+                        sa.AvailableBatteries,
+                        CalculateDistance(latitude, longitude, s.Latitude, s.Longitude)))
                 .OrderBy(s => s.Distance)
                 .ToList();
 
