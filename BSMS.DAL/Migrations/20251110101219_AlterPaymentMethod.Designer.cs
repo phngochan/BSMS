@@ -4,6 +4,7 @@ using BSMS.DAL.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BSMS.DAL.Migrations
 {
     [DbContext(typeof(BSMSDbContext))]
-    partial class BSMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251110101219_AlterPaymentMethod")]
+    partial class AlterPaymentMethod
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,10 +75,6 @@ namespace BSMS.DAL.Migrations
 
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
-
-                    b.Property<string>("DefectNote")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime?>("LastMaintenance")
                         .HasColumnType("datetime2");
@@ -290,9 +289,6 @@ namespace BSMS.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReservationId"));
 
-                    b.Property<int?>("BatteryId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -316,8 +312,6 @@ namespace BSMS.DAL.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("ReservationId");
-
-                    b.HasIndex("BatteryId");
 
                     b.HasIndex("StationId");
 
@@ -750,11 +744,6 @@ namespace BSMS.DAL.Migrations
 
             modelBuilder.Entity("BSMS.BusinessObjects.Models.Reservation", b =>
                 {
-                    b.HasOne("BSMS.BusinessObjects.Models.Battery", "Battery")
-                        .WithMany()
-                        .HasForeignKey("BatteryId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("BSMS.BusinessObjects.Models.ChangingStation", "Station")
                         .WithMany("Reservations")
                         .HasForeignKey("StationId")
@@ -772,8 +761,6 @@ namespace BSMS.DAL.Migrations
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Battery");
 
                     b.Navigation("Station");
 

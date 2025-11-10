@@ -28,20 +28,15 @@ public class AlertRepository : GenericRepository<Alert>, IAlertRepository
             .Include(a => a.Station)
             .Include(a => a.Battery)
             .AsQueryable();
-
-        // Role-based filtering can be added here if needed
-        // For now, return all unresolved alerts
         
         return await query
             .OrderByDescending(a => a.CreatedAt)
-            .Take(10) // Latest 10 alerts
+            .Take(10)
             .ToListAsync();
     }
 
     public async Task<int> GetUnreadCountByUserAsync(int userId)
     {
-        // For now, count all unresolved alerts
-        // Can add user-specific tracking table later
         return await _dbSet.CountAsync(a => !a.Resolved);
     }
 

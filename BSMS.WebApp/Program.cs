@@ -34,6 +34,8 @@ builder.Services.AddScoped<IStationStaffRepository, StationStaffRepository>();
 builder.Services.AddScoped<ISupportRepository, SupportRepository>();
 builder.Services.AddScoped<ISwapTransactionRepository, SwapTransactionRepository>();
 builder.Services.AddScoped<IConfigRepository, ConfigRepository>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+builder.Services.AddScoped<IStationRepository, StationRepository>();
 
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -49,6 +51,9 @@ builder.Services.AddScoped<IStationStaffService, StationStaffService>();
 builder.Services.AddScoped<ISupportService, SupportService>();
 builder.Services.AddScoped<ISwapTransactionService, SwapTransactionService>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IStationService, StationService>();
+
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();

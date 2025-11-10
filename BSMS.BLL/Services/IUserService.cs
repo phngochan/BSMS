@@ -14,4 +14,6 @@ public interface IUserService
     Task UpdateUserAsync(User user);
     Task UpdatePasswordAsync(string email, string newPasswordHash);
     Task<int> CountUsersAsync();
+    Task<User?> GetUserWithTransactionsAsync(int userId);
+    Task<User?> GetUserWithVehiclesAsync(int userId);
 }

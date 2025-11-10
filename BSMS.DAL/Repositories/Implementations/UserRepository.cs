@@ -66,6 +66,10 @@ public class UserRepository : GenericRepository<User>, IUserRepository
             .AsNoTracking()
             .Include(u => u.SwapTransactions)
                 .ThenInclude(st => st.Station)
+            .Include(u => u.SwapTransactions)
+                .ThenInclude(st => st.BatteryTaken)
+            .Include(u => u.SwapTransactions)
+                .ThenInclude(st => st.BatteryReturned)
             .Include(u => u.Payments)
             .FirstOrDefaultAsync(u => u.UserId == userId);
     }

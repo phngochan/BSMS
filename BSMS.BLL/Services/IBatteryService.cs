@@ -1,3 +1,4 @@
+using BSMS.BusinessObjects.DTOs;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 
@@ -13,4 +14,11 @@ public interface IBatteryService
     Task<Battery> CreateBatteryAsync(Battery battery);
     Task UpdateBatteryAsync(Battery battery);
     Task DeleteBatteryAsync(int batteryId);
+
+    Task<IEnumerable<Battery>> GetAvailableBatteriesAsync(int stationId);
+    Task<IEnumerable<Battery>> GetAvailableBatteriesByModelAsync(int stationId, string model);
+    Task<IEnumerable<BatteryModelGroupDto>> GetBatteriesGroupedByModelAsync(int stationId);
+    Task<Battery?> GetBatteryDetailsAsync(int batteryId);
+    Task UpdateBatteryStatusAsync(int batteryId, BatteryStatus newStatus);
+    Task<bool> CheckCompatibilityAsync(string batteryModel, string vehicleModel);
 }

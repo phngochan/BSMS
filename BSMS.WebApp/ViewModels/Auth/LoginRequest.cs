@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
-namespace BSMS.BusinessObjects.DTOs.Auth;
+namespace BSMS.WebApp.ViewModels.Auth;
 
 public class LoginRequest
 {
@@ -13,3 +13,4 @@ public class LoginRequest
 
     public bool RememberMe { get; set; }
 }
+

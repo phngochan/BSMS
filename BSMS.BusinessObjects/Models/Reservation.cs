@@ -7,6 +7,7 @@ public class Reservation
     public int UserId { get; set; }
     public int VehicleId { get; set; }
     public int StationId { get; set; }
+    public int? BatteryId { get; set; }
     public DateTime ScheduledTime { get; set; }
     public ReservationStatus Status { get; set; } = ReservationStatus.Active;
     public DateTime CreatedAt { get; set; }
@@ -14,4 +15,5 @@ public class Reservation
     public User User { get; set; }
     public Vehicle Vehicle { get; set; }
     public ChangingStation Station { get; set; }
+    public Battery? Battery { get; set; }
 }

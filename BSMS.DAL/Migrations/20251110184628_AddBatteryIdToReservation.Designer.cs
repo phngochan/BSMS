@@ -4,6 +4,7 @@ using BSMS.DAL.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BSMS.DAL.Migrations
 {
     [DbContext(typeof(BSMSDbContext))]
-    partial class BSMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251110184628_AddBatteryIdToReservation")]
+    partial class AddBatteryIdToReservation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,10 +75,6 @@ namespace BSMS.DAL.Migrations
 
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
-
-                    b.Property<string>("DefectNote")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.Property<DateTime?>("LastMaintenance")
                         .HasColumnType("datetime2");

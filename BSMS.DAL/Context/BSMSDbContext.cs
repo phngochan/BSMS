@@ -143,6 +143,11 @@ public class BSMSDbContext : DbContext
                   .WithMany(s => s.Reservations)
                   .HasForeignKey(r => r.StationId)
                   .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(r => r.Battery)
+                  .WithMany()
+                  .HasForeignKey(r => r.BatteryId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // BATTERY SERVICE PACKAGE

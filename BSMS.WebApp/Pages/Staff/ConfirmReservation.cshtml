@@ -1,0 +1,126 @@
+@page
+@using BSMS.BusinessObjects.Enums
+@using BSMS.WebApp.Helpers
+@model BSMS.WebApp.Pages.Staff.ConfirmReservationModel
+@{
+    ViewData["Title"] = "Xác Nhận Đặt Chỗ";
+}
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (Model.Reservation != null)
+            {
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-calendar-check"></i> Thông Tin Đặt Chỗ
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Mã Đặt Chỗ</h6>
+                                <p class="fs-4 fw-bold">#@Model.Reservation.ReservationId</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Trạng Thái</h6>
+                                <span class="badge bg-@(Model.Reservation.Status == ReservationStatus.Active ? "success" : "secondary") fs-6">
+                                    @Model.Reservation.Status
+                                </span>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Khách Hàng</h6>
+                                <p class="mb-1"><strong>@Model.Reservation.User?.FullName</strong></p>
+                                <p class="text-muted mb-0 small">@Model.Reservation.User?.Email</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Xe</h6>
+                                <p class="mb-1"><strong>@Model.Reservation.Vehicle?.Vin</strong></p>
+                                <p class="text-muted mb-0 small">Model: @Model.Reservation.Vehicle?.BatteryModel</p>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Trạm</h6>
+                                <p class="mb-1"><strong>@Model.Reservation.Station?.Name</strong></p>
+                                <p class="text-muted mb-0 small">@Model.Reservation.Station?.Address</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted mb-2">Giờ Hẹn</h6>
+                                <p class="mb-1"><strong>@Model.Reservation.ScheduledTime.ToLocalDateTimeString()</strong></p>
+                                <p class="text-muted mb-0 small">Đã tạo: @Model.Reservation.CreatedAt.ToLocalDateTimeString()</p>
+                            </div>
+                        </div>
+
+                        @if (Model.Reservation.Status == ReservationStatus.Active && !Model.IsConfirmed)
+                        {
+                            <hr>
+                            <form method="post" class="mt-4">
+                                <input type="hidden" name="id" value="@Model.Reservation.ReservationId" />
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="bi bi-check-circle"></i> Xác Nhận Đặt Chỗ
+                                    </button>
+                                    <a asp-page="/Staff/Index" class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-left"></i> Quay Lại
+                                    </a>
+                                </div>
+                            </form>
+                        }
+                        else if (Model.IsConfirmed)
+                        {
+                            <hr>
+                            <div class="alert alert-info mt-4">
+                                <i class="bi bi-info-circle"></i> Đặt chỗ đã được xác nhận. Bạn có thể tiếp tục xử lý đổi pin.
+                            </div>
+                            <div class="d-grid gap-2">
+                                <a asp-page="/Staff/Index" class="btn btn-primary">
+                                    <i class="bi bi-arrow-left"></i> Quay Lại Trang Chủ
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-exclamation-triangle fs-1 text-warning mb-3"></i>
+                        <h5>Không tìm thấy đặt chỗ</h5>
+                        <p class="text-muted">Mã đặt chỗ không hợp lệ hoặc đã bị xóa.</p>
+                        <a asp-page="/Staff/Index" class="btn btn-primary">
+                            <i class="bi bi-arrow-left"></i> Quay Lại
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+

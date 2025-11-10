@@ -1,0 +1,352 @@
+﻿@page
+@using BSMS.WebApp.Helpers
+@model IndexModel
+@{
+    ViewData["Title"] = "Bảng Điều Khiển";
+}
+
+<link rel="stylesheet" href="~/css/driver-dashboard.css" />
+
+<div class="dashboard-root pt-5">
+    <div class="container-fluid">
+        <div class="dd-grid">
+            <!-- Left column: Battery + Stations -->
+            <div class="dd-col-left" style="display:grid; gap:1.25rem;">
+                <!-- Vehicle Selector -->
+                @if (Model.UserVehicles.Any())
+                {
+                    <div class="dd-card">
+                        <div class="dd-card-header">
+                            <div>
+                                <div class="dd-title">Chọn Xe</div>
+                                <div class="dd-sub">Chọn xe để xem trạng thái pin</div>
+                            </div>
+                            <i class="bi bi-car-front text-ev-primary" style="font-size:1.25rem"></i>
+                        </div>
+                        <form method="get" class="p-3">
+                            <select name="vehicleId" class="form-select" onchange="this.form.submit()" required>
+                                @if (Model.UserVehicles.Count > 1)
+                                {
+                                    <option value="">-- Chọn Xe --</option>
+                                }
+                                @foreach (var vehicle in Model.UserVehicles)
+                                {
+                                    <option value="@vehicle.VehicleId" selected="@(Model.SelectedVehicleId == vehicle.VehicleId)">
+                                        @vehicle.Vin - @vehicle.BatteryModel
+                                    </option>
+                                }
+                            </select>
+                            @if (Model.UserVehicles.Count > 1 && !Model.SelectedVehicleId.HasValue)
+                            {
+                                <small class="text-danger d-block mt-2">Vui lòng chọn vehicle để xem battery status</small>
+                            }
+                        </form>
+                    </div>
+                }
+
+                <!-- Current Battery Status Card -->
+                @if (Model.SelectedVehicleId.HasValue && Model.BatteryStatus != null)
+                {
+                    <div class="dd-card">
+                        <div class="dd-card-header">
+                            <div>
+                                <div class="dd-title">Trạng Thái Pin Đã Lấy</div>
+                                <div class="dd-sub">@Model.UserVehicles.FirstOrDefault(v => v.VehicleId == Model.SelectedVehicleId)?.Vin</div>
+                            </div>
+                            @{
+                                var batteryStatusPercent = Model.BatteryStatus?.Percent ?? 0;
+                                var batteryIcon = "bi bi-battery-full text-ev-primary";
+                                switch (batteryStatusPercent)
+                                {
+                                    case >= 75:
+                                        batteryIcon = "bi bi-battery-full text-ev-primary";
+                                        break;
+                                    case >= 50:
+                                        batteryIcon = "bi bi-battery-three-quarters text-ev-primary";
+                                        break;
+                                    case >= 25:
+                                        batteryIcon = "bi bi-battery-half text-ev-primary";
+                                        break;
+                                    case >= 10:
+                                        batteryIcon = "bi bi-battery-quarter text-ev-warning";
+                                        break;
+                                    default:
+                                        batteryIcon = "bi bi-battery text-ev-danger";
+                                        break;
+                                }
+                            }
+                            <i class="@batteryIcon" style="font-size:1.25rem"></i>
+                        </div>
+                        <div class="battery-wrap">
+                            <div class="battery-icon">
+                                <div class="battery-fill" id="batteryFill" style="width: @batteryStatusPercent%"></div>
+                                <div class="battery-head"></div>
+                            </div>
+                            <div>
+                                <div class="battery-percent" id="batteryPercent">@batteryStatusPercent%</div>
+                                <div class="battery-meta">Quãng đường ước tính: <strong id="batteryRange">@(Model.BatteryStatus?.EstimatedRange ?? 0) km</strong></div>
+                                <div class="battery-meta">Lần đổi gần nhất: <strong>@(Model.BatteryStatus?.LastSwapped.ToLocalDateTimeString() ?? "N/A")</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (Model.UserVehicles.Count > 1 && !Model.SelectedVehicleId.HasValue)
+                {
+                    <div class="dd-card">
+                        <div class="dd-card-header">
+                            <div>
+                                <div class="dd-title">Trạng Thái Pin</div>
+                                <div class="dd-sub">Vui lòng chọn xe</div>
+                            </div>
+                            <i class="bi bi-battery text-muted" style="font-size:1.25rem"></i>
+                        </div>
+                        <div class="p-3 text-center text-muted">
+                            <p>Vui lòng chọn vehicle ở trên để xem battery status.</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Nearest Stations -->
+                <div class="dd-card">
+                    <div class="dd-card-header">
+                        <div>
+                            <div class="dd-title">Trạm Gần Nhất</div>
+                            <div class="dd-sub">Tìm trạm đổi pin gần bạn</div>
+                        </div>
+                        <i class="bi bi-geo-alt text-ev-accent" style="font-size:1.25rem"></i>
+                    </div>
+                    <div class="station-list">
+                        @if (Model.StationHighlights.Any())
+                        {
+                            @foreach (var station in Model.StationHighlights)
+                            {
+                                <div class="station-card">
+                                    <div class="station-title">@station.Name</div>
+                                    <div class="station-meta">@station.AvailableBatteries pin có sẵn</div>
+                                    @if (station.Distance.HasValue)
+                                    {
+                                        <div class="station-meta" style="color: #666; font-size: 0.875rem; margin-top: 0.25rem;">
+                                            <i class="bi bi-geo-alt-fill"></i> Cách @string.Format("{0:0.1}", station.Distance.Value) km
+                                        </div>
+                                    }
+                                    <div class="btn-row">
+                                        <a class="btn-ev-sm" asp-page="/Driver/StationDetails" asp-route-id="@station.StationId">Xem Chi Tiết</a>
+                                        <a class="btn-outline-ev-sm" href="https://www.google.com/maps/dir/?api=1&destination=@station.Latitude,@station.Longitude" target="_blank">Chỉ Đường</a>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-muted text-center p-3">Không có trạm nào</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column: Reservation + History + Support -->
+            <div class="dd-col-right" style="display:grid; gap:1.25rem;">
+                <!-- Active Reservation -->
+                @if (Model.ActiveReservation != null)
+                {
+                    <div class="dd-card">
+                        <div class="dd-card-header">
+                            <div>
+                                <div class="dd-title">Đặt Chỗ Đang Hoạt Động</div>
+                                <div class="dd-sub">@Model.ActiveReservation.StationName</div>
+                            </div>
+                            <i class="bi bi-clock-history" style="color:#2c3e50; font-size:1.25rem"></i>
+                        </div>
+                        <div class="reservation-panel">
+                            <div>
+                                <div class="dd-sub">Thời gian còn lại</div>
+                                <div class="timer" id="reserveTimer" data-seconds="@Model.ActiveReservationSecondsRemaining">--:--</div>
+                            </div>
+                            <div class="btn-row">
+                                <a class="btn-outline-ev-sm" asp-page="/Driver/StationDetails" asp-route-id="@Model.ActiveReservation.StationId">Xem Trạm</a>
+                                <a class="btn-ev-sm" asp-page="/Driver/CancelReservation" asp-route-id="@Model.ActiveReservation.ReservationId">Hủy</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="dd-card">
+                        <div class="dd-card-header">
+                            <div>
+                                <div class="dd-title">Đặt Chỗ Đang Hoạt Động</div>
+                                <div class="dd-sub">Không có đặt chỗ nào</div>
+                            </div>
+                            <i class="bi bi-clock-history" style="color:#2c3e50; font-size:1.25rem"></i>
+                        </div>
+                        <div class="reservation-panel">
+                            <div class="text-muted text-center p-3">Bạn chưa có đặt chỗ nào</div>
+                            <div class="btn-row">
+                                <a class="btn-ev-sm" asp-page="/Driver/FindStations">Tìm Trạm</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Swap History Summary -->
+                <div class="dd-card">
+                    <div class="dd-card-header">
+                        <div class="dd-title">Lịch Sử Đổi Pin Gần Đây</div>
+                        <a class="btn-outline-ev-sm" asp-page="/Swaps/History">Xem tất cả</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table history-list align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Trạm</th>
+                                    <th>Pin Đã Lấy</th>
+                                    <th>Pin Đã Trả</th>
+                                    <th>Chi Phí</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.RecentSwaps.Any())
+                                {
+                                    @foreach (var swap in Model.RecentSwaps)
+                                    {
+                                        <tr>
+                                            <td>@swap.SwapTime.ToLocalDateTimeString()</td>
+                                            <td>@swap.StationName</td>
+                                            <td>
+                                                <small class="text-success">@swap.BatteryTakenModel</small>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">@swap.BatteryReturnedModel</small>
+                                            </td>
+                                            <td>$@swap.TotalCost.ToString("F2")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">Chưa có lịch sử đổi pin</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Support Shortcut -->
+                <div class="dd-card support-card">
+                    <div class="support-left">
+                        <div class="support-icon">
+                            <i class="bi bi-life-preserver" style="font-size:1.25rem"></i>
+                        </div>
+                        <div>
+                            <div class="dd-title" style="margin-bottom:2px">Cần Hỗ Trợ?</div>
+                            <div class="dd-sub">Liên hệ đội hỗ trợ 24/7</div>
+                        </div>
+                    </div>
+                    <div class="support-action">
+                        <a class="btn-ev-sm" asp-page="/Support/Create">Tạo Yêu Cầu</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+<script>
+    // Get user location from localStorage or query params, and reload if needed
+    (function(){
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasLocationInUrl = urlParams.has('lat') && urlParams.has('lng');
+        
+        // If location is already in URL, use it
+        if (hasLocationInUrl) {
+            return;
+        }
+        
+        // Try to get location from localStorage
+        const storedLocation = localStorage.getItem('userLocation');
+        if (storedLocation) {
+            try {
+                const location = JSON.parse(storedLocation);
+                const storedTimestamp = parseInt(localStorage.getItem('userLocationTimestamp') || '0');
+                const now = Date.now();
+                const oneHour = 60 * 60 * 1000;
+                
+                // If location is fresh (less than 1 hour old), use it
+                if (location.lat && location.lng && (now - storedTimestamp) < oneHour) {
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('lat', location.lat);
+                    currentUrl.searchParams.set('lng', location.lng);
+                    window.location.href = currentUrl.toString();
+                    return;
+                }
+            } catch (e) {
+                console.log('Error parsing stored location:', e);
+            }
+        }
+        
+        // If no stored location, try to get it from browser
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    // Store in localStorage
+                    const location = { lat, lng, timestamp: Date.now() };
+                    localStorage.setItem('userLocation', JSON.stringify(location));
+                    localStorage.setItem('userLocationTimestamp', Date.now().toString());
+                    
+                    // Reload with coordinates
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('lat', lat);
+                    currentUrl.searchParams.set('lng', lng);
+                    window.location.href = currentUrl.toString();
+                },
+                function(error) {
+                    console.log('Geolocation error:', error.message);
+                    // Location not available, page will work without distance
+                },
+                { timeout: 10000, enableHighAccuracy: false }
+            );
+        }
+    })();
+
+    // Battery percent and animation
+    (function(){
+        const percent = @(Model.BatteryStatus?.Percent ?? 0);
+        const fill = document.getElementById('batteryFill');
+        const label = document.getElementById('batteryPercent');
+        if(fill && percent > 0){ fill.style.width = percent + '%'; }
+        if(label && percent > 0){ label.textContent = percent + '%'; }
+        const range = document.getElementById('batteryRange');
+        if(range && percent > 0){ range.textContent = @(Model.BatteryStatus?.EstimatedRange ?? 0) + ' km'; }
+    })();
+
+    // Reservation countdown
+    (function(){
+        const el = document.getElementById('reserveTimer');
+        if(!el) return;
+        const dataSeconds = el.getAttribute('data-seconds');
+        if(!dataSeconds) return;
+        
+        let seconds = parseInt(dataSeconds);
+        function tick(){
+            if(!el) return;
+            if(seconds <= 0) {
+                el.textContent = '00:00';
+                return;
+            }
+            const m = String(Math.floor(seconds/60)).padStart(2,'0');
+            const s = String(seconds%60).padStart(2,'0');
+            el.textContent = m+':'+s;
+            if(seconds>0) seconds--; 
+        }
+        tick();
+        setInterval(tick, 1000);
+    })();
+</script>
+}
