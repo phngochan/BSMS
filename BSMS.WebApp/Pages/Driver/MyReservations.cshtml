@@ -50,7 +50,7 @@
                                             <i class="bi bi-hourglass-split text-primary fs-4 me-2"></i>
                                             <div>
                                                 <small class="text-muted d-block">Thời Gian Còn Lại</small>
-                                                <strong class="countdown" data-target="@Model.ActiveReservation.ScheduledTime.ToString("o")">
+                                                <strong class="countdown" data-target="@Model.ActiveReservation.ScheduledTime.ToLocalTime().ToString("o")">
                                                     Calculating...
                                                 </strong>
                                             </div>

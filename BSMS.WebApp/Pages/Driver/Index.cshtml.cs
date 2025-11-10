@@ -29,7 +29,7 @@ public class IndexModel : PageModel
         _userService = userService;
     }
 
-    public List<StationHighlightViewModel> StationHighlights { get; private set; } = new();
+    public List<StationViewModel> StationHighlights { get; private set; } = new();
     public ReservationSummaryViewModel? ActiveReservation { get; private set; }
     public List<ReservationSummaryViewModel> RecentReservations { get; private set; } = new();
     public List<SwapHistoryViewModel> RecentSwaps { get; private set; } = new();
@@ -89,30 +89,44 @@ public class IndexModel : PageModel
 
     private async Task LoadStationHighlightsAsync()
     {
-        var stations = await _stationService.GetStationsWithAvailabilityAsync();
-
-        var highlights = stations
-            .Select(s => new StationHighlightViewModel
+        if (UserLatitude.HasValue && UserLongitude.HasValue)
+        {
+            var nearby = await _stationService.GetNearbyStationsAsync(UserLatitude.Value, UserLongitude.Value);
+            StationHighlights = nearby.Select(s => new StationViewModel
             {
                 StationId = s.StationId,
                 Name = s.Name,
                 Address = s.Address,
-                AvailableBatteries = s.AvailableBatteries,
                 Capacity = s.Capacity,
+                AvailableBatteries = s.AvailableBatteries,
+                Distance = s.Distance,
                 Latitude = s.Latitude,
-                Longitude = s.Longitude,
-                Distance = UserLatitude.HasValue && UserLongitude.HasValue
-                    ? CalculateDistance(UserLatitude.Value, UserLongitude.Value, s.Latitude, s.Longitude)
-                    : null
+                Longitude = s.Longitude
             })
-            .ToList();
-
-        StationHighlights = highlights
-            .OrderBy(s => s.Distance ?? double.MaxValue)
+            .OrderBy(s => s.Distance)
             .ThenByDescending(s => s.AvailableBatteries)
+            .Take(3)
+            .ToList();
+        }
+        else
+        {
+            var stations = await _stationService.GetStationsWithAvailabilityAsync();
+            StationHighlights = stations.Select(s => new StationViewModel
+            {
+                StationId = s.StationId,
+                Name = s.Name,
+                Address = s.Address,
+                Capacity = s.Capacity,
+                AvailableBatteries = s.AvailableBatteries,
+                Distance = 0,
+                Latitude = s.Latitude,
+                Longitude = s.Longitude
+            })
+            .OrderByDescending(s => s.AvailableBatteries)
             .ThenBy(s => s.Name)
             .Take(3)
             .ToList();
+        }
 
         TotalAvailableBatteries = StationHighlights.Sum(s => s.AvailableBatteries);
 
@@ -122,26 +136,6 @@ public class IndexModel : PageModel
         }
     }
 
-    private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
-    {
-        const double R = 6371;
-
-        var dLat = ToRadians(lat2 - lat1);
-        var dLon = ToRadians(lon2 - lon1);
-
-        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
-                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-
-        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-
-        return R * c;
-    }
-
-    private double ToRadians(double degrees)
-    {
-        return degrees * Math.PI / 180;
-    }
 
     private async Task LoadReservationsAsync(int userId)
     {
