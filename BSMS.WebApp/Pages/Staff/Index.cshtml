@@ -165,13 +165,20 @@
                                             <span class="@GetSupportBadgeClass(ticket.Status)">@ticket.Status</span>
                                         </td>
                                         <td class="text-end">
-                                            <form method="post" asp-page-handler="ProcessSupport" class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
+                                            <form method="post"
+                                                  asp-page-handler="ProcessSupport"
+                                                  class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
                                                 <input type="hidden" name="supportId" value="@ticket.SupportId" />
-                                                <select name="status" class="form-select form-select-sm" style="min-width:140px;">
-                                                    <option value="InProgress" selected="@(ticket.Status == SupportStatus.InProgress)">InProgress</option>
-                                                    <option value="Closed" selected="@(ticket.Status == SupportStatus.Closed)">Closed</option>
+                                                <select name="status"
+                                                        class="form-select form-select-sm support-status-select"
+                                                        style="min-width:140px;">
+                                                    @if (ticket.Status == SupportStatus.Open)
+                                                    {
+                                                        <option value="Open" selected disabled>Open</option>
+                                                    }
+                                                    <option value="InProgress" selected="@ticket.Status == SupportStatus.InProgress">InProgress</option>
+                                                    <option value="Closed" selected="@ticket.Status == SupportStatus.Closed">Closed</option>
                                                 </select>
-                                                <input type="number" name="rating" class="form-control form-control-sm" placeholder="Rating (1-5)" min="1" max="5" value="@ticket.Rating">
                                                 <button class="btn btn-sm btn-outline-primary" type="submit">Update</button>
                                             </form>
                                         </td>
@@ -212,6 +219,7 @@
                 select.addEventListener('change', toggleReason);
                 toggleReason();
             });
+
         });
     </script>
 }

@@ -125,7 +125,7 @@ public class IndexModel : BasePageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostProcessSupportAsync(int supportId, SupportStatus status, int? rating)
+    public async Task<IActionResult> OnPostProcessSupportAsync(int supportId, SupportStatus status)
     {
         await LoadStationDataAsync();
         if (!HasStation)
@@ -141,8 +141,7 @@ public class IndexModel : BasePageModel
             return RedirectToPage();
         }
 
-        int? appliedRating = status == SupportStatus.Closed ? rating : null;
-        await _supportService.UpdateSupportStatusAsync(supportId, status, appliedRating);
+        await _supportService.UpdateSupportStatusAsync(supportId, status, null);
         await LogActivityAsync("Support", $"Updated ticket #{supportId} -> {status}");
 
         TempData["SuccessMessage"] = "Support ticket updated.";
