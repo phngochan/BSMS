@@ -18,6 +18,7 @@ public class ReservationRepository : GenericRepository<Reservation>, IReservatio
             .Include(r => r.Station)
             .Include(r => r.User)
             .Include(r => r.Battery)
+            .Include(r => r.Vehicle)
             .Where(r => r.UserId == userId
                 && (r.Status == ReservationStatus.Active))
             .OrderByDescending(r => r.CreatedAt)

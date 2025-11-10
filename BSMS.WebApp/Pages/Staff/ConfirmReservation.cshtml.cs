@@ -1,7 +1,6 @@
 using BSMS.BLL.Services;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
-using BSMS.WebApp.Helpers;
 using BSMS.WebApp.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -99,7 +98,7 @@ public class ConfirmReservationModel : BasePageModel
 
         if (result)
         {
-            await LogActivityAsync("CANCEL_RESERVATION_BY_STAFF", 
+            await LogActivityAsync("CANCEL_RESERVATION_BY_STAFF",
                 $"Nhân viên đã hủy đặt chỗ #{id} của khách hàng {reservation.User?.FullName} (UserId: {reservation.UserId}) tại trạm {reservation.Station?.Name ?? "N/A"}");
 
             await _hubContext.Clients.User(reservation.UserId.ToString()).SendAsync("ReceiveNotification", new
@@ -143,24 +142,31 @@ public class ConfirmReservationModel : BasePageModel
 
         if (result)
         {
-            await LogActivityAsync("COMPLETE_RESERVATION", 
+            await LogActivityAsync("COMPLETE_RESERVATION",
                 $"Nhân viên đã hoàn thành đặt chỗ #{id} của khách hàng {reservation.User?.FullName} (UserId: {userId}) tại trạm {stationName}");
 
             try
             {
-                await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveNotification", new
+                // Gửi notification cho user (khách hàng)
+                await _hubContext.Clients.User(userId.ToString()).SendAsync("CompleteReservation", new
                 {
-                    message = $"Đặt chỗ tại {stationName} đã hoàn thành",
+                    reservationId = id,
+                    message = $"Đặt chỗ tại {stationName} đã được nhân viên hoàn thành",
                     type = "success",
-                    timestamp = DateTime.UtcNow
+                    timestamp = DateTime.UtcNow,
+                    stationName = stationName
                 });
 
-                await _hubContext.Clients.Group($"Station_{stationId}").SendAsync("ReceiveNotification", new
+                // Gửi notification cho nhân viên trạm
+                await _hubContext.Clients.Group($"Station_{stationId}").SendAsync("CompleteReservation", new
                 {
+                    reservationId = id,
                     message = $"Đặt chỗ #{id} đã hoàn thành",
                     type = "info",
                     timestamp = DateTime.UtcNow
                 });
+
+                _logger.LogInformation("SignalR notification sent for completed reservation {ReservationId} to user {UserId}", id, userId);
             }
             catch (Exception ex)
             {
