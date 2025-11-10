@@ -1,3 +1,4 @@
+using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Repositories;
 
@@ -26,6 +27,10 @@ public class StationStaffService : IStationStaffService
         {
             throw new InvalidOperationException("User not found");
         }
+        if (user.Role != UserRole.StationStaff)
+        {
+            throw new InvalidOperationException("Chỉ có thể gán người dùng với vai trò StationStaff.");
+        }
 
         var station = await _stationRepository.GetSingleAsync(s => s.StationId == assignment.StationId);
         if (station == null)
@@ -33,10 +38,10 @@ public class StationStaffService : IStationStaffService
             throw new InvalidOperationException("Station not found");
         }
 
-        var isAssigned = await _stationStaffRepository.IsUserAssignedAsync(assignment.UserId, assignment.StationId);
-        if (isAssigned)
+        var existingAssignment = await _stationStaffRepository.GetAssignmentByUserAsync(assignment.UserId);
+        if (existingAssignment != null)
         {
-            throw new InvalidOperationException("User already assigned to this station");
+            throw new InvalidOperationException("Nhân viên này đã được phân công cho trạm khác.");
         }
 
         assignment.AssignedAt = assignment.AssignedAt == default ? DateTime.UtcNow : assignment.AssignedAt;
@@ -52,6 +57,11 @@ public class StationStaffService : IStationStaffService
     public async Task<IEnumerable<StationStaff>> GetAssignmentsByStationAsync(int stationId)
     {
         return await _stationStaffRepository.GetAssignmentsByStationAsync(stationId);
+    }
+
+    public async Task<StationStaff?> GetAssignmentForUserAsync(int userId)
+    {
+        return await _stationStaffRepository.GetAssignmentByUserAsync(userId);
     }
 
     public async Task<StationStaff?> GetAssignmentAsync(int staffId)
@@ -85,11 +95,15 @@ public class StationStaffService : IStationStaffService
             {
                 throw new InvalidOperationException("User not found");
             }
-
-            var isAssigned = await _stationStaffRepository.IsUserAssignedAsync(assignment.UserId, existing.StationId);
-            if (isAssigned)
+            if (user.Role != UserRole.StationStaff)
             {
-                throw new InvalidOperationException("User already assigned to this station");
+                throw new InvalidOperationException("Chỉ có thể gán người dùng với vai trò StationStaff.");
+            }
+
+            var existingAssignment = await _stationStaffRepository.GetAssignmentByUserAsync(assignment.UserId);
+            if (existingAssignment != null && existingAssignment.StaffId != assignment.StaffId)
+            {
+                throw new InvalidOperationException("Nhân viên này đã được phân công cho trạm khác.");
             }
         }
 
@@ -104,7 +118,7 @@ public class StationStaffService : IStationStaffService
         }
 
         existing.StationId = assignment.StationId;
-        existing.AssignedAt = assignment.AssignedAt;
+        existing.AssignedAt = assignment.AssignedAt == default ? existing.AssignedAt : assignment.AssignedAt;
 
         await _stationStaffRepository.UpdateAsync(existing);
     }

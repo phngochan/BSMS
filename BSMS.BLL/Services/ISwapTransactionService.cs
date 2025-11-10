@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 
@@ -14,4 +15,5 @@ public interface ISwapTransactionService
     Task DeleteTransactionAsync(int transactionId);
     Task<decimal> GetCurrentMonthRevenueAsync();
     Task<int> GetDailyTransactionCountAsync(DateTime date);
+    Task<IDictionary<int, DateTime>> GetLatestCompletedSwapTimesAsync();
 }

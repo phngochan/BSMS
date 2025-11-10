@@ -19,7 +19,9 @@ public class SwapTransactionRepository : GenericRepository<SwapTransaction>, ISw
 
         return await _dbSet
             .AsNoTracking()
-            .CountAsync(t => t.SwapTime >= start && t.SwapTime < end);
+            .CountAsync(t => t.SwapTime >= start &&
+                             t.SwapTime < end &&
+                             t.Status == SwapStatus.Completed);
     }
 
     public async Task<decimal> GetRevenueForCurrentMonthAsync()
@@ -73,5 +75,19 @@ public class SwapTransactionRepository : GenericRepository<SwapTransaction>, ISw
             .Include(t => t.Vehicle)
             .Include(t => t.Payment)
             .FirstOrDefaultAsync(t => t.TransactionId == transactionId);
+    }
+
+    public async Task<IDictionary<int, DateTime>> GetLatestCompletedSwapTimesAsync()
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(t => t.Status == SwapStatus.Completed)
+            .GroupBy(t => t.StationId)
+            .Select(g => new
+            {
+                StationId = g.Key,
+                LastSwap = g.Max(t => t.SwapTime)
+            })
+            .ToDictionaryAsync(k => k.StationId, v => v.LastSwap);
     }
 }

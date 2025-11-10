@@ -9,4 +9,5 @@ public interface IStationStaffRepository : IGenericRepository<StationStaff>
     Task<IEnumerable<StationStaff>> GetAssignmentsByStationAsync(int stationId);
     Task<StationStaff?> GetAssignmentWithDetailsAsync(int staffId);
     Task<bool> IsUserAssignedAsync(int userId, int stationId);
+    Task<StationStaff?> GetAssignmentByUserAsync(int userId);
 }

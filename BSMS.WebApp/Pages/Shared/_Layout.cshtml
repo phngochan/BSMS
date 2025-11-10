@@ -48,11 +48,11 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1 d-flex justify-content-center"
+                    <ul class="navbar-nav flex-grow-1 d-flex justify-content-center">
                         @if (User.Identity?.IsAuthenticated ?? false)
                         {
                             var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
-                            @if (role == "Admin")
+                            if (role == "Admin")
                             {
                                 <li class="nav-item">
                                     <a class="nav-link" asp-area="" asp-page="/Admin/Dashboard">
@@ -61,7 +61,7 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link" asp-area="" asp-page="/Admin/Operations/Index">
-                                        <i class="bi bi-diagram-3 me-1"></i> Điều phối & Giám sát
+                                        <i class="bi bi-diagram-3 me-1"></i> Operations & Monitoring
                                     </a>
                                 </li>
                             }
@@ -69,7 +69,7 @@
                             {
                                 <li class="nav-item">
                                     <a class="nav-link" asp-area="" asp-page="/Staff/Index">
-                                        <i class="bi bi-clipboard-check me-1"></i> Ca trực
+                                        <i class="bi bi-clipboard-check me-1"></i> Shift workspace
                                     </a>
                                 </li>
                             }
@@ -105,7 +105,7 @@
                                     <!-- Logout -->
                                     <form method="get" asp-page="/Auth/Logout" class="m-0">
                                         <button type="submit" class="btn-logout">
-                                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                                            <i class="bi bi-box-arrow-right"></i> Sign out
                                         </button>
                                     </form>
                                 </div>
@@ -115,7 +115,7 @@
                         {
                             <form method="get" asp-page="/Auth/Login" class="m-0">
                                 <button type="submit" class="btn-logout">
-                                    <i class="bi bi-box-arrow-left"></i> Đăng nhập
+                                    <i class="bi bi-box-arrow-left"></i> Sign in
                                 </button>
                             </form>
                         }

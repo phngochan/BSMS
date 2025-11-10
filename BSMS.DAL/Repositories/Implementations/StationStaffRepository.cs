@@ -46,4 +46,13 @@ public class StationStaffRepository : GenericRepository<StationStaff>, IStationS
     {
         return await _dbSet.AnyAsync(ss => ss.UserId == userId && ss.StationId == stationId);
     }
+
+    public async Task<StationStaff?> GetAssignmentByUserAsync(int userId)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(ss => ss.User)
+            .Include(ss => ss.Station)
+            .FirstOrDefaultAsync(ss => ss.UserId == userId);
+    }
 }

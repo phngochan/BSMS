@@ -25,6 +25,11 @@ public class BatteryTransferService : IBatteryTransferService
             throw new InvalidOperationException("Battery not found");
         }
 
+        if (battery.Status != BatteryStatus.Full)
+        {
+            throw new InvalidOperationException("Chỉ có thể điều phối pin đang ở trạng thái Full.");
+        }
+
         if (battery.StationId != transfer.FromStationId)
         {
             throw new InvalidOperationException("Battery is not available at the source station");
@@ -75,6 +80,22 @@ public class BatteryTransferService : IBatteryTransferService
         if (existing == null)
         {
             throw new InvalidOperationException("Transfer not found");
+        }
+
+        var battery = await _batteryRepository.GetSingleAsync(b => b.BatteryId == transfer.BatteryId);
+        if (battery == null)
+        {
+            throw new InvalidOperationException("Battery not found");
+        }
+
+        if (battery.Status != BatteryStatus.Full)
+        {
+            throw new InvalidOperationException("Chỉ có thể điều phối pin đang ở trạng thái Full.");
+        }
+
+        if (battery.StationId != transfer.FromStationId)
+        {
+            throw new InvalidOperationException("Battery is not available at the source station");
         }
 
         existing.BatteryId = transfer.BatteryId;

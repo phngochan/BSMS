@@ -1,14 +1,18 @@
 using BSMS.BLL.Services;
+using Microsoft.AspNetCore.Authorization;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 using System.Linq;
 using BSMS.WebApp.Pages;
+using Microsoft.EntityFrameworkCore;
 
 namespace BSMS.WebApp.Pages.Admin.Operations;
 
+[Authorize(Roles = "Admin")]
 public class IndexModel : BasePageModel
 {
     private readonly IChangingStationService _stationService;
@@ -19,6 +23,7 @@ public class IndexModel : BasePageModel
     private readonly ISwapTransactionService _swapTransactionService;
     private readonly IConfigService _configService;
     private readonly IUserService _userService;
+    private readonly IPasswordHasher _passwordHasher;
 
     public IndexModel(
         IChangingStationService stationService,
@@ -29,6 +34,7 @@ public class IndexModel : BasePageModel
         ISwapTransactionService swapTransactionService,
         IConfigService configService,
         IUserService userService,
+        IPasswordHasher passwordHasher,
         IUserActivityLogService activityLogService) : base(activityLogService)
     {
         _stationService = stationService;
@@ -39,21 +45,24 @@ public class IndexModel : BasePageModel
         _swapTransactionService = swapTransactionService;
         _configService = configService;
         _userService = userService;
+        _passwordHasher = passwordHasher;
     }
 
     public OperationsOverview Overview { get; set; } = new();
     public IList<ChangingStation> Stations { get; set; } = new List<ChangingStation>();
     public IList<Battery> Batteries { get; set; } = new List<Battery>();
+    public IList<Battery> TransferEligibleBatteries { get; set; } = new List<Battery>();
     public IList<BatteryTransfer> Transfers { get; set; } = new List<BatteryTransfer>();
     public IList<StationStaff> Assignments { get; set; } = new List<StationStaff>();
     public IList<Support> Supports { get; set; } = new List<Support>();
     public IList<SwapTransaction> SwapTransactions { get; set; } = new List<SwapTransaction>();
     public IList<Config> Configs { get; set; } = new List<Config>();
+    public HashSet<int> IdleStations { get; private set; } = new();
+    public HashSet<int> StationsWithoutStaff { get; private set; } = new(); // ✅ THÊM
 
     public List<SelectListItem> StationOptions { get; set; } = new();
     public List<SelectListItem> StaffUserOptions { get; set; } = new();
     public List<SelectListItem> SupportUserOptions { get; set; } = new();
-    public List<SelectListItem> BatteryOptions { get; set; } = new();
 
     public IEnumerable<SelectListItem> StationStatusOptions =>
         Enum.GetValues<StationStatus>()
@@ -103,6 +112,9 @@ public class IndexModel : BasePageModel
     [BindProperty]
     public ConfigInput ConfigForm { get; set; } = new();
 
+    [BindProperty]
+    public StaffUserCreateInput StaffUserCreateForm { get; set; } = new();
+
     public async Task OnGetAsync()
     {
         await LoadReferenceDataAsync();
@@ -110,7 +122,7 @@ public class IndexModel : BasePageModel
 
     public async Task<IActionResult> OnPostSaveStationAsync()
     {
-        if (!ModelState.IsValid)
+        if (!ValidateForm(StationForm, nameof(StationForm)))
         {
             await LoadReferenceDataAsync();
             return Page();
@@ -118,6 +130,14 @@ public class IndexModel : BasePageModel
 
         try
         {
+            var validationMessage = await ValidateStationStatusRulesAsync();
+            if (!string.IsNullOrEmpty(validationMessage))
+            {
+                TempData["ErrorMessage"] = validationMessage;
+                await LoadReferenceDataAsync();
+                return Page();
+            }
+
             if (StationForm.StationId == 0)
             {
                 await _stationService.CreateStationAsync(new ChangingStation
@@ -154,10 +174,42 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
+    }
+
+    private async Task<string?> ValidateStationStatusRulesAsync()
+    {
+        if (StationForm == null || StationForm.StationId == 0)
+        {
+            return null;
+        }
+
+        var assignments = (await _stationStaffService.GetAssignmentsByStationAsync(StationForm.StationId)).ToList();
+
+        if (StationForm.Status == StationStatus.Inactive)
+        {
+            if (assignments.Any())
+            {
+                return "Không thể chuyển trạm sang trạng thái Inactive khi vẫn còn nhân viên đang được phân công.";
+            }
+
+            var hasBookedBattery = (await _batteryService.GetBatteriesByStationAsync(StationForm.StationId))
+                .Any(b => b.Status == BatteryStatus.Booked);
+            if (hasBookedBattery)
+            {
+                return "Không thể chuyển trạm sang trạng thái Inactive khi vẫn còn pin đang ở trạng thái Booked.";
+            }
+        }
+
+        if (StationForm.Status == StationStatus.Active && !assignments.Any())
+        {
+            return "Trạm ở trạng thái Active phải có ít nhất một nhân viên.";
+        }
+
+        return null;
     }
 
     public async Task<IActionResult> OnPostDeleteStationAsync(int stationId)
@@ -171,7 +223,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -179,8 +231,15 @@ public class IndexModel : BasePageModel
 
     public async Task<IActionResult> OnPostSaveBatteryAsync()
     {
-        if (!ModelState.IsValid)
+        if (!ValidateForm(BatteryForm, nameof(BatteryForm)))
         {
+            await LoadReferenceDataAsync();
+            return Page();
+        }
+
+        if (BatteryForm.Status == BatteryStatus.Defective && string.IsNullOrWhiteSpace(BatteryForm.DefectNote))
+        {
+            ModelState.AddModelError($"{nameof(BatteryForm)}.{nameof(BatteryForm.DefectNote)}", "Please provide the reason when marking a battery as defective.");
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -196,7 +255,8 @@ public class IndexModel : BasePageModel
                     Soh = BatteryForm.Soh,
                     Status = BatteryForm.Status,
                     StationId = BatteryForm.StationId,
-                    LastMaintenance = BatteryForm.LastMaintenance
+                    LastMaintenance = BatteryForm.LastMaintenance,
+                    DefectNote = BatteryForm.DefectNote
                 });
                 TempData["SuccessMessage"] = "Đã thêm pin mới.";
                 await LogActivityAsync("Battery", $"Created battery {BatteryForm.Model}");
@@ -211,7 +271,8 @@ public class IndexModel : BasePageModel
                     Soh = BatteryForm.Soh,
                     Status = BatteryForm.Status,
                     StationId = BatteryForm.StationId,
-                    LastMaintenance = BatteryForm.LastMaintenance
+                    LastMaintenance = BatteryForm.LastMaintenance,
+                    DefectNote = BatteryForm.DefectNote
                 });
                 TempData["SuccessMessage"] = "Đã cập nhật pin.";
                 await LogActivityAsync("Battery", $"Updated battery #{BatteryForm.BatteryId}");
@@ -221,7 +282,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -238,7 +299,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -246,7 +307,7 @@ public class IndexModel : BasePageModel
 
     public async Task<IActionResult> OnPostSaveTransferAsync()
     {
-        if (!ModelState.IsValid)
+        if (!ValidateForm(TransferForm, nameof(TransferForm)))
         {
             await LoadReferenceDataAsync();
             return Page();
@@ -261,6 +322,35 @@ public class IndexModel : BasePageModel
 
         try
         {
+            // ✅ THÊM VALIDATION CHO TRƯỜNG HỢP TẠO MỚI
+            if (TransferForm.TransferId == 0)
+            {
+                var battery = await _batteryService.GetBatteryAsync(TransferForm.BatteryId);
+                
+                if (battery == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Không tìm thấy pin.");
+                    await LoadReferenceDataAsync();
+                    return Page();
+                }
+
+                // Kiểm tra pin phải ở trạng thái Full
+                if (battery.Status != BatteryStatus.Full)
+                {
+                    ModelState.AddModelError(string.Empty, $"Pin chỉ có thể điều phối khi trạng thái = Full. Hiện tại: {battery.Status}");
+                    await LoadReferenceDataAsync();
+                    return Page();
+                }
+
+                // Kiểm tra pin phải ở đúng trạm xuất phát
+                if (battery.StationId != TransferForm.FromStationId)
+                {
+                    ModelState.AddModelError(string.Empty, $"Pin hiện đang ở trạm #{battery.StationId}, không phải trạm xuất phát đã chọn.");
+                    await LoadReferenceDataAsync();
+                    return Page();
+                }
+            }
+
             if (TransferForm.TransferId == 0)
             {
                 await _transferService.CreateTransferAsync(new BatteryTransfer
@@ -295,7 +385,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -305,6 +395,25 @@ public class IndexModel : BasePageModel
     {
         try
         {
+            // ✅ THÊM LOGIC DI CHUYỂN PIN KHI HOÀN TẤT
+            if (status == TransferStatus.Completed)
+            {
+                var transfer = await _transferService.GetTransferAsync(transferId);
+                if (transfer == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy lệnh điều phối.";
+                    return RedirectToPage();
+                }
+
+                var battery = await _batteryService.GetBatteryAsync(transfer.BatteryId);
+                if (battery != null)
+                {
+                    // Di chuyển pin sang trạm đích
+                    battery.StationId = transfer.ToStationId;
+                    await _batteryService.UpdateBatteryAsync(battery);
+                }
+            }
+
             await _transferService.UpdateTransferStatusAsync(transferId, status);
             TempData["SuccessMessage"] = "Đã cập nhật trạng thái điều phối.";
             await LogActivityAsync("Transfer", $"Changed transfer #{transferId} to {status}");
@@ -312,7 +421,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -329,7 +438,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -337,7 +446,7 @@ public class IndexModel : BasePageModel
 
     public async Task<IActionResult> OnPostSaveStationStaffAsync()
     {
-        if (!ModelState.IsValid)
+        if (!ValidateForm(StationStaffForm, nameof(StationStaffForm)))
         {
             await LoadReferenceDataAsync();
             return Page();
@@ -375,16 +484,85 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
+    }
+
+    public async Task<IActionResult> OnPostCreateStaffUserAsync()
+    {
+        if (!ValidateForm(StaffUserCreateForm, nameof(StaffUserCreateForm)))
+        {
+            await LoadReferenceDataAsync();
+            return Page();
+        }
+
+        if (await _userService.IsUsernameExistsAsync(StaffUserCreateForm.Username.Trim()))
+        {
+            ModelState.AddModelError($"{nameof(StaffUserCreateForm)}.{nameof(StaffUserCreateForm.Username)}", "Tên đăng nhập đã tồn tại.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(StaffUserCreateForm.Email) &&
+            await _userService.IsEmailExistsAsync(StaffUserCreateForm.Email.Trim()))
+        {
+            ModelState.AddModelError($"{nameof(StaffUserCreateForm)}.{nameof(StaffUserCreateForm.Email)}", "Email đã tồn tại.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await LoadReferenceDataAsync();
+            return Page();
+        }
+
+        var newUser = new User
+        {
+            Username = StaffUserCreateForm.Username.Trim(),
+            FullName = StaffUserCreateForm.FullName.Trim(),
+            Email = StaffUserCreateForm.Email?.Trim() ?? string.Empty,
+            Phone = StaffUserCreateForm.Phone?.Trim() ?? string.Empty,
+            Role = UserRole.StationStaff,
+            PasswordHash = _passwordHasher.HashPassword(StaffUserCreateForm.Password),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _userService.CreateUserAsync(newUser);
+        TempData["SuccessMessage"] = "Đã tạo nhân sự mới.";
+        await LogActivityAsync("Staff", $"Created staff user {newUser.Username}");
+        return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostDeleteStationStaffAsync(int staffId)
     {
         try
         {
+            // ✅ THÊM VALIDATION
+            var assignment = await _stationStaffService.GetAssignmentAsync(staffId);
+            if (assignment == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy phân công.";
+                return RedirectToPage();
+            }
+
+            var station = await _stationService.GetStationAsync(assignment.StationId);
+            if (station == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy trạm.";
+                return RedirectToPage();
+            }
+
+            // Kiểm tra nếu trạm Active và đây là nhân viên cuối cùng
+            if (station.Status == StationStatus.Active)
+            {
+                var staffCount = (await _stationStaffService.GetAssignmentsByStationAsync(assignment.StationId)).Count();
+                if (staffCount <= 1)
+                {
+                    TempData["ErrorMessage"] = "Không thể gỡ nhân viên cuối cùng khỏi trạm đang Active. Vui lòng chuyển trạm sang Maintenance hoặc Inactive trước.";
+                    await LoadReferenceDataAsync();
+                    return Page();
+                }
+            }
+
             await _stationStaffService.RemoveAssignmentAsync(staffId);
             TempData["SuccessMessage"] = "Đã gỡ nhân sự khỏi trạm.";
             await LogActivityAsync("Staff", $"Removed assignment {staffId}");
@@ -392,7 +570,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -400,7 +578,7 @@ public class IndexModel : BasePageModel
 
     public async Task<IActionResult> OnPostSaveSupportAsync()
     {
-        if (!ModelState.IsValid)
+        if (!ValidateForm(SupportForm, nameof(SupportForm)))
         {
             await LoadReferenceDataAsync();
             return Page();
@@ -444,7 +622,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -461,7 +639,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -478,7 +656,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -495,7 +673,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -512,7 +690,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -520,7 +698,7 @@ public class IndexModel : BasePageModel
 
     public async Task<IActionResult> OnPostSaveConfigAsync()
     {
-        if (!ModelState.IsValid)
+        if (!ValidateForm(ConfigForm, nameof(ConfigForm)))
         {
             await LoadReferenceDataAsync();
             return Page();
@@ -542,7 +720,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -559,7 +737,7 @@ public class IndexModel : BasePageModel
         }
         catch (Exception ex)
         {
-            TempData["ErrorMessage"] = ex.Message;
+            TempData["ErrorMessage"] = GetFriendlyErrorMessage(ex);
             await LoadReferenceDataAsync();
             return Page();
         }
@@ -580,28 +758,52 @@ public class IndexModel : BasePageModel
         var monthlyRevenue = await _swapTransactionService.GetCurrentMonthRevenueAsync();
         var dailyTransactions = await _swapTransactionService.GetDailyTransactionCountAsync(DateTime.UtcNow);
         var batterySummary = await _batteryService.GetStatusSummaryAsync();
+        var latestSwapTimes = await _swapTransactionService.GetLatestCompletedSwapTimesAsync();
+        var openSupportCount = await _supportService.CountByStatusAsync(SupportStatus.Open);
 
         Stations = stationList.OrderBy(s => s.Name).ToList();
         Batteries = batteryList.OrderByDescending(b => b.UpdatedAt).Take(50).ToList();
+        TransferEligibleBatteries = batteryList
+            .Where(b => b.Status == BatteryStatus.Full)
+            .OrderBy(b => b.StationId)
+            .ThenBy(b => b.BatteryId)
+            .ToList();
         Transfers = transfersList;
         Assignments = staffAssignments;
         Supports = supportList;
         SwapTransactions = swapList;
         Configs = configList;
+        
+        var now = DateTime.UtcNow;
+        var idleThreshold = TimeSpan.FromHours(12);
+        IdleStations = stationList
+            .Where(s =>
+            {
+                if (!latestSwapTimes.TryGetValue(s.StationId, out var lastSwap))
+                {
+                    return true;
+                }
+                return (now - lastSwap) > idleThreshold;
+            })
+            .Select(s => s.StationId)
+            .ToHashSet();
+
+        // ✅ THÊM: Tính trạm Active không có nhân viên
+        var stationStaffCounts = staffAssignments
+            .GroupBy(s => s.StationId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        StationsWithoutStaff = stationList
+            .Where(s => s.Status == StationStatus.Active && 
+                        !stationStaffCounts.ContainsKey(s.StationId))
+            .Select(s => s.StationId)
+            .ToHashSet();
 
         StationOptions = stationList
             .Select(s => new SelectListItem
             {
                 Text = $"{s.Name} ({s.Status})",
                 Value = s.StationId.ToString()
-            })
-            .ToList();
-
-        BatteryOptions = batteryList
-            .Select(b => new SelectListItem
-            {
-                Text = $"#{b.BatteryId} - {b.Model}",
-                Value = b.BatteryId.ToString()
             })
             .ToList();
 
@@ -632,7 +834,7 @@ public class IndexModel : BasePageModel
             BatteryTotal = batteryList.Count,
             BatteryStatusSummary = batterySummary,
             TransfersInProgress = transfersInProgress.Count,
-            OpenSupports = Supports.Count,
+            OpenSupports = openSupportCount,
             MonthlyRevenue = monthlyRevenue,
             DailyTransactions = dailyTransactions,
             GeneratedAt = DateTime.UtcNow
@@ -644,6 +846,46 @@ public class IndexModel : BasePageModel
         StationStaffForm ??= new StationStaffInput();
         SupportForm ??= new SupportInput { Status = SupportStatus.Open };
         ConfigForm ??= new ConfigInput();
+        StaffUserCreateForm ??= new StaffUserCreateInput();
+    }
+
+    private bool ValidateForm<TModel>(TModel formModel, string prefix)
+    {
+        ModelState.Clear();
+        var isValid = TryValidateModel(formModel, prefix);
+
+        if (!isValid)
+        {
+            var allowedPrefix = $"{prefix}.";
+            var keysToRemove = ModelState.Keys
+                .Where(k => !k.Equals(prefix, StringComparison.OrdinalIgnoreCase)
+                    && !k.StartsWith(allowedPrefix, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                ModelState.Remove(key);
+            }
+        }
+
+        return isValid;
+    }
+
+    private string GetFriendlyErrorMessage(Exception ex)
+    {
+        if (ex is DbUpdateException dbEx)
+        {
+            var detail = dbEx.InnerException?.Message ?? dbEx.Message;
+            if (!string.IsNullOrWhiteSpace(detail) &&
+                detail.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Không thể thao tác vì bản ghi đang được tham chiếu ở khu vực khác. Vui lòng xử lý dữ liệu liên quan trước khi thử lại.";
+            }
+
+            return detail;
+        }
+
+        return ex.Message;
     }
 
     public class OperationsOverview
@@ -686,35 +928,45 @@ public class IndexModel : BasePageModel
     {
         public int BatteryId { get; set; }
 
-        [Required, StringLength(100)]
+        [Required(ErrorMessage = "Model là bắt buộc")]
+        [StringLength(100)]
         public string Model { get; set; } = string.Empty;
 
-        [Range(1, 1000)]
+        [Required(ErrorMessage = "Capacity là bắt buộc")]
+        [Range(1, 10000, ErrorMessage = "Capacity phải từ 1 đến 10000 Wh")]
         public int Capacity { get; set; }
 
-        [Range(0, 100)]
-        public decimal Soh { get; set; }
+        [Required(ErrorMessage = "SoH là bắt buộc")]
+        [Range(0, 100, ErrorMessage = "SoH phải từ 0 đến 100%")]
+        public decimal Soh { get; set; } = 100;
 
         [Required]
         public BatteryStatus Status { get; set; } = BatteryStatus.Full;
 
-        [Required]
+        [Required(ErrorMessage = "Trạm là bắt buộc")]
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn trạm")]
         public int StationId { get; set; }
 
         public DateTime? LastMaintenance { get; set; }
+
+        [StringLength(500)]
+        public string? DefectNote { get; set; }
     }
 
     public class TransferInput
     {
         public int TransferId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Pin là bắt buộc")]
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn pin")]
         public int BatteryId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Trạm đi là bắt buộc")]
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn trạm đi")]
         public int FromStationId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Trạm đến là bắt buộc")]
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn trạm đến")]
         public int ToStationId { get; set; }
 
         public TransferStatus Status { get; set; } = TransferStatus.InProgress;
@@ -726,10 +978,12 @@ public class IndexModel : BasePageModel
     {
         public int StaffId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Nhân sự là bắt buộc")]
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn nhân sự")]
         public int UserId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Trạm là bắt buộc")]
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn trạm")]
         public int StationId { get; set; }
 
         public DateTime? AssignedAt { get; set; }
@@ -739,22 +993,25 @@ public class IndexModel : BasePageModel
     {
         public int SupportId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Người gửi là bắt buộc")]
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn người gửi")]
         public int UserId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Trạm là bắt buộc")]
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn trạm")]
         public int StationId { get; set; }
 
         [Required]
         public SupportType Type { get; set; }
 
-        [Required, StringLength(500)]
+        [Required(ErrorMessage = "Mô tả là bắt buộc")]
+        [StringLength(500)]
         public string Description { get; set; } = string.Empty;
 
         [Required]
         public SupportStatus Status { get; set; } = SupportStatus.Open;
 
-        [Range(1, 5)]
+        [Range(1, 5, ErrorMessage = "Rating phải từ 1 đến 5")]
         public int? Rating { get; set; }
     }
 
@@ -771,4 +1028,26 @@ public class IndexModel : BasePageModel
         [StringLength(500)]
         public string? Description { get; set; }
     }
+
+    public class StaffUserCreateInput
+    {
+        [Required, StringLength(100)]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required, StringLength(50, MinimumLength = 4)]
+        public string Username { get; set; } = string.Empty;
+
+        [EmailAddress(ErrorMessage = "Email không hợp lệ")]
+        public string? Email { get; set; }
+
+        [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
+        public string? Phone { get; set; }
+
+        [Required, StringLength(100, MinimumLength = 6)]
+        public string Password { get; set; } = string.Empty;
+
+        [Required, Compare(nameof(Password), ErrorMessage = "Mật khẩu xác nhận không khớp")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
 }
+

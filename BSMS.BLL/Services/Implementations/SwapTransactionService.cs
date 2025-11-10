@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Repositories;
@@ -54,15 +55,11 @@ public class SwapTransactionService : ISwapTransactionService
         await _swapRepository.DeleteAsync(existing);
     }
 
-    public async Task<int> GetDailyTransactionCountAsync(DateTime date)
-    {
-        return await _swapRepository.CountDailyTransactionsAsync(date);
-    }
+    public Task<int> GetDailyTransactionCountAsync(DateTime date) =>
+        _swapRepository.CountDailyTransactionsAsync(date);
 
-    public async Task<decimal> GetCurrentMonthRevenueAsync()
-    {
-        return await _swapRepository.GetRevenueForCurrentMonthAsync();
-    }
+    public Task<decimal> GetCurrentMonthRevenueAsync() =>
+        _swapRepository.GetRevenueForCurrentMonthAsync();
 
     public async Task<IEnumerable<SwapTransaction>> GetRecentTransactionsAsync(int count = 25)
     {
@@ -107,5 +104,10 @@ public class SwapTransactionService : ISwapTransactionService
 
         existing.Status = status;
         await _swapRepository.UpdateAsync(existing);
+    }
+
+    public async Task<IDictionary<int, DateTime>> GetLatestCompletedSwapTimesAsync()
+    {
+        return await _swapRepository.GetLatestCompletedSwapTimesAsync();
     }
 }

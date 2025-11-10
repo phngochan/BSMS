@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Base;
 
@@ -10,4 +11,5 @@ public interface ISwapTransactionRepository : IGenericRepository<SwapTransaction
     Task<SwapTransaction?> GetTransactionWithDetailsAsync(int transactionId);
     Task<decimal> GetRevenueForCurrentMonthAsync();
     Task<int> CountDailyTransactionsAsync(DateTime date);
+    Task<IDictionary<int, DateTime>> GetLatestCompletedSwapTimesAsync();
 }

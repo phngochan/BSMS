@@ -1,3 +1,4 @@
+using System;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Repositories;
 
@@ -40,6 +41,9 @@ public class ConfigService : IConfigService
 
     public async Task<Config> SaveAsync(Config config)
     {
+        await EnsureUniqueNameAsync(config);
+        ValidateConfigValue(config);
+
         if (config.ConfigId == 0)
         {
             return await _configRepository.CreateAsync(config);
@@ -57,5 +61,39 @@ public class ConfigService : IConfigService
 
         await _configRepository.UpdateAsync(existing);
         return existing;
+    }
+
+    private async Task EnsureUniqueNameAsync(Config config)
+    {
+        var existingByName = await _configRepository.GetByNameAsync(config.Name);
+        if (existingByName != null && existingByName.ConfigId != config.ConfigId)
+        {
+            throw new InvalidOperationException("Tên cấu hình đã tồn tại.");
+        }
+    }
+
+    private static void ValidateConfigValue(Config config)
+    {
+        if (string.IsNullOrWhiteSpace(config.Name))
+        {
+            return;
+        }
+
+        switch (config.Name.Trim().ToLowerInvariant())
+        {
+            case "min_full_percent":
+                if (!int.TryParse(config.Value, out var percent) || percent < 0 || percent > 100)
+                {
+                    throw new InvalidOperationException("min_full_percent phải nằm trong khoảng 0 - 100.");
+                }
+                break;
+
+            case "max_inactive_hours":
+                if (!int.TryParse(config.Value, out var hours) || hours <= 0)
+                {
+                    throw new InvalidOperationException("max_inactive_hours phải lớn hơn 0.");
+                }
+                break;
+        }
     }
 }

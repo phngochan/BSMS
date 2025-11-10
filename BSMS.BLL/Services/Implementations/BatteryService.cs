@@ -4,7 +4,7 @@ using BSMS.DAL.Repositories;
 
 namespace BSMS.BLL.Services.Implementations;
 
-public class BatteryService : IBatteryService
+public class BatteryService :IBatteryService
 {
     private readonly IBatteryRepository _batteryRepository;
     private readonly IChangingStationRepository _stationRepository;
@@ -55,7 +55,7 @@ public class BatteryService : IBatteryService
         return await _batteryRepository.GetByStatusAsync(status);
     }
 
-    public async Task<Battery?> GetBatteryAsync(int batteryId)
+    public async Task<Battery> GetBatteryAsync(int batteryId)
     {
         return await _batteryRepository.GetBatteryWithStationAsync(batteryId);
     }
@@ -88,6 +88,7 @@ public class BatteryService : IBatteryService
         existing.Status = battery.Status;
         existing.StationId = battery.StationId;
         existing.LastMaintenance = battery.LastMaintenance;
+        existing.DefectNote = battery.DefectNote;
         existing.UpdatedAt = DateTime.UtcNow;
 
         await _batteryRepository.UpdateAsync(existing);
