@@ -1,4 +1,5 @@
-﻿@using System.Security.Claims
+﻿@using System.Security.Claims;
+@using BSMS.BusinessObjects.Enums;
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,17 +20,21 @@
             <div class="container-fluid px-4">
                 <!-- Logo redirects based on user role -->
                 @{
-                    var logoPage = "/Index"; // Default for guests/drivers
-                    if (User.Identity?.IsAuthenticated ?? false)
+                    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+                    var roleString = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                    var userRole = Enum.TryParse<UserRole>(roleString, out var parsedRole)
+                    ? parsedRole
+                    : (UserRole?)null;
+
+                    // Logo redirect page
+                    var logoPage = userRole switch
                     {
-                        var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
-                        logoPage = userRole switch
-                        {
-                            "Admin" => "/Admin/Dashboard",
-                            "StationStaff" => "/Staff/Index",
-                            _ => "/Index"
-                        };
-                    }
+                        UserRole.Admin => "/Admin/Dashboard",
+                        UserRole.StationStaff => "/Staff/Index",
+                        UserRole.Driver => "/Driver/Dashboard",
+                        _ => "/Index"
+                    };
                 }
                 <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="@logoPage">
                     <div class="ev-logo">
@@ -48,19 +53,33 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1 d-flex justify-content-center"
-                        @if (User.Identity?.IsAuthenticated ?? false)
+                    @{
+                        var currentPath = Context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
+                        var isDriverDashboardActive = currentPath == "/driver" || currentPath.StartsWith("/driver/index");
+                        var isDriverStationsActive = currentPath.StartsWith("/driver/findstations") || currentPath.StartsWith("/driver/stationdetails");
+                        var isDriverReservationsActive = currentPath.StartsWith("/driver/myreservations") || currentPath.StartsWith("/driver/cancelreservation");
+                    }
+                    <ul class="navbar-nav flex-grow-1 d-flex justify-content-center">
+                        @if (isAuthenticated && userRole == UserRole.Driver)
                         {
-                            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
-                            @if (role == "Admin")
-                            {
-                            }
-                            else if (role == "StationStaff" || role == "Staff")
-                            {
-                            }
+                            <li class="nav-item">
+                                <a class="nav-link@(isDriverDashboardActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/Index">
+                                    <i class="bi bi-speedometer2 me-1"></i> Bảng điều khiển
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link@(isDriverStationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/FindStations">
+                                    <i class="bi bi-geo-alt me-1"></i> Tìm trạm
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/MyReservations">
+                                    <i class="bi bi-calendar-check me-1"></i> Lịch đặt
+                                </a>
+                            </li>
                         }
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Privacy">
+                            <a class="nav-link@(currentPath.StartsWith("/privacy") ? " active" : string.Empty)" asp-area="" asp-page="/Privacy">
                                 <i class="bi bi-shield-lock me-1"></i> Privacy
                             </a>
                         </li>

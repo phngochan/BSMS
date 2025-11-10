@@ -1,0 +1,225 @@
+@page
+@model BSMS.WebApp.Pages.Driver.MyReservationsModel
+@{
+    ViewData["Title"] = "My Reservations";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="bi bi-calendar-check text-success"></i> My Reservations
+            </h2>
+        </div>
+    </div>
+
+    <!-- Active Reservation -->
+    @if (Model.ActiveReservation != null)
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <h5 class="mb-3">Active Reservation</h5>
+                <div class="card border-success shadow">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-clock-history"></i> Upcoming</span>
+                            <span class="badge bg-light text-success">@Model.ActiveReservation.Status</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="card-title">@Model.ActiveReservation.StationName</h5>
+                                <p class="text-muted mb-3">
+                                    <i class="bi bi-geo-alt"></i> @Model.ActiveReservation.StationAddress
+                                </p>
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-sm-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-calendar3 text-success fs-4 me-2"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Date & Time</small>
+                                                <strong>@Model.ActiveReservation.ScheduledTime.ToString("MMM dd, yyyy HH:mm")</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-hourglass-split text-primary fs-4 me-2"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Time Remaining</small>
+                                                <strong class="countdown" data-target="@Model.ActiveReservation.ScheduledTime.ToString("o")">
+                                                    Calculating...
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2 mt-3">
+                                    <a href="https://www.google.com/maps/dir/?api=1&destination=@Model.ActiveReservation.StationLatitude,@Model.ActiveReservation.StationLongitude" 
+                                       target="_blank" class="btn btn-success">
+                                        <i class="bi bi-map"></i> Navigate
+                                    </a>
+                                    <button type="button" class="btn btn-outline-primary" onclick="showQRCode()">
+                                        <i class="bi bi-qr-code"></i> Show QR Code
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            onclick="confirmCancel(@Model.ActiveReservation.ReservationId)"
+                                            @(Model.CanCancel ? "" : "disabled")>
+                                        <i class="bi bi-x-circle"></i> Cancel
+                                    </button>
+                                </div>
+
+                                @if (!Model.CanCancel)
+                                {
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="bi bi-info-circle"></i> Cannot cancel less than 1 hour before scheduled time
+                                    </small>
+                                }
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="p-3 bg-light rounded">
+                                    <p class="mb-2"><strong>Reservation QR Code</strong></p>
+                                    <div id="qrcode-@Model.ActiveReservation.ReservationId" class="mb-2"></div>
+                                    <small class="text-muted">Show this to staff</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> You don't have any active reservation.
+            <a asp-page="/Driver/FindStations" class="alert-link">Find a station</a> to book now.
+        </div>
+    }
+
+    <!-- Past Reservations -->
+    <div class="row">
+        <div class="col-12">
+            <h5 class="mb-3">Past Reservations</h5>
+
+            @if (Model.PastReservations != null && Model.PastReservations.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Station</th>
+                                <th>Scheduled Time</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var reservation in Model.PastReservations)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@reservation.StationName</strong><br>
+                                        <small class="text-muted">@reservation.StationAddress</small>
+                                    </td>
+                                    <td>@reservation.ScheduledTime.ToString("MMM dd, yyyy HH:mm")</td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(reservation.Status)">
+                                            @reservation.Status
+                                        </span>
+                                    </td>
+                                    <td>@reservation.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                    <td>
+                                        <a asp-page="/Driver/ReservationDetails" asp-route-id="@reservation.ReservationId" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-calendar-x fs-1 text-muted"></i>
+                        <p class="text-muted mt-3">No past reservations</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Completed" => "bg-success",
+            "Cancelled" => "bg-danger",
+            "Active" => "bg-primary",
+            _ => "bg-secondary"
+        };
+    }
+}
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+    // Generate QR codes
+    @if (Model.ActiveReservation != null)
+    {
+        <text>
+        new QRCode(document.getElementById("qrcode-@Model.ActiveReservation.ReservationId"), {
+            text: "RESERVATION:@Model.ActiveReservation.ReservationId",
+            width: 150,
+            height: 150
+        });
+        </text>
+    }
+
+    // Countdown timer
+    function updateCountdown() {
+        document.querySelectorAll('.countdown').forEach(el => {
+            const target = new Date(el.dataset.target);
+            const now = new Date();
+            const diff = target - now;
+
+            if (diff <= 0) {
+                el.textContent = 'Time to go!';
+                el.classList.add('text-danger');
+                return;
+            }
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (hours > 24) {
+                const days = Math.floor(hours / 24);
+                el.textContent = `${days} day${days > 1 ? 's' : ''}`;
+            } else {
+                el.textContent = `${hours}h ${minutes}m`;
+            }
+        });
+    }
+
+    setInterval(updateCountdown, 60000); // Update every minute
+    updateCountdown();
+
+    function confirmCancel(id) {
+        if (confirm('Are you sure you want to cancel this reservation?')) {
+            window.location.href = `/Driver/CancelReservation?id=${id}`;
+        }
+    }
+
+    function showQRCode() {
+        alert('Show this QR code to the station staff when you arrive.');
+    }
+</script>

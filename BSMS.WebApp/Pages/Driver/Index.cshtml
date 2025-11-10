@@ -1,0 +1,185 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Driver Dashboard";
+}
+
+<link rel="stylesheet" href="~/css/driver-dashboard.css" />
+
+<div class="dashboard-root pt-5">
+    <div class="container-fluid">
+        <div class="dd-grid">
+            <!-- Left column: Battery + Stations -->
+            <div class="dd-col-left" style="display:grid; gap:1.25rem;">
+                <!-- Current Battery Status Card -->
+                <div class="dd-card">
+                    <div class="dd-card-header">
+                        <div>
+                            <div class="dd-title">Current Battery Status</div>
+                            <div class="dd-sub">Real-time status of your battery pack</div>
+                        </div>
+                        <i class="bi bi-battery-half text-ev-primary" style="font-size:1.25rem"></i>
+                    </div>
+                    <div class="battery-wrap">
+                        <div class="battery-icon">
+                            <div class="battery-fill" id="batteryFill"></div>
+                            <div class="battery-head"></div>
+                        </div>
+                        <div>
+                            <div class="battery-percent" id="batteryPercent">72%</div>
+                            <div class="battery-meta">Estimated range: <strong id="batteryRange">120 km</strong></div>
+                            <div class="battery-meta">Last swapped: <strong>Today, 10:15</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nearest Stations -->
+                <div class="dd-card">
+                    <div class="dd-card-header">
+                        <div>
+                            <div class="dd-title">Nearest Stations</div>
+                            <div class="dd-sub">Find a swap slot nearby</div>
+                        </div>
+                        <i class="bi bi-geo-alt text-ev-accent" style="font-size:1.25rem"></i>
+                    </div>
+                    <div class="station-list">
+                        <div class="station-card">
+                            <div class="station-title">Central Station</div>
+                            <div class="station-meta">1.2 km • 3 batteries available</div>
+                            <div class="btn-row">
+                                <a class="btn-ev-sm" asp-page="/Reservations/Create" asp-route-stationId="1">Reserve Slot</a>
+                                <a class="btn-outline-ev-sm" href="#">Navigate</a>
+                            </div>
+                        </div>
+                        <div class="station-card">
+                            <div class="station-title">Riverside Station</div>
+                            <div class="station-meta">2.1 km • 1 battery available</div>
+                            <div class="btn-row">
+                                <a class="btn-ev-sm" asp-page="/Reservations/Create" asp-route-stationId="2">Reserve Slot</a>
+                                <a class="btn-outline-ev-sm" href="#">Navigate</a>
+                            </div>
+                        </div>
+                        <div class="station-card">
+                            <div class="station-title">Tech Park Station</div>
+                            <div class="station-meta">3.4 km • 5 batteries available</div>
+                            <div class="btn-row">
+                                <a class="btn-ev-sm" asp-page="/Reservations/Create" asp-route-stationId="3">Reserve Slot</a>
+                                <a class="btn-outline-ev-sm" href="#">Navigate</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column: Reservation + History + Support -->
+            <div class="dd-col-right" style="display:grid; gap:1.25rem;">
+                <!-- Active Reservation -->
+                <div class="dd-card">
+                    <div class="dd-card-header">
+                        <div>
+                            <div class="dd-title">Active Reservation</div>
+                            <div class="dd-sub">Central Station • Bay A3</div>
+                        </div>
+                        <i class="bi bi-clock-history" style="color:#2c3e50; font-size:1.25rem"></i>
+                    </div>
+                    <div class="reservation-panel">
+                        <div>
+                            <div class="dd-sub">Time remaining</div>
+                            <div class="timer" id="reserveTimer">14:23</div>
+                        </div>
+                        <div class="btn-row">
+                            <a class="btn-outline-ev-sm" asp-page="/Reservations/Manage" asp-route-id="1001">Modify</a>
+                            <a class="btn-ev-sm" asp-page="/Reservations/Cancel" asp-route-id="1001">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Swap History Summary -->
+                <div class="dd-card">
+                    <div class="dd-card-header">
+                        <div class="dd-title">Recent Swaps</div>
+                        <a class="btn-outline-ev-sm" asp-page="/Swaps/History">View all</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table history-list align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Station</th>
+                                    <th>Cost</th>
+                                    <th>Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Oct 31, 10:12</td>
+                                    <td>Riverside</td>
+                                    <td>$4.20</td>
+                                    <td>7m 30s</td>
+                                </tr>
+                                <tr>
+                                    <td>Oct 29, 18:05</td>
+                                    <td>Central</td>
+                                    <td>$4.10</td>
+                                    <td>6m 54s</td>
+                                </tr>
+                                <tr>
+                                    <td>Oct 26, 08:40</td>
+                                    <td>Tech Park</td>
+                                    <td>$3.95</td>
+                                    <td>6m 12s</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Support Shortcut -->
+                <div class="dd-card support-card">
+                    <div class="support-left">
+                        <div class="support-icon">
+                            <i class="bi bi-life-preserver" style="font-size:1.25rem"></i>
+                        </div>
+                        <div>
+                            <div class="dd-title" style="margin-bottom:2px">Need Help?</div>
+                            <div class="dd-sub">Contact our support team 24/7</div>
+                        </div>
+                    </div>
+                    <div class="support-action">
+                        <a class="btn-ev-sm" asp-page="/Support/Create">Open Ticket</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+<script>
+    // Demo battery percent and animation
+    (function(){
+        const percent = 72; // TODO: bind from server
+        const fill = document.getElementById('batteryFill');
+        const label = document.getElementById('batteryPercent');
+        if(fill){ fill.style.width = percent + '%'; }
+        if(label){ label.textContent = percent + '%'; }
+        const range = document.getElementById('batteryRange');
+        if(range){ range.textContent = Math.round(percent * 1.7) + ' km'; }
+    })();
+
+    // Simple countdown (demo)
+    (function(){
+        let seconds = 14*60+23; // 14:23
+        const el = document.getElementById('reserveTimer');
+        function tick(){
+            if(!el) return;
+            const m = String(Math.floor(seconds/60)).padStart(2,'0');
+            const s = String(seconds%60).padStart(2,'0');
+            el.textContent = m+':'+s;
+            if(seconds>0) seconds--; 
+        }
+        tick();
+        setInterval(tick, 1000);
+    })();
+</script>
+}

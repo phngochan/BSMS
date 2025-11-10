@@ -1,0 +1,209 @@
+@page
+@model BSMS.WebApp.Pages.Driver.StationDetailsModel
+@{
+    ViewData["Title"] = "Station Details";
+}
+
+<div class="container-fluid py-4">
+    <!-- Back Button -->
+    <div class="mb-3">
+        <a asp-page="/Driver/FindStations" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Stations
+        </a>
+    </div>
+
+    @if (Model.Station != null)
+    {
+        <div class="row">
+            <!-- Station Info -->
+            <div class="col-lg-7 mb-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-geo-alt-fill"></i> @Model.Station.Name
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-2">Address</h6>
+                            <p class="mb-0"><i class="bi bi-geo-alt"></i> @Model.Station.Address</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-2">Contact</h6>
+                            <p class="mb-0 text-muted"><em>Not provided</em></p>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="stat-card p-3 bg-success bg-opacity-10 rounded text-center">
+                                    <i class="bi bi-battery-full fs-2 text-success"></i>
+                                    <h3 class="mb-0 mt-2">@Model.Station.AvailableBatteries</h3>
+                                    <small class="text-muted">Available Batteries</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card p-3 bg-primary bg-opacity-10 rounded text-center">
+                                    <i class="bi bi-hdd-stack fs-2 text-primary"></i>
+                                    <h3 class="mb-0 mt-2">@Model.Station.Capacity</h3>
+                                    <small class="text-muted">Total Capacity</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card p-3 bg-info bg-opacity-10 rounded text-center">
+                                    <i class="bi bi-activity fs-2 text-info"></i>
+                                    <h3 class="mb-0 mt-2">@Model.Station.Status</h3>
+                                    <small class="text-muted">Status</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=@Model.Station.Latitude,@Model.Station.Longitude" 
+                               target="_blank" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-map"></i> Get Directions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available Batteries -->
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">Available Battery Models</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.AvailableBatteryModels.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var battery in Model.AvailableBatteryModels)
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">@battery.Model</h6>
+                                                <small class="text-muted">
+                                                    Capacity: @battery.Capacity kWh | Available: @battery.Count units
+                                                </small>
+                                            </div>
+                                            <span class="badge bg-success">@battery.Count</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center py-3">No batteries available at the moment</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservation Form -->
+            <div class="col-lg-5">
+                <div class="card shadow sticky-top" style="top: 20px;">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-check"></i> Book a Time Slot
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="bi bi-exclamation-triangle"></i> @Model.ErrorMessage
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                        {
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle"></i> @Model.SuccessMessage
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        <form method="post">
+                            <input type="hidden" name="StationId" value="@Model.Station.StationId" />
+
+                            <!-- Date Picker -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Select Date</label>
+                                <input type="date" class="form-control" name="ReservationDate" 
+                                       value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                       min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                       max="@DateTime.Today.AddDays(7).ToString("yyyy-MM-dd")"
+                                       required />
+                                <small class="text-muted">You can book up to 7 days in advance</small>
+                            </div>
+
+                            <!-- Time Picker -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Select Time</label>
+                                <select class="form-select" name="ReservationTime" required>
+                                    <option value="">Choose a time...</option>
+                                    @for (int hour = 8; hour < 20; hour++)
+                                    {
+                                        var time = $"{hour:00}:00";
+                                        <option value="@time">@time</option>
+                                        var timeHalf = $"{hour:00}:30";
+                                        <option value="@timeHalf">@timeHalf</option>
+                                    }
+                                </select>
+                                <small class="text-muted">Available slots: 08:00 - 20:00</small>
+                            </div>
+
+                            <!-- Info Box -->
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="bi bi-info-circle"></i> 
+                                    <strong>Important:</strong>
+                                    <ul class="mb-0 mt-2 ps-3">
+                                        <li>You can only have 1 active reservation</li>
+                                        <li>Book at least 30 minutes in advance</li>
+                                        <li>Cannot cancel less than 1 hour before</li>
+                                        <li>Reservation auto-cancels if you're 30+ min late</li>
+                                    </ul>
+                                </small>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-success w-100 btn-lg" 
+                                    @(Model.Station.AvailableBatteries <= 0 ? "disabled" : "")>
+                                <i class="bi bi-check-circle"></i> Confirm Reservation
+                            </button>
+
+                            @if (Model.Station.AvailableBatteries <= 0)
+                            {
+                                <small class="text-danger d-block text-center mt-2">
+                                    <i class="bi bi-exclamation-triangle"></i> No batteries available
+                                </small>
+                            }
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Station not found.
+        </div>
+    }
+</div>
+
+<style>
+    .stat-card {
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    .sticky-top {
+        position: sticky;
+        z-index: 1020;
+    }
+</style>

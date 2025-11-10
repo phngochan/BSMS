@@ -1,0 +1,179 @@
+@page
+@model BSMS.WebApp.Pages.Driver.FindStationsModel
+@{
+    ViewData["Title"] = "Find Stations";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="bi bi-geo-alt text-success"></i> Find Charging Stations
+            </h2>
+            <p class="text-muted">Find the nearest battery swap station with available batteries</p>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="get">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" name="location" 
+                                           placeholder="Enter your location or use current location"
+                                           value="@Model.SearchLocation">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="useCurrentLocation()">
+                                <i class="bi bi-geo-alt-fill"></i> Use Current Location
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="card-title mb-3">Filter By:</h6>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filterAvailable" checked>
+                        <label class="form-check-label" for="filterAvailable">
+                            Available Batteries Only
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter24h">
+                        <label class="form-check-label" for="filter24h">
+                            24/7 Stations
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stations List -->
+    <div class="row">
+        @if (Model.Stations != null && Model.Stations.Any())
+        {
+            @foreach (var station in Model.Stations)
+            {
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow-sm station-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">@station.Name</h5>
+                                    <p class="text-muted mb-0">
+                                        <i class="bi bi-geo-alt"></i> @station.Address
+                                    </p>
+                                </div>
+                                <span class="badge bg-success">Active</span>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle bg-success bg-opacity-10 me-2">
+                                            <i class="bi bi-battery-full text-success"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block">Available</small>
+                                            <strong>@station.AvailableBatteries / @station.Capacity</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-circle bg-primary bg-opacity-10 me-2">
+                                            <i class="bi bi-signpost-2 text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block">Distance</small>
+                                            <strong>@string.Format("{0:0.0}", station.Distance) km</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contact phone removed: not available in model -->
+
+                            <div class="d-flex gap-2">
+                                <a asp-page="/Driver/StationDetails" asp-route-id="@station.StationId" 
+                                   class="btn btn-success flex-fill">
+                                    <i class="bi bi-calendar-check"></i> Book Now
+                                </a>
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=@station.Latitude,@station.Longitude" 
+                                   target="_blank" class="btn btn-outline-primary flex-fill">
+                                    <i class="bi bi-map"></i> Navigate
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-search fs-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">No stations found</h5>
+                        <p class="text-muted">Try adjusting your search location or filters</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .station-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .station-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    }
+    .icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+</style>
+
+<script>
+    function useCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                window.location.href = `/Driver/FindStations?lat=${lat}&lng=${lng}`;
+            }, function(error) {
+                alert('Unable to get your location. Please enter manually.');
+            });
+        } else {
+            alert('Geolocation is not supported by your browser.');
+        }
+    }
+</script>
