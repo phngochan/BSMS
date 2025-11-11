@@ -1,5 +1,6 @@
 ﻿@page
 @using BSMS.BusinessObjects.Enums
+@using BSMS.BusinessObjects.Models
 @model BSMS.WebApp.Pages.Staff.IndexModel
 @{
     ViewData["Title"] = "Station Operations";
@@ -23,6 +24,65 @@
         SupportStatus.Closed => "badge bg-success text-white fw-semibold",
         _ => "badge bg-secondary text-white fw-semibold"
     };
+
+    public static string FormatRelativeTime(DateTime timestamp)
+    {
+        var local = timestamp.Kind switch
+        {
+            DateTimeKind.Utc => timestamp.ToLocalTime(),
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(timestamp, DateTimeKind.Local),
+            _ => timestamp
+        };
+
+        var span = DateTime.Now - local;
+        if (span.TotalMinutes < 1)
+        {
+            return "just now";
+        }
+
+        if (span.TotalHours < 1)
+        {
+            return $"{Math.Floor(span.TotalMinutes)}m ago";
+        }
+
+        if (span.TotalDays < 1)
+        {
+            return $"{Math.Floor(span.TotalHours)}h ago";
+        }
+
+        return $"{Math.Floor(span.TotalDays)}d ago";
+    }
+
+    public static string FormatDuration(TimeSpan span)
+    {
+        if (span.TotalHours >= 1)
+        {
+            return $"{Math.Floor(span.TotalHours)}h {span.Minutes}m";
+        }
+
+        return $"{span.Minutes}m";
+    }
+
+    public static bool RequiresSlaAttention(Support ticket)
+    {
+        var age = DateTime.UtcNow - ticket.CreatedAt;
+        return ticket.Status != SupportStatus.Closed && age > TimeSpan.FromMinutes(45);
+    }
+
+    public static string FormatTimeRemaining(TimeSpan span)
+    {
+        if (span <= TimeSpan.Zero)
+        {
+            return "Handover now";
+        }
+
+        if (span.TotalHours >= 1)
+        {
+            return $"{Math.Floor(span.TotalHours)}h {span.Minutes}m remaining";
+        }
+
+        return $"{span.Minutes}m remaining";
+    }
 }
 
 <div class="container-fluid py-3">
@@ -35,6 +95,51 @@
     }
     else
     {
+        @if (Model.ShiftInfo != null)
+        {
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                        <div>
+                            <p class="text-uppercase text-muted small mb-1">Current shift</p>
+                            <h3 class="fw-bold mb-1">@Model.ShiftInfo.ShiftName</h3>
+                            <small class="text-muted">@Model.ShiftInfo.Window · @Model.ShiftInfo.StationName</small>
+                        </div>
+                        <div class="text-md-end mt-3 mt-md-0">
+                            <span class="badge bg-success-subtle text-success-emphasis mb-1">
+                                <i class="bi bi-clock-history me-1"></i>Since @Model.ShiftInfo.ShiftStart.ToString("dd/MM HH:mm")
+                            </span>
+                            <div class="small text-muted">@FormatTimeRemaining(Model.ShiftInfo.TimeRemaining)</div>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height:6px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width:@Model.ShiftInfo.ProgressPercent.ToString("0.##")%;" aria-valuenow="@Model.ShiftInfo.ProgressPercent.ToString("0.##")" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="row mt-3 g-3">
+                        <div class="col-12 col-md-7">
+                            <p class="text-muted small mb-2">Focus items</p>
+                            <ul class="list-unstyled mb-0 small">
+                                @foreach (var item in Model.ShiftInfo.Checklist)
+                                {
+                                    <li class="d-flex align-items-start gap-2 mb-1">
+                                        <i class="bi bi-check2-circle text-success mt-1"></i>
+                                        <span>@item</span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                        <div class="col-12 col-md-5">
+                            <div class="border rounded-3 p-3 h-100 bg-light-subtle">
+                                <p class="text-muted small mb-1">Assignment</p>
+                                <div class="fw-semibold">@Model.StationInfo?.Name</div>
+                                <small class="text-muted">Assigned since @Model.ShiftInfo.AssignedAtLocal.ToString("dd/MM/yyyy")</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
         <div class="row g-3 mb-4">
             @foreach (var status in Enum.GetValues(typeof(BSMS.BusinessObjects.Enums.BatteryStatus)).Cast<BSMS.BusinessObjects.Enums.BatteryStatus>())
             {
@@ -120,7 +225,7 @@
                 </div>
             </div>
             <div class="col-12 col-xl-4">
-                <div class="card shadow-sm border-0 h-100">
+                <div class="card shadow-sm border-0 mb-3">
                     <div class="card-body">
                         <h5 class="mb-1">Station information</h5>
                         <p class="text-muted mb-3">@Model.StationInfo?.Address</p>
@@ -128,6 +233,87 @@
                             <li>Capacity: <strong>@Model.StationInfo?.Capacity</strong></li>
                             <li>Status: <strong>@Model.StationInfo?.Status</strong></li>
                         </ul>
+                    </div>
+                </div>
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Swap workflow</h5>
+                            <span class="badge bg-primary-subtle text-primary-emphasis">Last 12 swaps</span>
+                        </div>
+                        <p class="text-muted small mt-1 mb-0">Theo dõi luồng công việc và chốt giao dịch đang Pending trực tiếp tại đây.</p>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            @foreach (var kv in Model.SwapWorkflow.StatusCounts.OrderBy(k => k.Key))
+                            {
+                                <span class="badge rounded-pill bg-light text-muted border">
+                                    @kv.Key: <strong class="ms-1">@kv.Value</strong>
+                                </span>
+                            }
+                        </div>
+                        <div class="mt-3">
+                            @foreach (var step in Model.SwapWorkflow.Steps)
+                            {
+                                var stateClass = step.IsCompleted
+                                    ? "bg-success text-white"
+                                    : step.IsActive
+                                        ? "bg-warning text-dark"
+                                        : "bg-light text-muted";
+                                <div class="d-flex align-items-start gap-3 mb-2">
+                                    <div class="rounded-circle @stateClass d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                        <i class="bi @(step.IsCompleted ? "bi-check" : "bi-chevron-right")"></i>
+                                    </div>
+                                    <div>
+                                        <strong>@step.Title</strong>
+                                        <div class="text-muted small">@step.Description</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-muted small mb-2">Recent activity</p>
+                            @if (Model.SwapWorkflow.Timeline.Any())
+                            {
+                                <ul class="list-unstyled small mb-0">
+                                    @foreach (var log in Model.SwapWorkflow.Timeline)
+                                    {
+                                        <li class="mb-3">
+                                            <div class="d-flex justify-content-between gap-3 flex-wrap">
+                                                <div>
+                                                    <strong>#@log.TransactionId</strong> · @log.Status
+                                                    <div class="text-muted">@log.RiderName · @log.Vehicle</div>
+                                                </div>
+                                                <span class="text-muted">@FormatRelativeTime(log.SwapTime)</span>
+                                            </div>
+                                            @if (log.Status == SwapStatus.Pending)
+                                            {
+                                                <form method="post"
+                                                      asp-page-handler="HandleSwapAction"
+                                                      class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                                                    <input type="hidden" name="transactionId" value="@log.TransactionId" />
+                                                    <div class="small text-muted me-1">Action:</div>
+                                                    <button type="submit"
+                                                            name="status"
+                                                            value="Completed"
+                                                            class="btn btn-success btn-sm">
+                                                        <i class="bi bi-check2 me-1"></i>Complete
+                                                    </button>
+                                                    <button type="submit"
+                                                            name="status"
+                                                            value="Cancelled"
+                                                            class="btn btn-outline-warning btn-sm">
+                                                        <i class="bi bi-x-circle me-1"></i>Cancel
+                                                    </button>
+                                                </form>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <div class="text-muted small fst-italic">No swap activity recorded yet.</div>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -140,6 +326,18 @@
                         <small class="text-muted">Keep riders informed by updating progress.</small>
                     </div>
                 </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-danger-subtle text-danger-emphasis">Open: @Model.SupportSummary.Open</span>
+                        <span class="badge bg-warning-subtle text-warning-emphasis">In progress: @Model.SupportSummary.InProgress</span>
+                        <span class="badge bg-success-subtle text-success-emphasis">Closed: @Model.SupportSummary.Closed</span>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis">Total: @Model.SupportSummary.Total</span>
+                        @if (Model.SupportSummary.OldestActiveAge.HasValue)
+                        {
+                            <span class="badge bg-light text-muted border">Oldest active: @FormatDuration(Model.SupportSummary.OldestActiveAge.Value)</span>
+                        }
+                    </div>
+                </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table align-middle mb-0">
@@ -149,6 +347,7 @@
                                     <th>Customer</th>
                                     <th>Category</th>
                                     <th>Description</th>
+                                    <th>Age</th>
                                     <th>Status</th>
                                     <th></th>
                                 </tr>
@@ -161,6 +360,13 @@
                                         <td>@ticket.User?.FullName</td>
                                         <td>@ticket.Type</td>
                                         <td>@ticket.Description</td>
+                                        <td>
+                                            <div>@FormatRelativeTime(ticket.CreatedAt)</div>
+                                            @if (RequiresSlaAttention(ticket))
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger-emphasis mt-1">SLA risk</span>
+                                            }
+                                        </td>
                                         <td>
                                             <span class="@GetSupportBadgeClass(ticket.Status)">@ticket.Status</span>
                                         </td>
@@ -187,7 +393,7 @@
                                 @if (!Model.SupportTickets.Any())
                                 {
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">No tickets yet.</td>
+                                        <td colspan="7" class="text-center text-muted py-4">No tickets yet.</td>
                                     </tr>
                                 }
                             </tbody>
