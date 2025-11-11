@@ -34,16 +34,6 @@ public class BatteryRepository : GenericRepository<Battery>, IBatteryRepository
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId)
-    {
-        return await _dbSet
-            .AsNoTracking()
-            .Where(b => b.StationId == stationId)
-            .OrderBy(b => b.Model)
-            .ThenBy(b => b.BatteryId)
-            .ToListAsync();
-    }
-
     public async Task<Battery?> GetBatteryWithStationAsync(int batteryId)
     {
         return await _dbSet
@@ -89,16 +79,19 @@ public class BatteryRepository : GenericRepository<Battery>, IBatteryRepository
     {
         await Task.CompletedTask;
 
-        if (string.IsNullOrWhiteSpace(batteryModel) || string.IsNullOrWhiteSpace(vehicleModel))
-            return false;
-
-        if (batteryModel.Equals(vehicleModel, StringComparison.OrdinalIgnoreCase))
+        if (batteryModel.Contains("Standard"))
             return true;
 
-        if (batteryModel.Contains("Standard", StringComparison.OrdinalIgnoreCase) ||
-            vehicleModel.Contains("Standard", StringComparison.OrdinalIgnoreCase))
-            return true;
+        return true;
+    }
 
-        return false;
+    public async Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(b => b.StationId == stationId)
+            .OrderBy(b => b.Model)
+            .ThenBy(b => b.BatteryId)
+            .ToListAsync();
     }
 }

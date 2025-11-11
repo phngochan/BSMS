@@ -101,7 +101,7 @@ public class ConfirmReservationModel : BasePageModel
             await LogActivityAsync("CANCEL_RESERVATION_BY_STAFF",
                 $"Nhân viên đã hủy đặt chỗ #{id} của khách hàng {reservation.User?.FullName} (UserId: {reservation.UserId}) tại trạm {reservation.Station?.Name ?? "N/A"}");
 
-            await _hubContext.Clients.User(reservation.UserId.ToString()).SendAsync("ReceiveNotification", new
+            await _hubContext.Clients.User(reservation.UserId.ToString()).SendAsync("CancelReservation", new
             {
                 message = $"Đặt chỗ tại {reservation.Station?.Name ?? "trạm"} đã bị hủy bởi nhân viên",
                 type = "warning",

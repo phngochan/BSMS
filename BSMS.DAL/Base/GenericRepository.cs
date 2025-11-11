@@ -43,7 +43,13 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         foreach (var include in includes)
             query = query.Include(include);
 
-        var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+        var keyName = _context.Model.FindEntityType(typeof(T))!
+        .FindPrimaryKey()!
+        .Properties
+        .Select(x => x.Name)
+        .Single();
+
+        var entity = await query.FirstOrDefaultAsync(e => EF.Property<int>(e, keyName) == id);
 
         if (entity != null)
             _context.Entry(entity).State = EntityState.Detached;

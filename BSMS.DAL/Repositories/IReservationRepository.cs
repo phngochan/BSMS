@@ -19,4 +19,5 @@ public interface IReservationRepository : IGenericRepository<Reservation>
     Task UpdateStatusAsync(int reservationId, ReservationStatus status);
 
     Task<bool> HasActiveReservationAsync(int userId);
+    Task<bool> HasActiveReservationByVehicleAsync(int vehicleId);
 }

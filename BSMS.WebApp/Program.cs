@@ -31,6 +31,7 @@ builder.Services.AddScoped<IAlertRepository, AlertRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IStationRepository, StationRepository>();
 builder.Services.AddScoped<IBatteryRepository, BatteryRepository>();
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -42,6 +43,7 @@ builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IBatteryService, BatteryService>();
+builder.Services.AddScoped<IVehicleService, VehicleService>();
 
 // Background Services
 builder.Services.AddHostedService<ReservationAutoCancelService>();

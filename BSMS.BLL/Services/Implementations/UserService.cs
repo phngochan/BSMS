@@ -67,4 +67,14 @@ public class UserService : IUserService
     {
         return await _userRepository.GetUserWithVehiclesAsync(userId);
     }
+
+    public async Task<IEnumerable<User>> GetAllUsersAsync()
+    {
+        return await _userRepository.GetAllAsync();
+    }
+
+    public async Task<User?> GetUserByIdAsync(int userId)
+    {
+        return await _userRepository.GetByIdAsync(userId);
+    }
 }

@@ -88,4 +88,11 @@ public class ReservationRepository : GenericRepository<Reservation>, IReservatio
             .AnyAsync(r => r.UserId == userId
                 && (r.Status == ReservationStatus.Active));
     }
+
+    public async Task<bool> HasActiveReservationByVehicleAsync(int vehicleId)
+    {
+        return await _dbSet
+            .AnyAsync(r => r.VehicleId == vehicleId
+                && (r.Status == ReservationStatus.Active));
+    }
 }

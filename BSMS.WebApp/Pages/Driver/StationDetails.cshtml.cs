@@ -1,31 +1,38 @@
 using BSMS.BLL.Services;
 using BSMS.WebApp.Helpers;
 using BSMS.WebApp.ViewModels.Driver;
+using BSMS.WebApp.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
 
 namespace BSMS.WebApp.Pages.Driver;
 
 [Authorize(Roles = "Driver")]
-public class StationDetailsModel : PageModel
+public class StationDetailsModel : BasePageModel
 {
     private readonly IReservationService _reservationService;
     private readonly IStationService _stationService;
     private readonly IBatteryService _batteryService;
     private readonly IUserService _userService;
+    private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly ILogger<StationDetailsModel> _logger;
 
     public StationDetailsModel(
         IReservationService reservationService, 
         IStationService stationService, 
         IBatteryService batteryService,
-        IUserService userService)
+        IUserService userService,
+        IHubContext<NotificationHub> hubContext,
+        ILogger<StationDetailsModel> logger,
+        IUserActivityLogService activityLogService) : base(activityLogService)
     {
         _reservationService = reservationService;
         _stationService = stationService;
         _batteryService = batteryService;
         _userService = userService;
+        _hubContext = hubContext;
+        _logger = logger;
     }
 
     public StationDetailViewModel? Station { get; set; }
@@ -43,10 +50,9 @@ public class StationDetailsModel : PageModel
         var station = await _stationService.GetStationDetailsAsync(id);
         if (station == null) return NotFound();
 
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (int.TryParse(userIdClaim, out var userId))
+        if (CurrentUserId > 0)
         {
-            var user = await _userService.GetUserWithVehiclesAsync(userId);
+            var user = await _userService.GetUserWithVehiclesAsync(CurrentUserId);
             if (user?.Vehicles != null)
             {
                 UserVehicles = user.Vehicles.ToList();
@@ -84,8 +90,7 @@ public class StationDetailsModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(int stationId, int vehicleId, DateTime reservationDate, string reservationTime)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(userIdClaim, out var userId))
+        if (CurrentUserId == 0)
         {
             ErrorMessage = "Không tìm thấy người dùng";
             return RedirectToPage(new { id = stationId });
@@ -108,7 +113,8 @@ public class StationDetailsModel : PageModel
             var scheduledTimeLocal = reservationDate.Date.Add(time);
             var scheduledTimeUtc = scheduledTimeLocal.ToUtcTime();
 
-            var (canCreate, errorMessage) = await _reservationService.ValidateReservationAsync(userId, vehicleId, stationId, scheduledTimeUtc);
+            var station = await _stationService.GetStationDetailsAsync(stationId);
+            var (canCreate, errorMessage) = await _reservationService.ValidateReservationAsync(CurrentUserId, vehicleId, stationId, scheduledTimeUtc);
             
             if (!canCreate)
             {
@@ -116,7 +122,35 @@ public class StationDetailsModel : PageModel
                 return RedirectToPage(new { id = stationId });
             }
 
-            var reservation = await _reservationService.CreateReservationAsync(userId, vehicleId, stationId, scheduledTimeUtc);
+            var reservation = await _reservationService.CreateReservationAsync(CurrentUserId, vehicleId, stationId, scheduledTimeUtc);
+
+            await LogActivityAsync("CREATE_RESERVATION", 
+                $"Đã tạo đặt chỗ #{reservation.ReservationId} tại trạm {station?.Name ?? "N/A"} cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}");
+
+            try
+            {
+                // Gửi notification cho driver
+                await _hubContext.Clients.User(CurrentUserId.ToString()).SendAsync("ReceiveNotification", new
+                {
+                    message = $"Đã tạo đặt chỗ #{reservation.ReservationId} tại trạm {station?.Name ?? "N/A"} cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}",
+                    type = "success",
+                    timestamp = DateTime.UtcNow
+                });
+
+                // Gửi notification cho nhân viên trạm
+                await _hubContext.Clients.Group($"Station_{stationId}").SendAsync("ReceiveNotification", new
+                {
+                    message = $"Có đặt chỗ mới #{reservation.ReservationId} tại trạm {station?.Name ?? "N/A"} cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}",
+                    type = "info",
+                    timestamp = DateTime.UtcNow
+                });
+
+                _logger.LogInformation("SignalR notification sent for created reservation {ReservationId} by user {UserId}", reservation.ReservationId, CurrentUserId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send SignalR notification for created reservation {ReservationId}", reservation.ReservationId);
+            }
 
             SuccessMessage = $"Đặt chỗ thành công cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}!";
             return RedirectToPage("/Driver/MyReservations");

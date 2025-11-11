@@ -1,0 +1,179 @@
+@page "{id:int}"
+@model BSMS.WebApp.Pages.Admin.Vehicles.EditModel
+@{
+    ViewData["Title"] = "Sửa Thông Tin Xe";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-0">
+                <i class="bi bi-pencil text-primary"></i> Sửa Thông Tin Xe
+            </h2>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Thông Tin Xe</h5>
+                </div>
+                <div class="card-body">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    <form method="post">
+                        <input type="hidden" asp-for="Input.VehicleId" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.UserId" class="form-label">Chủ Xe <span class="text-danger">*</span></label>
+                            <div class="position-relative">
+                                <input type="text" id="driverSearch" class="form-control" placeholder="Nhập tên hoặc email để tìm kiếm..." autocomplete="off" />
+                                <input type="hidden" asp-for="Input.UserId" id="selectedUserId" />
+                                <div id="driverDropdown" class="list-group position-absolute w-100" style="display: none; z-index: 1000; max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);"></div>
+                            </div>
+                            <small class="form-text text-muted">Nhập tên hoặc email để tìm kiếm chủ xe</small>
+                            <span asp-validation-for="Input.UserId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Vin" class="form-label">VIN (Số khung) <span class="text-danger">*</span></label>
+                            <input asp-for="Input.Vin" class="form-control" placeholder="Nhập 17 ký tự VIN" maxlength="17" />
+                            <span asp-validation-for="Input.Vin" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.BatteryModel" class="form-label">Loại Pin <span class="text-danger">*</span></label>
+                            <input asp-for="Input.BatteryModel" class="form-control" placeholder="Ví dụ: LG Chem, CATL, BYD" />
+                            <span asp-validation-for="Input.BatteryModel" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.BatteryType" class="form-label">Kiểu Pin <span class="text-danger">*</span></label>
+                            <input asp-for="Input.BatteryType" class="form-control" placeholder="Ví dụ: Lithium-ion, LFP" />
+                            <span asp-validation-for="Input.BatteryType" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-page="Index" class="btn btn-outline-secondary">Hủy</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Cập Nhật
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const driverSearch = document.getElementById('driverSearch');
+            const selectedUserId = document.getElementById('selectedUserId');
+            const driverDropdown = document.getElementById('driverDropdown');
+            const drivers = [
+                @foreach (var driver in Model.Drivers)
+                {
+                    var name = System.Text.Json.JsonSerializer.Serialize(driver.FullName);
+                    var email = System.Text.Json.JsonSerializer.Serialize(driver.Email);
+                    <text>{ id: @driver.UserId, name: @Html.Raw(name), email: @Html.Raw(email) },</text>
+                }
+            ];
+
+            let selectedDriver = null;
+
+            // Set initial value if editing
+            @if (Model.Vehicle != null)
+            {
+                var currentDriver = Model.Drivers.FirstOrDefault(d => d.UserId == Model.Vehicle.UserId);
+                if (currentDriver != null)
+                {
+                    var name = System.Text.Json.JsonSerializer.Serialize(currentDriver.FullName);
+                    var email = System.Text.Json.JsonSerializer.Serialize(currentDriver.Email);
+                    var displayText = System.Text.Json.JsonSerializer.Serialize($"{currentDriver.FullName} ({currentDriver.Email})");
+                    <text>
+                    selectedDriver = { id: @currentDriver.UserId, name: @Html.Raw(name), email: @Html.Raw(email) };
+                    driverSearch.value = @Html.Raw(displayText);
+                    selectedUserId.value = "@currentDriver.UserId";
+                    </text>
+                }
+            }
+
+            driverSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                if (searchTerm.length === 0) {
+                    driverDropdown.style.display = 'none';
+                    if (!selectedDriver) {
+                        selectedUserId.value = '';
+                    }
+                    return;
+                }
+
+                const filtered = drivers.filter(d => 
+                    d.name.toLowerCase().includes(searchTerm) || 
+                    d.email.toLowerCase().includes(searchTerm)
+                );
+
+                if (filtered.length > 0) {
+                    driverDropdown.innerHTML = filtered.map(d => 
+                        `<a href="#" class="list-group-item list-group-item-action" data-id="${d.id}" data-name="${d.name}" data-email="${d.email}">
+                            <strong>${d.name}</strong><br>
+                            <small class="text-muted">${d.email}</small>
+                        </a>`
+                    ).join('');
+                    driverDropdown.style.display = 'block';
+                } else {
+                    driverDropdown.innerHTML = '<div class="list-group-item text-muted">Không tìm thấy</div>';
+                    driverDropdown.style.display = 'block';
+                }
+            });
+
+            driverDropdown.addEventListener('click', function(e) {
+                e.preventDefault();
+                const item = e.target.closest('.list-group-item-action');
+                if (item) {
+                    const id = item.dataset.id;
+                    const name = item.dataset.name;
+                    const email = item.dataset.email;
+                    
+                    selectedUserId.value = id;
+                    driverSearch.value = `${name} (${email})`;
+                    driverDropdown.style.display = 'none';
+                    selectedDriver = { id: parseInt(id), name, email };
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!driverSearch.contains(e.target) && !driverDropdown.contains(e.target)) {
+                    driverDropdown.style.display = 'none';
+                }
+            });
+
+            driverSearch.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (!selectedDriver || driverSearch.value !== `${selectedDriver.name} (${selectedDriver.email})`) {
+                        if (selectedDriver) {
+                            driverSearch.value = `${selectedDriver.name} (${selectedDriver.email})`;
+                        } else {
+                            driverSearch.value = '';
+                            selectedUserId.value = '';
+                        }
+                    }
+                }, 200);
+            });
+        });
+    </script>
+}
+
