@@ -8,20 +8,97 @@ namespace BSMS.BLL.Services.Implementations;
 
 public class BatteryService : IBatteryService
 {
-    private readonly IBatteryRepository _batteryRepo;
+    private readonly IBatteryRepository _batteryRepository;
+    private readonly IChangingStationRepository _stationRepository;
     private readonly ILogger<BatteryService> _logger;
 
-    public BatteryService(IBatteryRepository batteryRepo, ILogger<BatteryService> logger)
+    public BatteryService(
+        IBatteryRepository batteryRepository,
+        IChangingStationRepository stationRepository,
+        ILogger<BatteryService> logger)
     {
-        _batteryRepo = batteryRepo;
+        _batteryRepository = batteryRepository;
+        _stationRepository = stationRepository;
         _logger = logger;
+    }
+
+    public async Task<IEnumerable<Battery>> GetBatteriesAsync()
+    {
+        return await _batteryRepository.GetBatteriesWithStationAsync();
+    }
+
+    public async Task<IEnumerable<Battery>> GetBatteriesByStatusAsync(BatteryStatus status)
+    {
+        return await _batteryRepository.GetByStatusAsync(status);
+    }
+
+    public async Task<Dictionary<BatteryStatus, int>> GetStatusSummaryAsync(int? stationId = null)
+    {
+        return await _batteryRepository.GetStatusSummaryAsync(stationId);
+    }
+
+    public async Task<Battery?> GetBatteryAsync(int batteryId)
+    {
+        return await _batteryRepository.GetBatteryWithStationAsync(batteryId);
+    }
+
+    public async Task<Battery> CreateBatteryAsync(Battery battery)
+    {
+        var station = await _stationRepository.GetSingleAsync(s => s.StationId == battery.StationId);
+        if (station == null)
+        {
+            throw new InvalidOperationException("Station not found");
+        }
+
+        battery.UpdatedAt = DateTime.UtcNow;
+        return await _batteryRepository.CreateAsync(battery);
+    }
+
+    public async Task UpdateBatteryAsync(Battery battery)
+    {
+        var existing = await _batteryRepository.GetSingleAsync(b => b.BatteryId == battery.BatteryId);
+        if (existing == null)
+        {
+            throw new InvalidOperationException("Battery not found");
+        }
+
+        if (existing.StationId != battery.StationId)
+        {
+            var station = await _stationRepository.GetSingleAsync(s => s.StationId == battery.StationId);
+            if (station == null)
+            {
+                throw new InvalidOperationException("Station not found");
+            }
+        }
+
+        existing.Model = battery.Model;
+        existing.Capacity = battery.Capacity;
+        existing.Soh = battery.Soh;
+        existing.Status = battery.Status;
+        existing.StationId = battery.StationId;
+        existing.LastMaintenance = battery.LastMaintenance;
+        existing.DefectNote = battery.DefectNote;
+        existing.UpdatedAt = DateTime.UtcNow;
+
+        await _batteryRepository.UpdateAsync(existing);
+    }
+
+    public async Task DeleteBatteryAsync(int batteryId)
+    {
+        var battery = await _batteryRepository.GetSingleAsync(b => b.BatteryId == batteryId);
+        if (battery == null)
+        {
+            throw new InvalidOperationException("Battery not found");
+        }
+
+        await _batteryRepository.DeleteAsync(battery);
     }
 
     public async Task<IEnumerable<Battery>> GetAvailableBatteriesAsync(int stationId)
     {
         try
         {
-            return await _batteryRepo.GetAvailableBatteriesAsync(stationId);
+            return await _batteryRepository.GetAvailableBatteriesAsync(stationId);
         }
         catch (Exception ex)
         {
@@ -34,12 +111,14 @@ public class BatteryService : IBatteryService
     {
         try
         {
-            return await _batteryRepo.GetAvailableBatteriesByModelAsync(stationId, model);
+            return await _batteryRepository.GetAvailableBatteriesByModelAsync(stationId, model);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to get available batteries for StationId: {StationId}, Model: {Model}",
-                stationId, model);
+            _logger.LogError(ex,
+                "Failed to get available batteries for StationId: {StationId}, Model: {Model}",
+                stationId,
+                model);
             throw;
         }
     }
@@ -48,7 +127,7 @@ public class BatteryService : IBatteryService
     {
         try
         {
-            return await _batteryRepo.GetBatteriesByStationAsync(stationId);
+            return await _batteryRepository.GetBatteriesByStationAsync(stationId);
         }
         catch (Exception ex)
         {
@@ -61,7 +140,7 @@ public class BatteryService : IBatteryService
     {
         try
         {
-            return await _batteryRepo.GetBatteriesGroupedByModelAsync(stationId);
+            return await _batteryRepository.GetBatteriesGroupedByModelAsync(stationId);
         }
         catch (Exception ex)
         {
@@ -74,7 +153,7 @@ public class BatteryService : IBatteryService
     {
         try
         {
-            return await _batteryRepo.GetBatteryWithStationAsync(batteryId);
+            return await _batteryRepository.GetBatteryWithStationAsync(batteryId);
         }
         catch (Exception ex)
         {
@@ -87,10 +166,10 @@ public class BatteryService : IBatteryService
     {
         try
         {
-            await _batteryRepo.UpdateBatteryStatusAsync(batteryId, newStatus);
-            
+            await _batteryRepository.UpdateBatteryStatusAsync(batteryId, newStatus);
             _logger.LogInformation("Battery status updated: BatteryId={BatteryId}, NewStatus={Status}",
-                batteryId, newStatus);
+                batteryId,
+                newStatus);
         }
         catch (Exception ex)
         {
@@ -103,13 +182,16 @@ public class BatteryService : IBatteryService
     {
         try
         {
-            return await _batteryRepo.IsBatteryCompatibleAsync(batteryModel, vehicleModel);
+            return await _batteryRepository.IsBatteryCompatibleAsync(batteryModel, vehicleModel);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to check battery compatibility: Battery={BatteryModel}, Vehicle={VehicleModel}",
-                batteryModel, vehicleModel);
+            _logger.LogError(ex,
+                "Failed to check battery compatibility: Battery={BatteryModel}, Vehicle={VehicleModel}",
+                batteryModel,
+                vehicleModel);
             throw;
         }
     }
 }
+

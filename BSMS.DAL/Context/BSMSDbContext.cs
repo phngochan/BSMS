@@ -72,6 +72,8 @@ public class BSMSDbContext : DbContext
             entity.Property(e => e.Status)
                   .HasConversion<string>()
                   .HasMaxLength(50);
+            entity.Property(e => e.DefectNote)
+                  .HasMaxLength(500);
             entity.HasOne(b => b.Station)
                   .WithMany(s => s.Batteries)
                   .HasForeignKey(b => b.StationId)

@@ -1,4 +1,4 @@
-﻿@using System.Security.Claims;
+@using System.Security.Claims;
 @using BSMS.BusinessObjects.Enums;
 <!DOCTYPE html>
 <html lang="en">
@@ -26,6 +26,12 @@
                     var userRole = Enum.TryParse<UserRole>(roleString, out var parsedRole)
                     ? parsedRole
                     : (UserRole?)null;
+
+                    // Determine active nav items for Driver
+                    var currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+                    var isDriverDashboardActive = currentPath.Contains("/driver/index") || currentPath == "/driver" || currentPath == "/driver/";
+                    var isDriverStationsActive = currentPath.Contains("/driver/findstations");
+                    var isDriverReservationsActive = currentPath.Contains("/driver/myreservations");
                 }
                 <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="Index">
                     <div class="ev-logo">
@@ -48,17 +54,17 @@
                         @if (isAuthenticated && userRole == UserRole.Driver)
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-page="/Driver/Index">
+                                <a class="nav-link@(isDriverDashboardActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/Index">
                                     <i class="bi bi-speedometer2 me-1"></i> Bảng điều khiển
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-page="/Driver/FindStations">
+                                <a class="nav-link@(isDriverStationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/FindStations">
                                     <i class="bi bi-geo-alt me-1"></i> Tìm trạm
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-page="/Driver/MyReservations">
+                                <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/MyReservations">
                                     <i class="bi bi-calendar-check me-1"></i> Lịch đặt
                                 </a>
                             </li>
@@ -115,7 +121,7 @@
                                     <!-- Logout -->
                                     <form method="get" asp-page="/Auth/Logout" class="m-0">
                                         <button type="submit" class="btn-logout">
-                                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                                            <i class="bi bi-box-arrow-right"></i> Sign out
                                         </button>
                                     </form>
                                 </div>
@@ -125,7 +131,7 @@
                         {
                             <form method="get" asp-page="/Auth/Login" class="m-0">
                                 <button type="submit" class="btn-logout">
-                                    <i class="bi bi-box-arrow-left"></i> Đăng nhập
+                                    <i class="bi bi-box-arrow-left"></i> Sign in
                                 </button>
                             </form>
                         }

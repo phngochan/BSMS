@@ -28,11 +28,16 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserActivityLogRepository, UserActivityLogRepository>();
 builder.Services.AddScoped<IAlertRepository, AlertRepository>();
+builder.Services.AddScoped<IChangingStationRepository, ChangingStationRepository>();
+builder.Services.AddScoped<IBatteryRepository, BatteryRepository>();
+builder.Services.AddScoped<IBatteryTransferRepository, BatteryTransferRepository>();
+builder.Services.AddScoped<IStationStaffRepository, StationStaffRepository>();
+builder.Services.AddScoped<ISupportRepository, SupportRepository>();
+builder.Services.AddScoped<ISwapTransactionRepository, SwapTransactionRepository>();
+builder.Services.AddScoped<IConfigRepository, ConfigRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IStationRepository, StationRepository>();
-builder.Services.AddScoped<IBatteryRepository, BatteryRepository>();
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
-builder.Services.AddScoped<ISwapTransactionRepository, SwapTransactionRepository>();
 
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -41,11 +46,16 @@ builder.Services.AddScoped<IUserActivityLogService, UserActivityLogService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IChangingStationService, ChangingStationService>();
+builder.Services.AddScoped<IBatteryService, BatteryService>();
+builder.Services.AddScoped<IBatteryTransferService, BatteryTransferService>();
+builder.Services.AddScoped<IStationStaffService, StationStaffService>();
+builder.Services.AddScoped<ISupportService, SupportService>();
+builder.Services.AddScoped<ISwapTransactionService, SwapTransactionService>();
+builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IStationService, StationService>();
-builder.Services.AddScoped<IBatteryService, BatteryService>();
 builder.Services.AddScoped<IVehicleService, VehicleService>();
-builder.Services.AddScoped<ISwapTransactionService, SwapTransactionService>();
 
 // Background Services
 builder.Services.AddHostedService<ReservationAutoCancelService>();

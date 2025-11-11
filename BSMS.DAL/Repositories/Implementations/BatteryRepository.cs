@@ -13,6 +13,64 @@ public class BatteryRepository : GenericRepository<Battery>, IBatteryRepository
     {
     }
 
+    public async Task<IEnumerable<Battery>> GetBatteriesWithStationAsync()
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(b => b.Station)
+            .OrderBy(b => b.BatteryId)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Battery>> GetByStationAsync(int stationId)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(b => b.StationId == stationId)
+            .Include(b => b.Station)
+            .OrderByDescending(b => b.UpdatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Battery>> GetByStatusAsync(BatteryStatus status)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(b => b.Status == status)
+            .Include(b => b.Station)
+            .OrderBy(b => b.StationId)
+            .ToListAsync();
+    }
+
+    public async Task<Battery?> GetBatteryWithStationAsync(int batteryId)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(b => b.Station)
+            .FirstOrDefaultAsync(b => b.BatteryId == batteryId);
+    }
+
+    public async Task<Dictionary<BatteryStatus, int>> GetStatusSummaryAsync(int? stationId = null)
+    {
+        var query = _dbSet.AsNoTracking();
+
+        if (stationId.HasValue)
+        {
+            query = query.Where(b => b.StationId == stationId.Value);
+        }
+
+        var result = await query
+            .GroupBy(b => b.Status)
+            .Select(group => new
+            {
+                group.Key,
+                Count = group.Count()
+            })
+            .ToListAsync();
+
+        return result.ToDictionary(k => k.Key, v => v.Count);
+    }
+
     public async Task<IEnumerable<Battery>> GetAvailableBatteriesAsync(int stationId)
     {
         return await _dbSet
@@ -28,18 +86,10 @@ public class BatteryRepository : GenericRepository<Battery>, IBatteryRepository
         return await _dbSet
             .AsNoTracking()
             .Where(b => b.StationId == stationId
-                && b.Status == BatteryStatus.Full
-                && b.Model == model)
+                        && b.Status == BatteryStatus.Full
+                        && b.Model == model)
             .OrderBy(b => b.BatteryId)
             .ToListAsync();
-    }
-
-    public async Task<Battery?> GetBatteryWithStationAsync(int batteryId)
-    {
-        return await _dbSet
-            .AsNoTracking()
-            .Include(b => b.Station)
-            .FirstOrDefaultAsync(b => b.BatteryId == batteryId);
     }
 
     public async Task<IEnumerable<BatteryModelGroupDto>> GetBatteriesGroupedByModelAsync(int stationId)
@@ -67,24 +117,21 @@ public class BatteryRepository : GenericRepository<Battery>, IBatteryRepository
     public async Task UpdateBatteryStatusAsync(int batteryId, BatteryStatus newStatus)
     {
         var battery = await _dbSet.FindAsync(batteryId);
-        if (battery != null)
+        if (battery == null)
         {
-            battery.Status = newStatus;
-            battery.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            return;
         }
+
+        battery.Status = newStatus;
+        battery.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
     }
 
     public async Task<bool> IsBatteryCompatibleAsync(string batteryModel, string vehicleModel)
     {
         await Task.CompletedTask;
-
-        if (batteryModel.Contains("Standard"))
-            return true;
-
         return true;
     }
-
     public async Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId)
     {
         return await _dbSet
