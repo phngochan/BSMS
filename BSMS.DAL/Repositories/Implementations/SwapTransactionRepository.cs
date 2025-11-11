@@ -17,6 +17,7 @@ public class SwapTransactionRepository : GenericRepository<SwapTransaction>, ISw
             .Include(st => st.Station)
             .Include(st => st.BatteryTaken)
             .Include(st => st.BatteryReturned)
+            .Include(st => st.Vehicle)
             .Where(st => st.UserId == userId)
             .OrderByDescending(st => st.SwapTime)
             .ToListAsync();
