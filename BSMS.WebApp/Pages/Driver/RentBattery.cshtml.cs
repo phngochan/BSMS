@@ -57,7 +57,7 @@ namespace BSMS.WebApp.Pages.Driver
             {
                 TempData["Success"] = "Có lỗi xảy ra khi mua gói!";
             }
-            return RedirectToPage();
+            return RedirectToPage("/Driver/FindStations");
         }
 
 

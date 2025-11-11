@@ -121,6 +121,27 @@ public class UserPackageService : IUserPackageService
         await Task.WhenAll(expiredPackages.Select(_upRepo.UpdateAsync));
     }
 
+    public async Task<List<BatteryServicePackage>> FilterPackagesAsync(string? search, bool? isActive)
+    {
+        var query = _context.BatteryServicePackages.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(p =>
+                p.Name.Contains(search) ||
+                p.Description.Contains(search)
+            );
+        }
+
+        if (isActive != null)
+        {
+            query = query.Where(p => p.Active == isActive);
+        }
+
+        return await query.OrderBy(p => p.PackageId).ToListAsync();
+    }
+
+
     public async Task<BatteryServicePackage?> GetByIdAsync(int id)
        => await _pkgRepo.GetByIdAsync(id);
 

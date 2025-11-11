@@ -19,6 +19,8 @@ namespace BSMS.BLL.Services
         Task<UserPackage?> GetCurrentPackageAsync(int userId);
         Task ExpirePackagesAsync();
 
+        Task<List<BatteryServicePackage>> FilterPackagesAsync(string? search, bool? isActive);
+
         Task<BatteryServicePackage?> GetByIdAsync(int id);
         Task CreateAsync(BatteryServicePackage pkg);
         Task UpdateAsync(BatteryServicePackage pkg);

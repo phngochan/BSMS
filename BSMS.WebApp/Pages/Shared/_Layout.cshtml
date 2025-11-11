@@ -69,6 +69,11 @@
                                     <i class="bi bi-calendar-check me-1"></i> Lịch đặt
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/RentBattery">
+                                    <i class="bi bi-calendar-check"></i> Đăng ký gói thuê pin
+                                </a>
+                            </li>
                         }
                         @if (isAuthenticated && (userRole == UserRole.StationStaff || userRole == UserRole.Admin))
                         {
@@ -93,6 +98,16 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-area="" asp-page="/Admin/Vehicles/Index">
                                     <i class="bi bi-car-front me-1"></i> Quản lý xe
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Admin/Packages/Index">
+                                    <i class="bi bi-box-seam me-1"></i> Quản lý gói thuê pin
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Admin/Payments/Index">
+                                    <i class="bi bi-credit-card me-1"></i> Quản lý thanh toán
                                 </a>
                             </li>
                         }
