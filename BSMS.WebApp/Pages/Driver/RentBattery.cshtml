@@ -1,0 +1,60 @@
+﻿@page
+@using BSMS.BusinessObjects.Enums
+@model BSMS.WebApp.Pages.Driver.RentBatteryModel
+@{
+    ViewData["Title"] = "Gói thuê pin";
+}
+
+<!-- THÔNG BÁO -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<h2 class="mb-4">@ViewData["Title"]</h2>
+
+<div class="row">
+    @foreach (var pkg in Model.Packages)
+    {
+        var isPurchased = Model.PurchasedPackages.Any(p => p.PackageId == pkg.PackageId);
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm @(isPurchased ? "border-success" : "")">
+                <div class="card-body text-center position-relative">
+
+                    @if (isPurchased)
+                    {
+                        <div class="ribbon ribbon-top-right">
+                            <span class="bg-success">ĐÃ MUA</span>
+                        </div>
+                    }
+
+                    <h5 class="card-title text-primary">@pkg.Name</h5>
+                    <h4 class="text-danger fw-bold">@pkg.Price đ</h4>
+                    <p class="text-muted small">Thời hạn: @pkg.DurationDays ngày</p>
+
+                    @if (isPurchased)
+                    {
+                        <form method="post" asp-page-handler="Renew">
+                            <input type="hidden" name="packageId" value="@pkg.PackageId" />
+                            <button type="submit" class="btn btn-warning btn-lg w-100">
+                                Gia hạn gói
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Buy">
+                            <input type="hidden" name="packageId" value="@pkg.PackageId" />
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                Mua ngay
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

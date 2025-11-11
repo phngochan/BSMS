@@ -1,0 +1,38 @@
+﻿@page
+@model BSMS.WebApp.Pages.Driver.VnpayReturnModel
+@{
+    ViewData["Title"] = "Kết quả thanh toán";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body text-center p-5">
+                    @if (Model.IsSuccess)
+                    {
+                        <div class="mb-4">
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                        </div>
+                        <h3 class="text-success mb-3">Thanh toán thành công!</h3>
+                    }
+                    else
+                    {
+                        <div class="mb-4">
+                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 5rem;"></i>
+                        </div>
+                        <h3 class="text-danger mb-3">Thanh toán thất bại</h3>
+                    }
+
+                    <p class="lead">@Model.Message</p>
+
+                    <div class="mt-4">
+                        <a href="/Driver/Subscription" class="btn btn-primary btn-lg">
+                            <i class="bi bi-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

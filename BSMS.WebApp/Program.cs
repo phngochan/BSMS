@@ -7,8 +7,10 @@ using BSMS.DAL.Context;
 using BSMS.DAL.Init;
 using BSMS.DAL.Repositories;
 using BSMS.DAL.Repositories.Implementations;
+using BSMS.WebApp.Hubs;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,8 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserActivityLogRepository, UserActivityLogRepository>();
 builder.Services.AddScoped<IAlertRepository, AlertRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPackageRepository, PackageRepository>();
 builder.Services.AddScoped<IChangingStationRepository, ChangingStationRepository>();
 builder.Services.AddScoped<IBatteryRepository, BatteryRepository>();
 builder.Services.AddScoped<IBatteryTransferRepository, BatteryTransferRepository>();
@@ -46,6 +50,9 @@ builder.Services.AddScoped<IUserActivityLogService, UserActivityLogService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IUserPackageService, UserPackageService>();
+builder.Services.AddScoped<IVnpayService, VnpayService>();
 builder.Services.AddScoped<IChangingStationService, ChangingStationService>();
 builder.Services.AddScoped<IBatteryService, BatteryService>();
 builder.Services.AddScoped<IBatteryTransferService, BatteryTransferService>();
@@ -62,7 +69,7 @@ builder.Services.AddHostedService<ReservationAutoCancelService>();
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
-
+builder.Services.AddHttpContextAccessor();
 // Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -119,5 +126,7 @@ app.UseSession();
 
 app.MapRazorPages();
 app.MapHub<BSMS.WebApp.Hubs.NotificationHub>("/notificationHub");
+app.MapHub<PaymentHub>("/paymentHub");
+
 
 app.Run();

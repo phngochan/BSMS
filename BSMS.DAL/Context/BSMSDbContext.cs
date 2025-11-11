@@ -1,5 +1,7 @@
-﻿using BSMS.BusinessObjects.Models;
+﻿using BSMS.BusinessObjects.Enums;
+using BSMS.BusinessObjects.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace BSMS.DAL.Context;
 public class BSMSDbContext : DbContext
@@ -185,8 +187,8 @@ public class BSMSDbContext : DbContext
                   .HasConversion<string>()
                   .HasMaxLength(50);
             entity.Property(e => e.Status)
-                  .HasConversion<string>()
-                  .HasMaxLength(50);
+             .HasConversion<string>()
+             .HasMaxLength(50);
 
             entity.HasOne(p => p.User)
                   .WithMany(u => u.Payments)
