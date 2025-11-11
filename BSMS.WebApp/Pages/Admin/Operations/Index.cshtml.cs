@@ -328,6 +328,20 @@ public class IndexModel : BasePageModel
             return Page();
         }
 
+        var nowUtc = DateTime.UtcNow;
+        var transferTimeUtc = nowUtc;
+
+        if (TransferForm.TransferTime.HasValue)
+        {
+            transferTimeUtc = NormalizeToUtc(TransferForm.TransferTime.Value);
+            if (transferTimeUtc <= nowUtc)
+            {
+                ModelState.AddModelError($"{nameof(TransferForm)}.{nameof(TransferForm.TransferTime)}", "Thời gian điều phối phải lớn hơn thời điểm hiện tại.");
+                await LoadReferenceDataAsync();
+                return Page();
+            }
+        }
+
         try
         {
             // ✅ THÊM VALIDATION CHO TRƯỜNG HỢP TẠO MỚI
@@ -366,7 +380,7 @@ public class IndexModel : BasePageModel
                     BatteryId = TransferForm.BatteryId,
                     FromStationId = TransferForm.FromStationId,
                     ToStationId = TransferForm.ToStationId,
-                    TransferTime = TransferForm.TransferTime ?? DateTime.UtcNow,
+                    TransferTime = transferTimeUtc,
                     Status = TransferForm.Status
                 });
 
@@ -381,7 +395,7 @@ public class IndexModel : BasePageModel
                     BatteryId = TransferForm.BatteryId,
                     FromStationId = TransferForm.FromStationId,
                     ToStationId = TransferForm.ToStationId,
-                    TransferTime = TransferForm.TransferTime ?? DateTime.UtcNow,
+                    TransferTime = transferTimeUtc,
                     Status = TransferForm.Status
                 });
 
@@ -460,6 +474,37 @@ public class IndexModel : BasePageModel
             return Page();
         }
 
+        var nowUtc = DateTime.UtcNow;
+        DateTime assignedAtUtc = StationStaffForm.AssignedAt.HasValue
+            ? NormalizeToUtc(StationStaffForm.AssignedAt.Value)
+            : nowUtc;
+
+        if (StationStaffForm.StaffId == 0 && assignedAtUtc <= nowUtc)
+        {
+            ModelState.AddModelError($"{nameof(StationStaffForm)}.{nameof(StationStaffForm.AssignedAt)}", "Thời điểm phân bổ phải nằm trong tương lai.");
+            await LoadReferenceDataAsync();
+            return Page();
+        }
+
+        var station = await _stationService.GetStationAsync(StationStaffForm.StationId);
+        if (station == null || station.Status != StationStatus.Active)
+        {
+            ModelState.AddModelError($"{nameof(StationStaffForm)}.{nameof(StationStaffForm.StationId)}", "Chỉ có thể phân bổ tới trạm đang hoạt động.");
+            await LoadReferenceDataAsync();
+            return Page();
+        }
+
+        var existingAssignment = await _stationStaffService.GetAssignmentForUserAsync(StationStaffForm.UserId);
+        if (existingAssignment != null && (StationStaffForm.StaffId == 0 || existingAssignment.StaffId != StationStaffForm.StaffId))
+        {
+            var conflictMessage = existingAssignment.StationId == StationStaffForm.StationId
+                ? "Nhân viên này đã được phân bổ cho trạm này."
+                : $"Nhân viên này đang được phân bổ tại trạm #{existingAssignment.StationId}.";
+            ModelState.AddModelError($"{nameof(StationStaffForm)}.{nameof(StationStaffForm.UserId)}", conflictMessage);
+            await LoadReferenceDataAsync();
+            return Page();
+        }
+
         try
         {
             if (StationStaffForm.StaffId == 0)
@@ -468,7 +513,7 @@ public class IndexModel : BasePageModel
                 {
                     UserId = StationStaffForm.UserId,
                     StationId = StationStaffForm.StationId,
-                    AssignedAt = DateTime.UtcNow
+                    AssignedAt = assignedAtUtc
                 });
 
                 TempData["SuccessMessage"] = "Đã phân công nhân sự.";
@@ -481,7 +526,7 @@ public class IndexModel : BasePageModel
                     StaffId = StationStaffForm.StaffId,
                     UserId = StationStaffForm.UserId,
                     StationId = StationStaffForm.StationId,
-                    AssignedAt = StationStaffForm.AssignedAt ?? DateTime.UtcNow
+                    AssignedAt = assignedAtUtc
                 });
 
                 TempData["SuccessMessage"] = "Đã cập nhật phân công nhân sự.";
@@ -900,6 +945,16 @@ public class IndexModel : BasePageModel
         StaffUserCreateForm ??= new StaffUserCreateInput();
     }
 
+    private static DateTime NormalizeToUtc(DateTime dateTime)
+    {
+        return dateTime.Kind switch
+        {
+            DateTimeKind.Utc => dateTime,
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
+            _ => dateTime.ToUniversalTime()
+        };
+    }
+
     private bool ValidateForm<TModel>(TModel formModel, string prefix)
     {
         ModelState.Clear();
@@ -964,7 +1019,6 @@ public class IndexModel : BasePageModel
         public DateTime? NextReservationTime { get; set; }
         public bool NeedsAttention => PendingReservations > 0 && FullBatteries == 0;
     }
-
     public class StationInput
     {
         public int StationId { get; set; }
