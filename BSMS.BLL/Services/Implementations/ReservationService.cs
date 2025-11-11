@@ -2,6 +2,7 @@ using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Repositories;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BSMS.BLL.Services.Implementations;
 
@@ -11,6 +12,7 @@ public class ReservationService : IReservationService
     private readonly IStationService _stationService;
     private readonly IBatteryService _batteryService;
     private readonly IUserService _userService;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<ReservationService> _logger;
 
     public ReservationService(
@@ -18,12 +20,14 @@ public class ReservationService : IReservationService
         IStationService stationService,
         IBatteryService batteryService,
         IUserService userService,
+        IServiceProvider serviceProvider,
         ILogger<ReservationService> logger)
     {
         _reservationRepo = reservationRepo;
         _stationService = stationService;
         _batteryService = batteryService;
         _userService = userService;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -86,6 +90,14 @@ public class ReservationService : IReservationService
 
             await _reservationRepo.CreateAsync(reservation);
 
+            // Tạo swap transaction với status Pending
+            var swapTransactionService = _serviceProvider.GetRequiredService<ISwapTransactionService>();
+            await swapTransactionService.CreatePendingSwapTransactionAsync(
+                userId,
+                vehicleId,
+                stationId,
+                selectedBattery.BatteryId);
+
             _logger.LogInformation("Reservation created: UserId={UserId}, StationId={StationId}, BatteryId={BatteryId}, TimeSlot={TimeSlot}",
                 userId, stationId, selectedBattery.BatteryId, timeSlot);
 
@@ -140,6 +152,17 @@ public class ReservationService : IReservationService
                 _logger.LogInformation("Battery status reset to Full: BatteryId={BatteryId}", reservation.BatteryId.Value);
             }
 
+            // Cập nhật swap transaction thành Cancelled
+            if (reservation.BatteryId.HasValue)
+            {
+                var swapTransactionService = _serviceProvider.GetRequiredService<ISwapTransactionService>();
+                await swapTransactionService.CancelSwapTransactionAsync(
+                    reservation.UserId,
+                    reservation.VehicleId,
+                    reservation.StationId,
+                    reservation.BatteryId.Value);
+            }
+
             _logger.LogInformation("Reservation cancelled: {ReservationId} by User {UserId}",
                 reservationId, userId);
 
@@ -177,6 +200,14 @@ public class ReservationService : IReservationService
             {
                 await _batteryService.UpdateBatteryStatusAsync(reservation.BatteryId.Value, BatteryStatus.Full);
                 _logger.LogInformation("Battery status reset to Full: BatteryId={BatteryId}", reservation.BatteryId.Value);
+
+                // Cập nhật swap transaction thành Cancelled
+                var swapTransactionService = _serviceProvider.GetRequiredService<ISwapTransactionService>();
+                await swapTransactionService.CancelSwapTransactionAsync(
+                    reservation.UserId,
+                    reservation.VehicleId,
+                    reservation.StationId,
+                    reservation.BatteryId.Value);
             }
 
             _logger.LogInformation("Reservation cancelled by staff: {ReservationId}, UserId: {UserId}",
@@ -305,6 +336,14 @@ public class ReservationService : IReservationService
                 {
                     await _batteryService.UpdateBatteryStatusAsync(reservation.BatteryId.Value, BatteryStatus.Full);
                     _logger.LogInformation("Battery status reset to Full after auto-cancel: BatteryId={BatteryId}", 
+                        reservation.BatteryId.Value);
+
+                    // Cập nhật swap transaction thành Cancelled
+                    var swapTransactionService = _serviceProvider.GetRequiredService<ISwapTransactionService>();
+                    await swapTransactionService.CancelSwapTransactionAsync(
+                        reservation.UserId,
+                        reservation.VehicleId,
+                        reservation.StationId,
                         reservation.BatteryId.Value);
                 }
 

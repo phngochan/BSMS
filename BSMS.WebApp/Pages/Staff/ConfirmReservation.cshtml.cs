@@ -120,67 +120,8 @@ public class ConfirmReservationModel : BasePageModel
 
     public async Task<IActionResult> OnPostCompleteAsync(int id)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!int.TryParse(userIdClaim, out var staffUserId))
-        {
-            ErrorMessage = "Không tìm thấy người dùng";
-            return RedirectToPage(new { id });
-        }
-
-        var reservation = await _reservationService.GetReservationDetailsAsync(id);
-        if (reservation == null)
-        {
-            ErrorMessage = "Không tìm thấy đặt chỗ";
-            return RedirectToPage(new { id });
-        }
-
-        var userId = reservation.UserId;
-        var stationId = reservation.StationId;
-        var stationName = reservation.Station?.Name ?? "trạm";
-
-        var result = await _reservationService.CompleteReservationAsync(id);
-
-        if (result)
-        {
-            await LogActivityAsync("COMPLETE_RESERVATION",
-                $"Nhân viên đã hoàn thành đặt chỗ #{id} của khách hàng {reservation.User?.FullName} (UserId: {userId}) tại trạm {stationName}");
-
-            try
-            {
-                // Gửi notification cho user (khách hàng)
-                await _hubContext.Clients.User(userId.ToString()).SendAsync("CompleteReservation", new
-                {
-                    reservationId = id,
-                    message = $"Đặt chỗ tại {stationName} đã được nhân viên hoàn thành",
-                    type = "success",
-                    timestamp = DateTime.UtcNow,
-                    stationName = stationName
-                });
-
-                // Gửi notification cho nhân viên trạm
-                await _hubContext.Clients.Group($"Station_{stationId}").SendAsync("CompleteReservation", new
-                {
-                    reservationId = id,
-                    message = $"Đặt chỗ #{id} đã hoàn thành",
-                    type = "info",
-                    timestamp = DateTime.UtcNow
-                });
-
-                _logger.LogInformation("SignalR notification sent for completed reservation {ReservationId} to user {UserId}", id, userId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send SignalR notification for completed reservation {ReservationId}", id);
-            }
-
-            SuccessMessage = "Đã hoàn thành đặt chỗ thành công!";
-        }
-        else
-        {
-            ErrorMessage = "Không thể hoàn thành đặt chỗ. Vui lòng kiểm tra lại trạng thái đặt chỗ.";
-        }
-
-        return RedirectToPage(new { id });
+        // Redirect đến trang chọn pin để tạo swap transaction
+        return RedirectToPage("/Staff/CompleteSwap", new { id });
     }
 }
 
