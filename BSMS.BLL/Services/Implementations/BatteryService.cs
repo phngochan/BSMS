@@ -27,11 +27,6 @@ public class BatteryService : IBatteryService
         return await _batteryRepository.GetBatteriesWithStationAsync();
     }
 
-    public async Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId)
-    {
-        return await _batteryRepository.GetByStationAsync(stationId);
-    }
-
     public async Task<IEnumerable<Battery>> GetBatteriesByStatusAsync(BatteryStatus status)
     {
         return await _batteryRepository.GetByStatusAsync(status);
@@ -124,6 +119,19 @@ public class BatteryService : IBatteryService
                 "Failed to get available batteries for StationId: {StationId}, Model: {Model}",
                 stationId,
                 model);
+            throw;
+        }
+    }
+
+    public async Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId)
+    {
+        try
+        {
+            return await _batteryRepository.GetBatteriesByStationAsync(stationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get batteries for StationId: {StationId}", stationId);
             throw;
         }
     }

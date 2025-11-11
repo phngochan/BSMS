@@ -8,8 +8,31 @@ namespace BSMS.DAL.Repositories.Implementations;
 
 public class SwapTransactionRepository : GenericRepository<SwapTransaction>, ISwapTransactionRepository
 {
-    public SwapTransactionRepository(BSMSDbContext context) : base(context)
+    public SwapTransactionRepository(BSMSDbContext context) : base(context) { }
+
+    public async Task<IEnumerable<SwapTransaction>> GetTransactionsByUserIdAsync(int userId)
     {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(st => st.Station)
+            .Include(st => st.BatteryTaken)
+            .Include(st => st.BatteryReturned)
+            .Include(st => st.Vehicle)
+            .Where(st => st.UserId == userId)
+            .OrderByDescending(st => st.SwapTime)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<SwapTransaction>> GetTransactionsByStationIdAsync(int stationId)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(st => st.User)
+            .Include(st => st.BatteryTaken)
+            .Include(st => st.BatteryReturned)
+            .Where(st => st.StationId == stationId)
+            .OrderByDescending(st => st.SwapTime)
+            .ToListAsync();
     }
 
     public async Task<int> CountDailyTransactionsAsync(DateTime date)
@@ -67,7 +90,7 @@ public class SwapTransactionRepository : GenericRepository<SwapTransaction>, ISw
     public async Task<SwapTransaction?> GetTransactionWithDetailsAsync(int transactionId)
     {
         return await _dbSet
-            .AsNoTracking()
+        .AsNoTracking()
             .Include(t => t.User)
             .Include(t => t.Station)
             .Include(t => t.BatteryTaken)
@@ -75,6 +98,22 @@ public class SwapTransactionRepository : GenericRepository<SwapTransaction>, ISw
             .Include(t => t.Vehicle)
             .Include(t => t.Payment)
             .FirstOrDefaultAsync(t => t.TransactionId == transactionId);
+    }
+
+    public async Task<SwapTransaction?> GetPendingTransactionAsync(int userId, int vehicleId, int stationId, int batteryTakenId)
+    {
+        return await _dbSet
+            .Include(st => st.User)
+            .Include(st => st.Vehicle)
+            .Include(st => st.Station)
+            .Include(st => st.BatteryTaken)
+            .Include(st => st.BatteryReturned)
+            .FirstOrDefaultAsync(st =>
+                st.UserId == userId &&
+                st.VehicleId == vehicleId &&
+                st.StationId == stationId &&
+                st.BatteryTakenId == batteryTakenId &&
+                st.Status == SwapStatus.Pending);
     }
 
     public async Task<IDictionary<int, DateTime>> GetLatestCompletedSwapTimesAsync()

@@ -48,6 +48,7 @@ public class UserRepository : GenericRepository<User>, IUserRepository
         return await _dbSet
             .AsNoTracking()
             .Include(u => u.Vehicles)
+            .Include(u => u.StationStaffs)
             .FirstOrDefaultAsync(u => u.UserId == userId);
     }
 

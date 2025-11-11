@@ -16,4 +16,6 @@ public interface IUserService
     Task<int> CountUsersAsync();
     Task<User?> GetUserWithTransactionsAsync(int userId);
     Task<User?> GetUserWithVehiclesAsync(int userId);
+    Task<IEnumerable<User>> GetAllUsersAsync();
+    Task<User?> GetUserByIdAsync(int userId);
 }

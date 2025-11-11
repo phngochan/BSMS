@@ -132,5 +132,13 @@ public class BatteryRepository : GenericRepository<Battery>, IBatteryRepository
         await Task.CompletedTask;
         return true;
     }
+    public async Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(b => b.StationId == stationId)
+            .OrderBy(b => b.Model)
+            .ThenBy(b => b.BatteryId)
+            .ToListAsync();
+    }
 }
-

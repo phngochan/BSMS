@@ -1,0 +1,61 @@
+@page "{id:int}"
+@using BSMS.WebApp.Helpers
+@model BSMS.WebApp.Pages.Admin.Vehicles.DeleteModel
+@{
+    ViewData["Title"] = "Xóa Xe";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-0">
+                <i class="bi bi-trash text-danger"></i> Xóa Xe
+            </h2>
+        </div>
+    </div>
+
+    @if (Model.Vehicle != null)
+    {
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-sm border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">Xác Nhận Xóa Xe</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Cảnh báo:</strong> Bạn có chắc chắn muốn xóa xe này? Hành động này không thể hoàn tác.
+                        </div>
+
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-2">Thông Tin Xe</h6>
+                            <p class="mb-1"><strong>VIN:</strong> @Model.Vehicle.Vin</p>
+                            <p class="mb-1"><strong>Chủ Xe:</strong> @Model.Vehicle.UserName</p>
+                            <p class="mb-1"><strong>Loại Pin:</strong> @Model.Vehicle.BatteryModel</p>
+                            <p class="mb-1"><strong>Kiểu Pin:</strong> @Model.Vehicle.BatteryType</p>
+                            <p class="mb-0"><strong>Ngày Tạo:</strong> @Model.Vehicle.CreatedAt.ToLocalDateString()</p>
+                        </div>
+
+                        <form method="post">
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a asp-page="Index" class="btn btn-outline-secondary">Hủy</a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash"></i> Xóa Xe
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-danger">
+            Không tìm thấy xe hoặc bạn không có quyền xóa xe này.
+        </div>
+        <a asp-page="Index" class="btn btn-outline-secondary">Quay Lại</a>
+    }
+</div>
+

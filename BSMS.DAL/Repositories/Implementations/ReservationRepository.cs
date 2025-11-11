@@ -18,6 +18,7 @@ public class ReservationRepository : GenericRepository<Reservation>, IReservatio
             .Include(r => r.Station)
             .Include(r => r.User)
             .Include(r => r.Battery)
+            .Include(r => r.Vehicle)
             .Where(r => r.UserId == userId
                 && (r.Status == ReservationStatus.Active))
             .OrderByDescending(r => r.CreatedAt)
@@ -85,6 +86,13 @@ public class ReservationRepository : GenericRepository<Reservation>, IReservatio
     {
         return await _dbSet
             .AnyAsync(r => r.UserId == userId
+                && (r.Status == ReservationStatus.Active));
+    }
+
+    public async Task<bool> HasActiveReservationByVehicleAsync(int vehicleId)
+    {
+        return await _dbSet
+            .AnyAsync(r => r.VehicleId == vehicleId
                 && (r.Status == ReservationStatus.Active));
     }
 }

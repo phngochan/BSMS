@@ -71,6 +71,20 @@ public class VerifyOtpModel : BasePageModel
                 return RedirectToPage("/Auth/Register");
             }
 
+            if (result.User != null && _activityLogService != null)
+            {
+                try
+                {
+                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                    await _activityLogService.LogActivityAsync(
+                        result.User.UserId, 
+                        "REGISTER", 
+                        $"Người dùng mới đăng ký: {result.User.Username} ({result.User.Email})", 
+                        ipAddress);
+                }
+                catch { }
+            }
+
             HttpContext.Session.ClearPendingRegistration();
             TempData["SuccessMessage"] = "Email verified. Registration completed. Please login.";
             return RedirectToPage("/Auth/Login");

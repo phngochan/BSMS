@@ -26,6 +26,12 @@
                     var userRole = Enum.TryParse<UserRole>(roleString, out var parsedRole)
                     ? parsedRole
                     : (UserRole?)null;
+
+                    // Determine active nav items for Driver
+                    var currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+                    var isDriverDashboardActive = currentPath.Contains("/driver/index") || currentPath == "/driver" || currentPath == "/driver/";
+                    var isDriverStationsActive = currentPath.Contains("/driver/findstations");
+                    var isDriverReservationsActive = currentPath.Contains("/driver/myreservations");
                 }
                 <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="Index">
                     <div class="ev-logo">
@@ -44,57 +50,48 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    @{
-                        var currentPath = Context.Request.Path.Value?.ToLowerInvariant() ?? string.Empty;
-                        var isDriverDashboardActive = currentPath == "/driver" || currentPath.StartsWith("/driver/index");
-                        var isDriverStationsActive = currentPath.StartsWith("/driver/findstations") || currentPath.StartsWith("/driver/stationdetails");
-                        var isDriverReservationsActive = currentPath.StartsWith("/driver/myreservations") || currentPath.StartsWith("/driver/cancelreservation");
-                    }
                     <ul class="navbar-nav flex-grow-1 d-flex justify-content-center">
-                        @if (isAuthenticated && userRole.HasValue)
+                        @if (isAuthenticated && userRole == UserRole.Driver)
                         {
-                            if (userRole == UserRole.Admin)
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link@(currentPath.StartsWith("/admin/dashboard") ? " active" : string.Empty)" asp-area="" asp-page="/Admin/Dashboard">
-                                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link@(currentPath.StartsWith("/admin/operations") ? " active" : string.Empty)" asp-area="" asp-page="/Admin/Operations/Index">
-                                        <i class="bi bi-diagram-3 me-1"></i> Operations & Monitoring
-                                    </a>
-                                </li>
-                            }
-                            else if (userRole == UserRole.StationStaff)
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link@(currentPath.StartsWith("/staff") ? " active" : string.Empty)" asp-area="" asp-page="/Staff/Index">
-                                        <i class="bi bi-clipboard-check me-1"></i> Shift workspace
-                                    </a>
-                                </li>
-                            }
-                            else if (userRole == UserRole.Driver)
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link@(isDriverDashboardActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/Index">
-                                        <i class="bi bi-speedometer2 me-1"></i> Driver dashboard
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link@(isDriverStationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/FindStations">
-                                        <i class="bi bi-geo-alt me-1"></i> Find stations
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/MyReservations">
-                                        <i class="bi bi-calendar-check me-1"></i> Reservations
-                                    </a>
-                                </li>
-                            }
+                            <li class="nav-item">
+                                <a class="nav-link@(isDriverDashboardActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/Index">
+                                    <i class="bi bi-speedometer2 me-1"></i> Bảng điều khiển
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link@(isDriverStationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/FindStations">
+                                    <i class="bi bi-geo-alt me-1"></i> Tìm trạm
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/MyReservations">
+                                    <i class="bi bi-calendar-check me-1"></i> Lịch đặt
+                                </a>
+                            </li>
+                        }
+                        @if (isAuthenticated && (userRole == UserRole.StationStaff || userRole == UserRole.Admin))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Staff/Index">
+                                    <i class="bi bi-speedometer2 me-1"></i> Bảng điều khiển
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Staff/ConfirmReservation">
+                                    <i class="bi bi-check-circle me-1"></i> Xác nhận đặt chỗ
+                                </a>
+                            </li>
+                        }
+                        @if (isAuthenticated && userRole == UserRole.Admin)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Admin/Vehicles/Index">
+                                    <i class="bi bi-car-front me-1"></i> Quản lý xe
+                                </a>
+                            </li>
                         }
                         <li class="nav-item">
-                            <a class="nav-link@(currentPath.StartsWith("/privacy") ? " active" : string.Empty)" asp-area="" asp-page="/Privacy">
+                            <a class="nav-link" asp-area="" asp-page="/Privacy">
                                 <i class="bi bi-shield-lock me-1"></i> Privacy
                             </a>
                         </li>
@@ -117,9 +114,9 @@
                                     </div>
 
                                     <!-- User icon -->
-                                    <button type="button" class="btn-user rounded-circle">
+                                    <a asp-page="/Profile" class="btn-user rounded-circle text-decoration-none" style="display: inline-flex; align-items: center; justify-content: center;">
                                         <i class="bi bi-person fs-5"></i>
-                                    </button>
+                                    </a>
 
                                     <!-- Logout -->
                                     <form method="get" asp-page="/Auth/Logout" class="m-0">
@@ -170,6 +167,7 @@
     {
         <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
         <script src="~/js/signalr-client.js" asp-append-version="true"></script>
+        <script src="~/js/reservation-notifications.js" asp-append-version="true"></script>
     }
 
     <!-- Request location permission on page load (only for authenticated users) -->

@@ -52,7 +52,22 @@ public class ResetPasswordModel : BasePageModel
         }
 
         var newPasswordHash = _passwordHasher.HashPassword(Input.Password);
+        var user = await _userService.GetUserByEmailAsync(email);
         await _userService.UpdatePasswordAsync(email, newPasswordHash);
+
+        if (user != null && _activityLogService != null)
+        {
+            try
+            {
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                await _activityLogService.LogActivityAsync(
+                    user.UserId, 
+                    "RESET_PASSWORD", 
+                    $"Đã đặt lại mật khẩu cho email: {email}", 
+                    ipAddress);
+            }
+            catch { }
+        }
 
         // cleanup session
         HttpContext.Session.ClearResetVerified();

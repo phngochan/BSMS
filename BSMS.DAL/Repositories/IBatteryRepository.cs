@@ -7,6 +7,7 @@ namespace BSMS.DAL.Repositories;
 
 public interface IBatteryRepository : IGenericRepository<Battery>
 {
+    Task<IEnumerable<Battery>> GetBatteriesByStationAsync(int stationId);
     Task<IEnumerable<Battery>> GetBatteriesWithStationAsync();
     Task<IEnumerable<Battery>> GetByStationAsync(int stationId);
     Task<IEnumerable<Battery>> GetByStatusAsync(BatteryStatus status);

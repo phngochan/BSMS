@@ -1,4 +1,5 @@
 using BSMS.BLL.Services;
+using BSMS.BLL.Services.Background;
 using BSMS.BLL.Services.Implementations;
 using BSMS.BusinessObjects.Configurations;
 using BSMS.DAL.Base;
@@ -36,6 +37,7 @@ builder.Services.AddScoped<ISwapTransactionRepository, SwapTransactionRepository
 builder.Services.AddScoped<IConfigRepository, ConfigRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IStationRepository, StationRepository>();
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -53,7 +55,10 @@ builder.Services.AddScoped<ISwapTransactionService, SwapTransactionService>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IStationService, StationService>();
+builder.Services.AddScoped<IVehicleService, VehicleService>();
 
+// Background Services
+builder.Services.AddHostedService<ReservationAutoCancelService>();
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();

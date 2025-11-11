@@ -1,0 +1,255 @@
+@page
+@using BSMS.WebApp.Helpers
+@model BSMS.WebApp.Pages.ProfileModel
+@{
+    ViewData["Title"] = "Hồ Sơ Của Tôi";
+}
+
+@if (Model.Profile == null)
+{
+    <div class="container-fluid py-4">
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Không tìm thấy thông tin người dùng.
+        </div>
+    </div>
+}
+else
+{
+    <div class="container-fluid py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-0">
+                    <i class="bi bi-person-circle text-primary"></i> Hồ Sơ Của Tôi
+                </h2>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Thông tin cá nhân -->
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person"></i> Thông Tin Cá Nhân
+                        </h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="bi bi-person-circle" style="font-size: 4rem; color: var(--primary);"></i>
+                        </div>
+                        <h4 class="mb-1">@Model.Profile.FullName</h4>
+                        <p class="text-muted mb-3">@Model.Profile.Username</p>
+                        <hr>
+                        <div class="text-start">
+                            <div class="mb-2">
+                                <i class="bi bi-envelope text-primary"></i>
+                                <strong>Email:</strong> @Model.Profile.Email
+                            </div>
+                            <div class="mb-2">
+                                <i class="bi bi-telephone text-primary"></i>
+                                <strong>Số điện thoại:</strong> @Model.Profile.Phone
+                            </div>
+                            <div class="mb-2">
+                                <i class="bi bi-shield-check text-primary"></i>
+                                <strong>Vai trò:</strong> @Model.Profile.Role
+                            </div>
+                            <div class="mb-2">
+                                <i class="bi bi-calendar text-primary"></i>
+                                <strong>Tham gia:</strong> @Model.Profile.CreatedAt.ToLocalDateString()
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thống kê -->
+                @if (Model.Profile.Role == "Driver")
+                {
+                    <div class="card shadow-sm mt-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-graph-up"></i> Thống Kê
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6 mb-3">
+                                    <div class="border-end">
+                                        <h3 class="text-primary mb-0">@Model.Profile.TotalSwaps</h3>
+                                        <small class="text-muted">Tổng Giao Dịch</small>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <h3 class="text-success mb-0">@Model.Profile.CompletedSwaps</h3>
+                                    <small class="text-muted">Đã Hoàn Thành</small>
+                                </div>
+                                <div class="col-12">
+                                    <hr>
+                                    <h4 class="text-warning mb-0">@Model.Profile.TotalSpent.ToString("N0") đ</h4>
+                                    <small class="text-muted">Tổng Chi Phí</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Danh sách xe (chỉ hiển thị cho Driver) -->
+            @if (Model.Profile.Role == "Driver")
+            {
+                <div class="col-lg-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-car-front"></i> Xe Của Tôi (@Model.Profile.Vehicles.Count)
+                            </h5>
+                            @if (Model.Profile.Vehicles.Any())
+                            {
+                                <a asp-page="/Driver/MyVehicles" class="btn btn-sm btn-light">
+                                    <i class="bi bi-arrow-right"></i> Xem Tất Cả
+                                </a>
+                            }
+                        </div>
+                        <div class="card-body">
+                            @if (Model.Profile.Vehicles.Any())
+                            {
+                                <div class="list-group list-group-flush">
+                                    @foreach (var vehicle in Model.Profile.Vehicles.Take(3))
+                                    {
+                                        <div class="list-group-item px-0">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1">VIN: @vehicle.Vin</h6>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-battery-charging"></i> @vehicle.BatteryModel - @vehicle.BatteryType
+                                                    </small>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-calendar"></i> @vehicle.CreatedAt.ToLocalDateString()
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                @if (Model.Profile.Vehicles.Count > 3)
+                                {
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">Và @(Model.Profile.Vehicles.Count - 3) xe khác...</small>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center py-3">
+                                    <i class="bi bi-car-front fs-1 text-muted"></i>
+                                    <p class="text-muted mt-2 small">Chưa có xe nào</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Lịch sử giao dịch -->
+            @if (Model.Profile.Role == "Driver")
+            {
+                <div class="col-lg-@(Model.Profile.Vehicles.Any() ? "4" : "8") mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clock-history"></i> Lịch Sử Đổi Pin (@Model.Profile.SwapTransactions.Count)
+                            </h5>
+                            @if (Model.Profile.SwapTransactions.Any())
+                            {
+                                <a asp-page="/Driver/SwapHistory" class="btn btn-sm btn-dark">
+                                    <i class="bi bi-arrow-right"></i> Xem Tất Cả
+                                </a>
+                            }
+                        </div>
+                        <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                            @if (Model.Profile.SwapTransactions.Any())
+                            {
+                                <div class="list-group list-group-flush">
+                                    @foreach (var transaction in Model.Profile.SwapTransactions.Take(5))
+                                    {
+                                        <div class="list-group-item px-0 mb-2 border rounded">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="mb-1">
+                                                        <i class="bi bi-geo-alt"></i> @transaction.StationName
+                                                    </h6>
+                                                    <small class="text-muted">@transaction.SwapTime.ToLocalDateTimeString()</small>
+                                                </div>
+                                                <span class="badge @GetStatusBadgeClass(transaction.Status)">
+                                                    @transaction.Status
+                                                </span>
+                                            </div>
+                                            <div class="small">
+                                                <div class="mb-1">
+                                                    <i class="bi bi-car-front text-primary"></i> 
+                                                    <strong>Xe:</strong> @transaction.VehicleVin
+                                                </div>
+                                                <div class="mb-1">
+                                                    <i class="bi bi-arrow-down-circle text-success"></i> 
+                                                    <strong>Pin nhận:</strong> @transaction.BatteryTakenModel 
+                                                    @if (!string.IsNullOrEmpty(transaction.BatteryTakenSerialNumber))
+                                                    {
+                                                        <span class="text-muted">(@transaction.BatteryTakenSerialNumber)</span>
+                                                    }
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(transaction.BatteryReturnedModel))
+                                                {
+                                                    <div class="mb-1">
+                                                        <i class="bi bi-arrow-up-circle text-danger"></i> 
+                                                        <strong>Pin trả:</strong> @transaction.BatteryReturnedModel
+                                                        @if (!string.IsNullOrEmpty(transaction.BatteryReturnedSerialNumber))
+                                                        {
+                                                            <span class="text-muted">(@transaction.BatteryReturnedSerialNumber)</span>
+                                                        }
+                                                    </div>
+                                                }
+                                                @if (transaction.TotalCost > 0)
+                                                {
+                                                    <div class="mt-2">
+                                                        <strong class="text-warning">Chi phí: @transaction.TotalCost.ToString("N0") đ</strong>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                @if (Model.Profile.SwapTransactions.Count > 5)
+                                {
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">Và @(Model.Profile.SwapTransactions.Count - 5) giao dịch khác...</small>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center py-4">
+                                    <i class="bi bi-clock-history fs-1 text-muted"></i>
+                                    <p class="text-muted mt-2">Chưa có giao dịch nào</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Completed" => "bg-success",
+            "Cancelled" => "bg-danger",
+            "Pending" => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+}
+

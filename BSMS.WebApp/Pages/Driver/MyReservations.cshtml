@@ -50,7 +50,7 @@
                                             <i class="bi bi-hourglass-split text-primary fs-4 me-2"></i>
                                             <div>
                                                 <small class="text-muted d-block">Thời Gian Còn Lại</small>
-                                                <strong class="countdown" data-target="@Model.ActiveReservation.ScheduledTime.ToString("o")">
+                                                <strong class="countdown" data-target="@Model.ActiveReservation.ScheduledTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss")">
                                                     Calculating...
                                                 </strong>
                                             </div>
@@ -174,45 +174,76 @@
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
-    @if (Model.ActiveReservation != null)
-    {
-        var qrUrl = Url.Page("/Staff/ConfirmReservation", null, new { id = Model.ActiveReservation.ReservationId }, Request.Scheme, Request.Host.Value);
-        <text>
-        new QRCode(document.getElementById("qrcode-@Model.ActiveReservation.ReservationId"), {
-            text: "@qrUrl",
-            width: 150,
-            height: 150
-        });
-        </text>
-    }
-
-    // Countdown timer
-    function updateCountdown() {
-        document.querySelectorAll('.countdown').forEach(el => {
-            const target = new Date(el.dataset.target);
-            const now = new Date();
-            const diff = target - now;
-
-            if (diff <= 0) {
-                el.textContent = 'Đến giờ!';
-                el.classList.add('text-danger');
-                return;
+    document.addEventListener('DOMContentLoaded', function() {
+        @if (Model.ActiveReservation != null)
+        {
+            var qrUrl = Url.Page("/Staff/ConfirmReservation", null, new { id = Model.ActiveReservation.ReservationId }, Request.Scheme, Request.Host.Value);
+            <text>
+            // Generate QR Code
+            const qrElement = document.getElementById("qrcode-@Model.ActiveReservation.ReservationId");
+            if (qrElement) {
+                try {
+                    new QRCode(qrElement, {
+                        text: "@qrUrl",
+                        width: 150,
+                        height: 150,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                } catch (error) {
+                    console.error("QR Code generation error:", error);
+                    qrElement.innerHTML = '<p class="text-danger">Không thể tạo mã QR</p>';
+                }
             }
+            </text>
+        }
 
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        // Countdown timer
+        function updateCountdown() {
+            document.querySelectorAll('.countdown').forEach(el => {
+                const targetStr = el.dataset.target;
+                if (!targetStr) {
+                    el.textContent = 'Không xác định';
+                    return;
+                }
 
-            if (hours > 24) {
-                const days = Math.floor(hours / 24);
-                el.textContent = `${days} day${days > 1 ? 's' : ''}`;
-            } else {
-                el.textContent = `${hours}h ${minutes}m`;
-            }
-        });
-    }
+                try {
+                    const target = new Date(targetStr);
+                    const now = new Date();
+                    const diff = target - now;
 
-    setInterval(updateCountdown, 60000); // Update every minute
-    updateCountdown();
+                    if (diff <= 0) {
+                        el.textContent = 'Đến giờ!';
+                        el.classList.add('text-danger');
+                        return;
+                    }
+
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    if (days > 0) {
+                        el.textContent = `${days} ngày ${hours} giờ`;
+                    } else if (hours > 0) {
+                        el.textContent = `${hours} giờ ${minutes} phút`;
+                    } else if (minutes > 0) {
+                        el.textContent = `${minutes} phút ${seconds} giây`;
+                    } else {
+                        el.textContent = `${seconds} giây`;
+                    }
+                } catch (error) {
+                    console.error("Countdown error:", error);
+                    el.textContent = 'Lỗi tính toán';
+                }
+            });
+        }
+
+        // Update countdown immediately and then every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    });
 
     function confirmCancel(id) {
         if (confirm('Bạn có chắc chắn muốn hủy đặt chỗ này không?')) {
@@ -221,6 +252,11 @@
     }
 
     function showQRCode() {
-        alert('Hiển thị mã QR này cho nhân viên trạm khi bạn đến.');
+        const qrElement = document.getElementById("qrcode-@Model.ActiveReservation?.ReservationId");
+        if (qrElement && qrElement.querySelector('canvas')) {
+            alert('Hiển thị mã QR này cho nhân viên trạm khi bạn đến.');
+        } else {
+            alert('Mã QR đang được tạo, vui lòng đợi...');
+        }
     }
 </script>

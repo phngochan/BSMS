@@ -6,6 +6,7 @@ public interface IReservationService
 {
     Task<Reservation> CreateReservationAsync(int userId, int vehicleId, int stationId, DateTime timeSlot);
     Task<bool> CancelReservationAsync(int reservationId, int userId);
+    Task<bool> CancelReservationByStaffAsync(int reservationId);
     Task<bool> ConfirmReservationAsync(int reservationId);
     Task<bool> CompleteReservationAsync(int reservationId);
     Task<Reservation?> GetActiveReservationAsync(int userId);
