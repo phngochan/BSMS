@@ -1,13 +1,12 @@
-﻿// Pages/Driver/RentBattery.cshtml.cs
-using BSMS.BLL.Services;
+﻿using BSMS.BLL.Services;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Claims;
+using Microsoft.AspNetCore.SignalR;
+using BSMS.WebApp.Hubs;
+
 
 namespace BSMS.WebApp.Pages.Driver
 {
@@ -15,57 +14,60 @@ namespace BSMS.WebApp.Pages.Driver
     {
         private readonly IUserPackageService _pkgService;
         private readonly IPaymentService _paymentService;
+        private readonly IHubContext<PaymentHub> _hubContext;
 
         public List<BatteryServicePackage> Packages { get; set; } = new();
-        public UserPackage? ActivePackage { get; set; }
-        public int UsedSwaps { get; set; } = 0;
-        public List<SwapTransaction> RecentSwaps { get; set; } = new();
+        public List<UserPackage> PurchasedPackages { get; set; } = new();
 
-        public RentBatteryModel(
-            IUserPackageService pkgService,
-            IPaymentService paymentService)
+        public RentBatteryModel(IUserPackageService pkgService, IPaymentService paymentService, IHubContext<PaymentHub> hubContext)
         {
             _pkgService = pkgService;
             _paymentService = paymentService;
+            _hubContext = hubContext;
         }
 
-   // Pages/Driver/RentBattery.cshtml.cs
-            public async Task OnGetAsync()
-            {
-                var userId = 1;
-                ActivePackage = await _pkgService.GetCurrentPackageAsync(userId); // ← ĐÃ SỬA
-                Packages = await _pkgService.GetAvailablePackagesAsync();
-            }
+        public async Task OnGetAsync()
+        {
+            var userId = GetUserId() ?? 2;
+            Packages = await _pkgService.GetAvailablePackagesAsync();
+            PurchasedPackages = await _pkgService.GetUserPackagesAsync(userId);
+        }
 
-        // BỎ VNPAY – THANH TOÁN NGAY
-        // Pages/Driver/RentBattery.cshtml.cs
         public async Task<IActionResult> OnPostBuyAsync(int packageId)
         {
-            var userId = 1;
+            var userId = GetUserId() ?? 2;
             try
             {
                 var payment = await _paymentService.CreatePaymentAsync(userId, packageId, PaymentMethod.EWallet);
                 await _paymentService.UpdateStatusAsync(payment.PaymentId, PaymentStatus.Paid);
                 await _pkgService.CreateUserPackageAsync(userId, packageId, payment.PaymentId);
 
-                TempData["Success"] = "Mua gói thành công!";
+                // Gửi SignalR cho Admin
+                await _hubContext.Clients.All.SendAsync("PaymentUpdated", new
+                {
+                    paymentId = payment.PaymentId,
+                    userId = userId,
+                    amount = payment.Amount,
+                    time = payment.PaymentTime.ToString("yyyy-MM-dd HH:mm:ss")
+                });
 
-                // GỌI LẠI OnGetAsync ĐỂ CẬP NHẬT DỮ LIỆU
-                await OnGetAsync();
-                return Page();
+                TempData["Success"] = "Mua gói thành công!";
             }
-            catch (Exception ex)
+            catch
             {
-                TempData["Error"] = "Lỗi: " + ex.Message;
-                await OnGetAsync();
-                return Page();
+                TempData["Success"] = "Có lỗi xảy ra khi mua gói!";
             }
+            return RedirectToPage();
         }
+
 
         public async Task<IActionResult> OnPostRenewAsync(int packageId)
-        {
-            return await OnPostBuyAsync(packageId); // GỌI CHUNG
-        }
+            => await OnPostBuyAsync(packageId);
 
+        private int? GetUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
+            return int.TryParse(claim?.Value, out int id) ? id : null;
+        }
     }
 }

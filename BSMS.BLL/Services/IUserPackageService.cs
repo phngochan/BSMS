@@ -10,6 +10,9 @@ namespace BSMS.BLL.Services
     public interface IUserPackageService
     {
         Task<List<BatteryServicePackage>> GetAvailablePackagesAsync();
+
+        Task<List<BatteryServicePackage>> GetAllPackagesAsync();
+
         Task<UserPackage?> GetActivePackageAsync(int userId);
         Task CreateUserPackageAsync(int userId, int packageId, int paymentId);
         Task<bool> CanSwapBatteryAsync(int userId, int vehicleId, int stationId, int batteryTakenId, int batteryReturnedId);
@@ -20,5 +23,6 @@ namespace BSMS.BLL.Services
         Task CreateAsync(BatteryServicePackage pkg);
         Task UpdateAsync(BatteryServicePackage pkg);
         Task<bool> DeleteAsync(int id);
+        Task<List<UserPackage>> GetUserPackagesAsync(int userId);
     }
 }

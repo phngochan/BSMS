@@ -42,7 +42,6 @@ public class PaymentRepository : GenericRepository<Payment>, IPaymentRepository
 
         var total = await query.CountAsync();
         var items = await query
-            .OrderByDescending(p => p.PaymentId)
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

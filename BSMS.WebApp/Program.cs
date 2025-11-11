@@ -7,6 +7,7 @@ using BSMS.DAL.Context;
 using BSMS.DAL.Init;
 using BSMS.DAL.Repositories;
 using BSMS.DAL.Repositories.Implementations;
+using BSMS.WebApp.Hubs;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
@@ -125,5 +126,7 @@ app.UseSession();
 
 app.MapRazorPages();
 app.MapHub<BSMS.WebApp.Hubs.NotificationHub>("/notificationHub");
+app.MapHub<PaymentHub>("/paymentHub");
+
 
 app.Run();

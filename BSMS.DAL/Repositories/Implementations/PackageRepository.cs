@@ -20,6 +20,9 @@ namespace BSMS.DAL.Repositories.Implementations
                 .OrderBy(p => p.Price)
                 .ToListAsync();
 
+        public async Task<List<BatteryServicePackage>> GetAllPackagesAsync()
+       => await _context.BatteryServicePackages
+           .ToListAsync();
 
         public async Task<bool> CanDeleteAsync(int packageId)
         {
@@ -39,6 +42,12 @@ namespace BSMS.DAL.Repositories.Implementations
             _context.Entry(pkg).State = EntityState.Modified;
 
             await _context.SaveChangesAsync();
+        }
+
+        public virtual async Task CreateAsync(BatteryServicePackage pkg)
+        {
+            _context.Set<BatteryServicePackage>().Add(pkg);
+            await _context.SaveChangesAsync(); // BẮT BUỘC PHẢI CÓ DÒNG NÀY
         }
 
     }

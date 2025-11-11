@@ -27,6 +27,9 @@ public class UserPackageService : IUserPackageService
     public async Task<List<BatteryServicePackage>> GetAvailablePackagesAsync()
         => await _pkgRepo.GetActivePackagesAsync();
 
+    public async Task<List<BatteryServicePackage>> GetAllPackagesAsync()
+     => await _pkgRepo.GetAllPackagesAsync();
+
     public async Task<UserPackage?> GetActivePackageAsync(int userId)
     {
         return await _upRepo.GetAllAsync(
@@ -133,5 +136,16 @@ public class UserPackageService : IUserPackageService
             return false;
 
         return await _pkgRepo.DeleteAsync(id);
+    }
+
+    public async Task<List<UserPackage>> GetUserPackagesAsync(int userId)
+    {
+        return (await _upRepo.GetAllAsync(
+            filter: up => up.UserId == userId,
+            includes: new Expression<Func<UserPackage, object>>[]
+            {
+            up => up.Package!
+            }
+        )).ToList(); // DÒNG NÀY GIẢI QUYẾT HẾT!
     }
 }

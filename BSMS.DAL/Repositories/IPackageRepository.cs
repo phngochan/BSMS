@@ -11,6 +11,9 @@ namespace BSMS.DAL.Repositories
     public interface IPackageRepository : IGenericRepository<BatteryServicePackage>
     {
         Task<List<BatteryServicePackage>> GetActivePackagesAsync();
+
+        Task<List<BatteryServicePackage>> GetAllPackagesAsync();
+
         Task<bool> CanDeleteAsync(int packageId);
 
         Task UpdateAsync(BatteryServicePackage pkg);

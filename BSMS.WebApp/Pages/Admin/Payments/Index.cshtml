@@ -92,9 +92,9 @@
                                         <strong>@(p.User?.FullName ?? "User " + p.UserId)</strong>
                                         <br /><small class="text-muted">ID: @p.UserId</small>
                                     </td>
-                                    <td class="text-end text-success fw-bold">@p.Amount:N0 đ</td>
+                                    <td class="text-end text-success fw-bold">@p.Amount đ</td>
                                     <td><span class="badge bg-info text-dark">@p.Method.GetDisplayName()</span></td>
-                                    <td>@p.PaymentTime:dd/MM/yyyy HH:mm</td>
+                                    <td>@p.PaymentTime </td>
                                     <td class="text-center">
                                         @switch (p.Status)
                                         {
@@ -212,4 +212,29 @@
             }
         });
     </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/paymentHub")
+            .build();
+
+        connection.on("PaymentUpdated", data => {
+            console.log("Có thanh toán mới:", data);
+
+            // Gợi ý: hiển thị thông báo popup nhỏ
+            const toast = document.createElement("div");
+            toast.className = "alert alert-info position-fixed top-0 end-0 m-3";
+            toast.innerHTML = `Có giao dịch mới #${data.paymentId}<br>Số tiền: ${data.amount}`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.remove(), 4000);
+
+            location.reload();
+        });
+
+        connection.start().catch(err => console.error(err));
+    </script>
+
 }
