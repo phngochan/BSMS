@@ -24,6 +24,9 @@ public class IndexModel : BasePageModel
     private readonly IConfigService _configService;
     private readonly IUserService _userService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IReservationService _reservationService;
+    private static readonly TimeSpan DriverQueueWindow = TimeSpan.FromHours(6);
+    private const int UpcomingReservationDisplayLimit = 12;
 
     public IndexModel(
         IChangingStationService stationService,
@@ -34,6 +37,7 @@ public class IndexModel : BasePageModel
         ISwapTransactionService swapTransactionService,
         IConfigService configService,
         IUserService userService,
+        IReservationService reservationService,
         IPasswordHasher passwordHasher,
         IUserActivityLogService activityLogService) : base(activityLogService)
     {
@@ -46,6 +50,7 @@ public class IndexModel : BasePageModel
         _configService = configService;
         _userService = userService;
         _passwordHasher = passwordHasher;
+        _reservationService = reservationService;
     }
 
     public OperationsOverview Overview { get; set; } = new();
@@ -59,6 +64,9 @@ public class IndexModel : BasePageModel
     public IList<Config> Configs { get; set; } = new List<Config>();
     public HashSet<int> IdleStations { get; private set; } = new();
     public HashSet<int> StationsWithoutStaff { get; private set; } = new(); // ✅ THÊM
+
+    public IList<Reservation> UpcomingReservations { get; private set; } = new List<Reservation>();
+    public Dictionary<int, StationDriverSignal> StationDriverSignals { get; private set; } = new();
 
     public List<SelectListItem> StationOptions { get; set; } = new();
     public List<SelectListItem> StaffUserOptions { get; set; } = new();
@@ -760,6 +768,49 @@ public class IndexModel : BasePageModel
         var batterySummary = await _batteryService.GetStatusSummaryAsync();
         var latestSwapTimes = await _swapTransactionService.GetLatestCompletedSwapTimesAsync();
         var openSupportCount = await _supportService.CountByStatusAsync(SupportStatus.Open);
+        var stationLookup = stationList.ToDictionary(s => s.StationId);
+        var batteryStatusByStation = batteryList
+            .GroupBy(b => b.StationId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.GroupBy(b => b.Status)
+                      .ToDictionary(bg => bg.Key, bg => bg.Count()));
+        var now = DateTime.UtcNow;
+        var queueWindowEnd = now.Add(DriverQueueWindow);
+        var upcomingReservationWindow = (await _reservationService
+            .GetUpcomingReservationsAsync(now, queueWindowEnd))
+            .OrderBy(r => r.ScheduledTime)
+            .ToList();
+        var driverQueueCount = upcomingReservationWindow.Count;
+        UpcomingReservations = upcomingReservationWindow
+            .Take(UpcomingReservationDisplayLimit)
+            .ToList();
+        StationDriverSignals = upcomingReservationWindow
+            .GroupBy(r => r.StationId)
+            .ToDictionary(
+                g => g.Key,
+                g =>
+                {
+                    batteryStatusByStation.TryGetValue(g.Key, out var statusCounts);
+                    statusCounts ??= new Dictionary<BatteryStatus, int>();
+                    return new StationDriverSignal
+                    {
+                        StationId = g.Key,
+                        StationName = stationLookup.TryGetValue(g.Key, out var station)
+                            ? station.Name
+                            : $"Station {g.Key}",
+                        PendingReservations = g.Count(),
+                        FullBatteries = statusCounts.TryGetValue(BatteryStatus.Full, out var full) ? full : 0,
+                        BookedBatteries = statusCounts.TryGetValue(BatteryStatus.Booked, out var booked) ? booked : 0,
+                        DriverNames = g
+                            .Select(r => r.User?.FullName ?? r.User?.Username ?? $"User {r.UserId}")
+                            .Where(name => !string.IsNullOrWhiteSpace(name))
+                            .Distinct()
+                            .Take(3)
+                            .ToList(),
+                        NextReservationTime = g.Min(r => r.ScheduledTime)
+                    };
+                });
 
         Stations = stationList.OrderBy(s => s.Name).ToList();
         Batteries = batteryList.OrderByDescending(b => b.UpdatedAt).Take(50).ToList();
@@ -774,7 +825,6 @@ public class IndexModel : BasePageModel
         SwapTransactions = swapList;
         Configs = configList;
         
-        var now = DateTime.UtcNow;
         var idleThreshold = TimeSpan.FromHours(12);
         IdleStations = stationList
             .Where(s =>
@@ -837,6 +887,7 @@ public class IndexModel : BasePageModel
             OpenSupports = openSupportCount,
             MonthlyRevenue = monthlyRevenue,
             DailyTransactions = dailyTransactions,
+            DriverQueueCount = driverQueueCount,
             GeneratedAt = DateTime.UtcNow
         };
 
@@ -898,7 +949,20 @@ public class IndexModel : BasePageModel
         public int OpenSupports { get; set; }
         public int DailyTransactions { get; set; }
         public decimal MonthlyRevenue { get; set; }
+        public int DriverQueueCount { get; set; }
         public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class StationDriverSignal
+    {
+        public int StationId { get; set; }
+        public string StationName { get; set; } = string.Empty;
+        public int PendingReservations { get; set; }
+        public int FullBatteries { get; set; }
+        public int BookedBatteries { get; set; }
+        public List<string> DriverNames { get; set; } = new();
+        public DateTime? NextReservationTime { get; set; }
+        public bool NeedsAttention => PendingReservations > 0 && FullBatteries == 0;
     }
 
     public class StationInput

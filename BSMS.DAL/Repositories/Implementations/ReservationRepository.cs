@@ -95,4 +95,33 @@ public class ReservationRepository : GenericRepository<Reservation>, IReservatio
             .AnyAsync(r => r.VehicleId == vehicleId
                 && (r.Status == ReservationStatus.Active));
     }
+
+    public async Task<IEnumerable<Reservation>> GetUpcomingReservationsAsync(DateTime fromUtc, DateTime toUtc)
+    {
+        if (fromUtc.Kind != DateTimeKind.Utc)
+        {
+            fromUtc = fromUtc.ToUniversalTime();
+        }
+
+        if (toUtc.Kind != DateTimeKind.Utc)
+        {
+            toUtc = toUtc.ToUniversalTime();
+        }
+
+        if (toUtc < fromUtc)
+        {
+            (fromUtc, toUtc) = (toUtc, fromUtc);
+        }
+
+        return await _dbSet
+            .Include(r => r.User)
+            .Include(r => r.Vehicle)
+            .Include(r => r.Station)
+            .Include(r => r.Battery)
+            .Where(r => r.Status == ReservationStatus.Active
+                && r.ScheduledTime >= fromUtc
+                && r.ScheduledTime <= toUtc)
+            .OrderBy(r => r.ScheduledTime)
+            .ToListAsync();
+    }
 }

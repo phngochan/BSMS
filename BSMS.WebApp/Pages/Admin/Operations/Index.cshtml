@@ -1,6 +1,7 @@
 ﻿@page
 @using BSMS.BusinessObjects.Enums
 @using System.Text.Json
+@using System.Linq
 @model BSMS.WebApp.Pages.Admin.Operations.IndexModel
 @{
     ViewData["Title"] = "OPERATIONS & SYSTEM MONITORING";
@@ -138,6 +139,134 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-12 col-md-3">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="text-muted text-uppercase small mb-1">Driver queue (6h)</p>
+                                <div class="fs-2 fw-bold">@Model.Overview.DriverQueueCount</div>
+                                @{
+                                    var nextReservation = Model.UpcomingReservations.FirstOrDefault();
+                                    var nextSlot = nextReservation?.ScheduledTime.ToLocalTime().ToString("HH:mm");
+                                }
+                                <small class="text-danger">
+                                    @(nextSlot is not null ? $"Next pickup {nextSlot}" : "No driver scheduled")
+                                </small>
+                            </div>
+                            <i class="bi bi-person-raised-hand text-danger fs-1"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-xl-8">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-0">
+                            <h5 class="mb-0">Driver pipeline (next 6h)</h5>
+                            <small class="text-muted">Match upcoming drivers with prepared batteries.</small>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.UpcomingReservations.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Driver</th>
+                                                <th>Station &amp; slot</th>
+                                                <th>Battery</th>
+                                                <th class="text-end">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var reservation in Model.UpcomingReservations)
+                                            {
+                                                var driverName = reservation.User?.FullName ?? reservation.User?.Username ?? $"User #{reservation.UserId}";
+                                                var vehicleModel = reservation.Vehicle?.Vin ?? "Unknown Vehicle";
+                                                var scheduledTime = reservation.ScheduledTime.ToLocalTime().ToString("HH:mm dd/MM");
+                                                var batteryLabel = reservation.BatteryId?.ToString() ?? "--";
+                                                <tr>
+                                                    <td class="fw-semibold">
+                                                        @driverName
+                                                        <div class="small text-muted">@vehicleModel</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="fw-semibold">
+                                                            @reservation.Station?.Name ?? $"Station #{reservation.StationId}"
+                                                        </div>
+                                                        <small class="text-muted">@scheduledTime</small>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-light text-dark border">Battery #@batteryLabel</span>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="badge bg-info-subtle text-info">@reservation.Status</span>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted mb-0">No drivers queued in the next 6 hours.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-0">
+                            <h5 class="mb-0">Stations needing prep</h5>
+                            <small class="text-muted">Alert if drivers arrive before fresh packs are ready.</small>
+                        </div>
+                        <div class="card-body">
+                            @{
+                                var attentionStations = Model.StationDriverSignals.Values
+                                    .Where(s => s.NeedsAttention)
+                                    .OrderByDescending(s => s.PendingReservations)
+                                    .ToList();
+                            }
+                            @if (attentionStations.Any())
+                            {
+                                <div class="list-group list-group-flush">
+                                    @foreach (var signal in attentionStations)
+                                    {
+                                        <div class="list-group-item border-0 border-bottom d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <div class="fw-semibold">@signal.StationName</div>
+                                                <small class="text-muted d-block">
+                                                    Drivers: @signal.PendingReservations &middot;
+                                                    Full ready: @signal.FullBatteries &middot;
+                                                    Booked: @signal.BookedBatteries
+                                                </small>
+                                                @if (signal.DriverNames.Any())
+                                                {
+                                                    <small class="text-muted">Queue: @string.Join(", ", signal.DriverNames)</small>
+                                                }
+                                                @if (signal.NextReservationTime.HasValue)
+                                                {
+                                                    <small class="d-block text-muted">
+                                                        Next at @signal.NextReservationTime.Value.ToLocalTime().ToString("HH:mm")
+                                                    </small>
+                                                }
+                                            </div>
+                                            <span class="badge bg-danger-subtle text-danger">Prep now</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-success mb-0">
+                                    All scheduled drivers have a ready battery.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="card shadow-sm border-0 mb-4">
@@ -181,6 +310,7 @@
                                             <th>Address</th>
                                             <th>Capacity</th>
                                             <th>Pin</th>
+                                            <th>Drivers</th>
                                             <th>Status</th>
                                             <th></th>
                                         </tr>
@@ -195,19 +325,41 @@
                                                 <td class="fw-semibold">@station.Name</td>
                                                 <td>@station.Address</td>
                                                 <td>@station.Capacity</td>
-                                                <td>
-                                                    <div class="d-flex gap-2 flex-wrap">
-                                                        @foreach (BatteryStatus status in Enum.GetValues(typeof(BatteryStatus)))
+                                            <td>
+                                                <div class="d-flex gap-2 flex-wrap">
+                                                    @foreach (BatteryStatus status in Enum.GetValues(typeof(BatteryStatus)))
+                                                    {
+                                                        var value = batteryGroups.TryGetValue(status, out var v) ? v : 0;
+                                                        <span class="badge bg-light text-dark border">@status: @value</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (Model.StationDriverSignals.TryGetValue(station.StationId, out var driverSignal))
+                                                {
+                                                    <div class="d-flex flex-column gap-1">
+                                                        <span class="fw-semibold">@driverSignal.PendingReservations pending</span>
+                                                        <small class="text-muted">Next: @(driverSignal.NextReservationTime?.ToLocalTime().ToString("HH:mm") ?? "--")</small>
+                                                        <small class="text-muted">Full ready: @driverSignal.FullBatteries &middot; Booked: @driverSignal.BookedBatteries</small>
+                                                        @if (driverSignal.DriverNames.Any())
                                                         {
-                                                            var value = batteryGroups.TryGetValue(status, out var v) ? v : 0;
-                                                            <span class="badge bg-light text-dark border">@status: @value</span>
+                                                            <small class="text-muted">Queue: @string.Join(", ", driverSignal.DriverNames)</small>
                                                         }
                                                     </div>
-                                                </td>
-                                                <td>
-                                                    @{
-                                                        var stationBadgeClass = GetStationBadgeClass(station.Status);
+                                                    @if (driverSignal.NeedsAttention)
+                                                    {
+                                                        <span class="badge bg-danger text-white mt-1">Prep battery</span>
                                                     }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">No queue</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @{
+                                                    var stationBadgeClass = GetStationBadgeClass(station.Status);
+                                                }
                                                     <span class="@stationBadgeClass">@station.Status</span>
                                                     @if (Model.IdleStations.Contains(station.StationId))
                                                     {
@@ -247,7 +399,7 @@
                                         @if (!Model.Stations.Any())
                                         {
                                             <tr>
-                                                <td colspan="6" class="text-center text-muted py-4">No station data available yet.</td>
+                                                <td colspan="7" class="text-center text-muted py-4">No station data available yet.</td>
                                             </tr>
                                         }
                                     </tbody>

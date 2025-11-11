@@ -32,6 +32,7 @@
                     var isDriverDashboardActive = currentPath.Contains("/driver/index") || currentPath == "/driver" || currentPath == "/driver/";
                     var isDriverStationsActive = currentPath.Contains("/driver/findstations");
                     var isDriverReservationsActive = currentPath.Contains("/driver/myreservations");
+                    var isAdminOperationsActive = currentPath.Contains("/admin/operations");
                 }
                 <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="Index">
                     <div class="ev-logo">
@@ -84,6 +85,11 @@
                         }
                         @if (isAuthenticated && userRole == UserRole.Admin)
                         {
+                            <li class="nav-item">
+                                <a class="nav-link@(isAdminOperationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Admin/Operations/Index">
+                                    <i class="bi bi-activity me-1"></i> Operations
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-area="" asp-page="/Admin/Vehicles/Index">
                                     <i class="bi bi-car-front me-1"></i> Quản lý xe

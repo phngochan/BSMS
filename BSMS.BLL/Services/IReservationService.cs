@@ -15,4 +15,6 @@ public interface IReservationService
     Task<IEnumerable<Reservation>> GetStationReservationsAsync(int stationId, DateTime date);
     Task<int> AutoCancelLateReservationsAsync();
     Task<(bool CanCreate, string? ErrorMessage)> ValidateReservationAsync(int userId, int vehicleId, int stationId, DateTime timeSlot);
+
+    Task<IEnumerable<Reservation>> GetUpcomingReservationsAsync(DateTime fromUtc, DateTime toUtc);
 }

@@ -432,4 +432,24 @@ public class ReservationService : IReservationService
             throw;
         }
     }
+
+    public async Task<IEnumerable<Reservation>> GetUpcomingReservationsAsync(DateTime fromUtc, DateTime toUtc)
+    {
+        if (fromUtc.Kind != DateTimeKind.Utc)
+        {
+            fromUtc = fromUtc.ToUniversalTime();
+        }
+
+        if (toUtc.Kind != DateTimeKind.Utc)
+        {
+            toUtc = toUtc.ToUniversalTime();
+        }
+
+        if (toUtc < fromUtc)
+        {
+            (fromUtc, toUtc) = (toUtc, fromUtc);
+        }
+
+        return await _reservationRepo.GetUpcomingReservationsAsync(fromUtc, toUtc);
+    }
 }

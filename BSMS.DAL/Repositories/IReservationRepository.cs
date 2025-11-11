@@ -20,4 +20,6 @@ public interface IReservationRepository : IGenericRepository<Reservation>
 
     Task<bool> HasActiveReservationAsync(int userId);
     Task<bool> HasActiveReservationByVehicleAsync(int vehicleId);
+
+    Task<IEnumerable<Reservation>> GetUpcomingReservationsAsync(DateTime fromUtc, DateTime toUtc);
 }
