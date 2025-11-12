@@ -802,7 +802,7 @@ public class IndexModel : BasePageModel
         var batteryList = (await _batteryService.GetBatteriesAsync()).ToList();
         var transfersList = (await _transferService.GetRecentTransfersAsync(25)).ToList();
         var staffAssignments = (await _stationStaffService.GetAssignmentsAsync()).ToList();
-        var supportList = (await _supportService.GetOpenSupportsAsync()).ToList();
+        var supportList = (await _supportService.GetAllSupportsAsync()).ToList();
         var swapList = (await _swapTransactionService.GetRecentTransactionsAsync(20)).ToList();
         var configList = (await _configService.GetAllAsync()).ToList();
         var staffUsers = (await _userService.GetUsersByRoleAsync(UserRole.StationStaff)).ToList();

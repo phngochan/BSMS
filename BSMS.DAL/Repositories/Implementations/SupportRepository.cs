@@ -58,4 +58,14 @@ public class SupportRepository : GenericRepository<Support>, ISupportRepository
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<Support>> GetAllSupportsAsync()
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Include(s => s.User)
+            .Include(s => s.Station)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+    }
 }

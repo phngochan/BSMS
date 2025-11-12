@@ -59,6 +59,11 @@ public class SupportService : ISupportService
         return await _supportRepository.GetOpenSupportsAsync();
     }
 
+    public async Task<IEnumerable<Support>> GetAllSupportsAsync()
+    {
+        return await _supportRepository.GetAllSupportsAsync();
+    }
+
     public async Task<Support?> GetSupportAsync(int supportId)
     {
         return await _supportRepository.GetSupportWithDetailsAsync(supportId);

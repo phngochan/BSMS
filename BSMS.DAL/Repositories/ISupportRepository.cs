@@ -11,4 +11,5 @@ public interface ISupportRepository : IGenericRepository<Support>
     Task<Support?> GetSupportWithDetailsAsync(int supportId);
     Task<int> CountByStatusAsync(SupportStatus status);
     Task<IEnumerable<Support>> GetSupportsByUserAsync(int userId);
+    Task<IEnumerable<Support>> GetAllSupportsAsync();
 }

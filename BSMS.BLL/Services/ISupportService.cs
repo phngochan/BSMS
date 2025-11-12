@@ -7,6 +7,7 @@ public interface ISupportService
 {
     Task<IEnumerable<Support>> GetOpenSupportsAsync();
     Task<IEnumerable<Support>> GetSupportsByStationAsync(int stationId);
+    Task<IEnumerable<Support>> GetAllSupportsAsync();
     Task<Support?> GetSupportAsync(int supportId);
     Task<Support> CreateSupportAsync(Support support);
     Task UpdateSupportAsync(Support support);
