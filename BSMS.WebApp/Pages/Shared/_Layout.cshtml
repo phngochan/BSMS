@@ -32,6 +32,7 @@
                     var isDriverDashboardActive = currentPath.Contains("/driver/index") || currentPath == "/driver" || currentPath == "/driver/";
                     var isDriverStationsActive = currentPath.Contains("/driver/findstations");
                     var isDriverReservationsActive = currentPath.Contains("/driver/myreservations");
+                    var isDriverSupportActive = currentPath.Contains("/driver/support");
                     var isAdminOperationsActive = currentPath.Contains("/admin/operations");
                 }
                 <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="Index">
@@ -64,11 +65,16 @@
                                     <i class="bi bi-geo-alt me-1"></i> Tìm trạm
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/MyReservations">
-                                    <i class="bi bi-calendar-check me-1"></i> Lịch đặt
-                                </a>
-                            </li>
+                        <li class="nav-item">
+                            <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/MyReservations">
+                                <i class="bi bi-calendar-check me-1"></i> Lịch đặt
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link@(isDriverSupportActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/Support">
+                                <i class="bi bi-life-preserver me-1"></i> Hỗ trợ
+                            </a>
+                        </li>
                             <li class="nav-item">
                                 <a class="nav-link@(isDriverReservationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Driver/RentBattery">
                                     <i class="bi bi-calendar-check"></i> Đăng ký gói thuê pin

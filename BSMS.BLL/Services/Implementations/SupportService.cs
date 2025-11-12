@@ -69,33 +69,55 @@ public class SupportService : ISupportService
         return await _supportRepository.GetSupportsByStationAsync(stationId);
     }
 
-    public async Task UpdateSupportAsync(Support support)
-    {
-        var existing = await _supportRepository.GetSingleAsync(s => s.SupportId == support.SupportId);
-        if (existing == null)
+        public async Task UpdateSupportAsync(Support support)
         {
-            throw new InvalidOperationException("Support request not found");
+            var existing = await _supportRepository.GetSingleAsync(s => s.SupportId == support.SupportId);
+            if (existing == null)
+            {
+                throw new InvalidOperationException("Support request not found");
+            }
+
+            existing.Type = support.Type;
+            existing.Description = support.Description;
+            existing.Status = support.Status;
+            existing.Rating = support.Rating;
+            existing.StaffNote = support.StaffNote;
+
+            await _supportRepository.UpdateAsync(existing);
         }
 
-        existing.Type = support.Type;
-        existing.Description = support.Description;
-        existing.Status = support.Status;
-        existing.Rating = support.Rating;
-
-        await _supportRepository.UpdateAsync(existing);
-    }
-
-    public async Task UpdateSupportStatusAsync(int supportId, SupportStatus status, int? rating = null)
-    {
-        var existing = await _supportRepository.GetSingleAsync(s => s.SupportId == supportId);
-        if (existing == null)
+        public async Task UpdateSupportStatusAsync(int supportId, SupportStatus status, int? rating = null, string? staffNote = null)
         {
-            throw new InvalidOperationException("Support request not found");
+            var existing = await _supportRepository.GetSingleAsync(s => s.SupportId == supportId);
+            if (existing == null)
+            {
+                throw new InvalidOperationException("Support request not found");
+            }
+
+            existing.Status = status;
+            existing.Rating = status == SupportStatus.Closed ? rating : null;
+            if (staffNote != null)
+            {
+                existing.StaffNote = staffNote;
+            }
+
+            await _supportRepository.UpdateAsync(existing);
         }
 
-        existing.Status = status;
-        existing.Rating = status == SupportStatus.Closed ? rating : null;
+        public async Task<IEnumerable<Support>> GetSupportsByUserAsync(int userId)
+        {
+            return await _supportRepository.GetSupportsByUserAsync(userId);
+        }
 
-        await _supportRepository.UpdateAsync(existing);
-    }
+        public async Task UpdateSupportRatingAsync(int supportId, int rating)
+        {
+            var existing = await _supportRepository.GetSingleAsync(s => s.SupportId == supportId);
+            if (existing == null)
+            {
+                throw new InvalidOperationException("Support request not found");
+            }
+
+            existing.Rating = rating;
+            await _supportRepository.UpdateAsync(existing);
+        }
 }

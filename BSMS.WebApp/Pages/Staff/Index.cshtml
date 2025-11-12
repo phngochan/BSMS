@@ -329,6 +329,13 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.SupportSuccessMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+                            <i class="bi bi-check-circle me-1"></i> @Model.SupportSuccessMessage
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
                     <div class="d-flex flex-wrap gap-2">
                         <span class="badge bg-danger-subtle text-danger-emphasis">Open: @Model.SupportSummary.Open</span>
                         <span class="badge bg-warning-subtle text-warning-emphasis">In progress: @Model.SupportSummary.InProgress</span>
@@ -344,15 +351,16 @@
                     <div class="table-responsive">
                         <table class="table align-middle mb-0">
                             <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Customer</th>
-                                    <th>Category</th>
-                                    <th>Description</th>
-                                    <th>Age</th>
-                                    <th>Status</th>
-                                    <th></th>
-                                </tr>
+                        <tr>
+                            <th>#</th>
+                            <th>Customer</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Age</th>
+                            <th>Status</th>
+                            <th>Rating</th>
+                            <th></th>
+                        </tr>
                             </thead>
                             <tbody>
                                 @foreach (var ticket in Model.SupportTickets)
@@ -369,10 +377,26 @@
                                                 <span class="badge bg-danger-subtle text-danger-emphasis mt-1">SLA risk</span>
                                             }
                                         </td>
-                                        <td>
-                                            <span class="@GetSupportBadgeClass(ticket.Status)">@ticket.Status</span>
-                                        </td>
-                                        <td class="text-end">
+                                    <td>
+                                        <span class="@GetSupportBadgeClass(ticket.Status)">@ticket.Status</span>
+                                    </td>
+                                    <td>
+                                        @if (ticket.Rating.HasValue)
+                                        {
+                                            <span class="badge bg-success text-white">@ticket.Rating</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Chưa đánh giá</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        @if (ticket.Status == SupportStatus.Closed)
+                                        {
+                                            <span class="badge bg-secondary text-white">Ticket đã đóng</span>
+                                        }
+                                        else
+                                        {
                                             <form method="post"
                                                   asp-page-handler="ProcessSupport"
                                                   class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
@@ -387,10 +411,12 @@
                                                     <option value="InProgress" selected="@ticket.Status == SupportStatus.InProgress">InProgress</option>
                                                     <option value="Closed" selected="@ticket.Status == SupportStatus.Closed">Closed</option>
                                                 </select>
+                                                <textarea name="staffNote" class="form-control form-control-sm mt-2 support-note-input" rows="2" placeholder="Ghi chú cho driver">@ticket.StaffNote</textarea>
                                                 <button class="btn btn-sm btn-outline-primary" type="submit">Update</button>
                                             </form>
-                                        </td>
-                                    </tr>
+                                        }
+                                    </td>
+                                </tr>
                                 }
                                 @if (!Model.SupportTickets.Any())
                                 {

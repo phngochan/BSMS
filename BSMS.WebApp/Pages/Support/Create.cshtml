@@ -1,0 +1,52 @@
+﻿@page "/Support/Create"
+@namespace BSMS.WebApp.Pages.DriverSupport
+@model BSMS.WebApp.Pages.DriverSupport.CreateModel
+@{
+    ViewData["Title"] = "Tạo yêu cầu hỗ trợ";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow border-0">
+                <div class="card-body">
+                    <h1 class="h4 mb-1">Gửi yêu cầu hỗ trợ trạm</h1>
+                    <p class="text-muted mb-4">Mô tả vấn đề bạn đang gặp phải để nhân viên trạm có thể hỗ trợ nhanh chóng.</p>
+                    <form method="post" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <div class="mb-3">
+                            <label asp-for="SupportForm.StationId" class="form-label">Trạm</label>
+                            <select asp-for="SupportForm.StationId" class="form-select" asp-items="Model.StationOptions">
+                                <option value="">Chọn trạm</option>
+                            </select>
+                            <span asp-validation-for="SupportForm.StationId" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="SupportForm.Type" class="form-label">Loại hỗ trợ</label>
+                            <select asp-for="SupportForm.Type" class="form-select">
+                                @foreach (var type in Enum.GetValues<BSMS.BusinessObjects.Enums.SupportType>())
+                                {
+                                    <option value="@type">@type.ToString()</option>
+                                }
+                            </select>
+                            <span asp-validation-for="SupportForm.Type" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="SupportForm.Description" class="form-label">Mô tả chi tiết</label>
+                            <textarea asp-for="SupportForm.Description" class="form-control" rows="4" maxlength="1000"></textarea>
+                            <span asp-validation-for="SupportForm.Description" class="text-danger"></span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-ev-primary flex-grow-1">Gửi yêu cầu</button>
+                            <a asp-page="/Driver/Index" class="btn btn-outline-secondary">Hủy</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

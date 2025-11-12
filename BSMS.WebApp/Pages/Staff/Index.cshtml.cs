@@ -45,6 +45,9 @@ public class IndexModel : BasePageModel
     public SwapWorkflowViewModel SwapWorkflow { get; private set; } = SwapWorkflowViewModel.Empty;
     public SupportSummaryViewModel SupportSummary { get; private set; } = SupportSummaryViewModel.Empty;
 
+    [TempData]
+    public string? SupportSuccessMessage { get; set; }
+
     public bool HasStation => Assignment != null;
 
     private static readonly IReadOnlyDictionary<BatteryStatus, BatteryStatus[]> StaffAllowedTransitions = new Dictionary<BatteryStatus, BatteryStatus[]>
@@ -153,7 +156,7 @@ public class IndexModel : BasePageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostProcessSupportAsync(int supportId, SupportStatus status)
+    public async Task<IActionResult> OnPostProcessSupportAsync(int supportId, SupportStatus status, string? staffNote)
     {
         await LoadStationDataAsync();
         if (!HasStation)
@@ -169,10 +172,12 @@ public class IndexModel : BasePageModel
             return RedirectToPage();
         }
 
-        await _supportService.UpdateSupportStatusAsync(supportId, status, null);
+        var trimmedNote = string.IsNullOrWhiteSpace(staffNote) ? null : staffNote.Trim();
+        await _supportService.UpdateSupportStatusAsync(supportId, status, null, trimmedNote);
         await LogActivityAsync("Support", $"Updated ticket #{supportId} -> {status}");
 
         TempData["SuccessMessage"] = "Support ticket updated.";
+        SupportSuccessMessage = "Support ticket updated.";
         return RedirectToPage();
     }
 
@@ -300,7 +305,7 @@ public class IndexModel : BasePageModel
         public TimeSpan TimeRemaining { get; init; }
         public IReadOnlyList<string> Checklist { get; init; } = Array.Empty<string>();
 
-        public static StaffShiftViewModel? Create(StationStaff assignment, ChangingStation? station)
+        public static StaffShiftViewModel? Create(StationStaff? assignment, ChangingStation? station)
         {
             if (assignment == null)
             {
@@ -357,7 +362,7 @@ public class IndexModel : BasePageModel
         public IReadOnlyDictionary<SwapStatus, int> StatusCounts { get; init; } = new Dictionary<SwapStatus, int>();
         public IReadOnlyList<SwapWorkflowTimelineItem> Timeline { get; init; } = Array.Empty<SwapWorkflowTimelineItem>();
 
-        public static SwapWorkflowViewModel FromTransactions(IEnumerable<SwapTransaction> transactions, string stationName)
+        public static SwapWorkflowViewModel FromTransactions(IEnumerable<SwapTransaction>? transactions, string stationName)
         {
             var list = transactions?.ToList() ?? new List<SwapTransaction>();
             var counts = Enum.GetValues<SwapStatus>()
@@ -428,7 +433,7 @@ public class IndexModel : BasePageModel
 
         public bool HasBacklogRisk => OldestActiveAge.HasValue && OldestActiveAge.Value > TimeSpan.FromHours(1);
 
-        public static SupportSummaryViewModel FromTickets(IEnumerable<Support> tickets)
+        public static SupportSummaryViewModel FromTickets(IEnumerable<Support>? tickets)
         {
             var list = tickets?.ToList() ?? new List<Support>();
             var open = list.Count(t => t.Status == SupportStatus.Open);

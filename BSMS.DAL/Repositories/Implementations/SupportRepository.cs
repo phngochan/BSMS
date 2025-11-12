@@ -47,4 +47,15 @@ public class SupportRepository : GenericRepository<Support>, ISupportRepository
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<Support>> GetSupportsByUserAsync(int userId)
+    {
+        return await _dbSet
+            .AsNoTracking()
+            .Where(s => s.UserId == userId)
+            .Include(s => s.User)
+            .Include(s => s.Station)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+    }
 }

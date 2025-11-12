@@ -1,0 +1,113 @@
+@page "/Driver/Support"
+@using BSMS.BusinessObjects.Enums
+@model BSMS.WebApp.Pages.Driver.SupportModel
+@{
+    ViewData["Title"] = "Hỗ trợ trạm";
+}
+
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                <div>
+                    <h3 class="mb-0">Yêu cầu hỗ trợ của bạn</h3>
+                    <p class="text-muted mb-0">Xem trạng thái và phản hồi từ nhân viên trạm.</p>
+                </div>
+                <div>
+                    <a class="btn btn-outline-secondary btn-sm" asp-page="/Support/Create">
+                        <i class="bi bi-plus-circle me-1"></i> Gửi yêu cầu mới
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Trạm</th>
+                            <th>Loại</th>
+                            <th>Mô tả</th>
+                            <th>Ghi chú trạm</th>
+                            <th>Trạng thái</th>
+                            <th>Phản hồi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.SupportTickets.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">Bạn chưa gửi yêu cầu hỗ trợ nào.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var support in Model.SupportTickets)
+                            {
+                                <tr>
+                                    <td>@support.SupportId</td>
+                                    <td>@support.Station?.Name</td>
+                                    <td>@support.Type</td>
+                                    <td>
+                                        <div>@support.Description</div>
+                                        <small class="text-muted">Ngày tạo: @support.CreatedAt.ToLocalTime():g</small>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(support.StaffNote))
+                                        {
+                                            <span class="text-success small">@support.StaffNote</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Đang chờ phản hồi</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @{
+                                            var badgeClass = support.Status switch
+                                            {
+                                                SupportStatus.Open => "badge bg-danger text-white fw-semibold",
+                                                SupportStatus.InProgress => "badge bg-warning text-dark fw-semibold",
+                                                SupportStatus.Closed => "badge bg-success text-white fw-semibold",
+                                                _ => "badge bg-secondary text-white fw-semibold"
+                                            };
+                                        }
+                                        <span class="@badgeClass">@support.Status</span>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(support.StaffNote))
+                                        {
+                                            if (support.Rating.HasValue)
+                                            {
+                                                <span class="badge bg-success text-white">Đã đánh giá: @support.Rating</span>
+                                            }
+                                            else
+                                            {
+                                                <form method="post" asp-page-handler="Rate" class="d-flex flex-column flex-sm-row gap-2">
+                                                    <input type="hidden" name="supportId" value="@support.SupportId" />
+                                                    <select name="rating" class="form-select form-select-sm" required>
+                                                        <option value="" selected>Chọn xếp hạng</option>
+                                                        @for (int i = 1; i <= 5; i++)
+                                                        {
+                                                            <option value="@i">@i</option>
+                                                        }
+                                                    </select>
+                                                    <button type="submit" class="btn btn-ev-primary btn-sm">Gửi</button>
+                                                </form>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Chờ nhân viên cập nhật</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

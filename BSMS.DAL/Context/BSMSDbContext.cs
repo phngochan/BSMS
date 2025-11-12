@@ -207,6 +207,8 @@ public class BSMSDbContext : DbContext
             entity.Property(e => e.Status)
                   .HasConversion<string>()
                   .HasMaxLength(50);
+            entity.Property(e => e.StaffNote)
+                  .HasMaxLength(1000);
 
             entity.HasOne(s => s.User)
                   .WithMany(u => u.Supports)

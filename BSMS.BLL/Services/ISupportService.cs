@@ -10,7 +10,9 @@ public interface ISupportService
     Task<Support?> GetSupportAsync(int supportId);
     Task<Support> CreateSupportAsync(Support support);
     Task UpdateSupportAsync(Support support);
-    Task UpdateSupportStatusAsync(int supportId, SupportStatus status, int? rating = null);
+    Task UpdateSupportStatusAsync(int supportId, SupportStatus status, int? rating = null, string? staffNote = null);
     Task DeleteSupportAsync(int supportId);
     Task<int> CountByStatusAsync(SupportStatus status);
+    Task<IEnumerable<Support>> GetSupportsByUserAsync(int userId);
+    Task UpdateSupportRatingAsync(int supportId, int rating);
 }

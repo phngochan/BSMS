@@ -648,7 +648,7 @@ public class IndexModel : BasePageModel
                     Type = SupportForm.Type,
                     Description = SupportForm.Description,
                     Status = SupportForm.Status,
-                    Rating = SupportForm.Rating
+                    StaffNote = SupportForm.StaffNote
                 });
 
                 TempData["SuccessMessage"] = "Đã tạo ticket hỗ trợ.";
@@ -664,7 +664,7 @@ public class IndexModel : BasePageModel
                     Type = SupportForm.Type,
                     Description = SupportForm.Description,
                     Status = SupportForm.Status,
-                    Rating = SupportForm.Rating
+                    StaffNote = SupportForm.StaffNote
                 });
 
                 TempData["SuccessMessage"] = "Đã cập nhật ticket hỗ trợ.";
@@ -681,11 +681,11 @@ public class IndexModel : BasePageModel
         }
     }
 
-    public async Task<IActionResult> OnPostUpdateSupportStatusAsync(int supportId, SupportStatus status, int? rating)
+    public async Task<IActionResult> OnPostUpdateSupportStatusAsync(int supportId, SupportStatus status)
     {
         try
         {
-            await _supportService.UpdateSupportStatusAsync(supportId, status, rating);
+            await _supportService.UpdateSupportStatusAsync(supportId, status);
             TempData["SuccessMessage"] = "Đã cập nhật xử lý khiếu nại.";
             await LogActivityAsync("Support", $"Support #{supportId} -> {status}");
             return RedirectToPage();
@@ -1129,7 +1129,9 @@ public class IndexModel : BasePageModel
         [Required]
         public SupportStatus Status { get; set; } = SupportStatus.Open;
 
-        [Range(1, 5, ErrorMessage = "Rating phải từ 1 đến 5")]
+        [StringLength(1000)]
+        public string? StaffNote { get; set; }
+
         public int? Rating { get; set; }
     }
 

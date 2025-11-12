@@ -11,6 +11,7 @@ public class Support
     public DateTime CreatedAt { get; set; }
     public SupportStatus Status { get; set; } = SupportStatus.Open;
     public int? Rating { get; set; }
+    public string? StaffNote { get; set; }
 
     public User User { get; set; }
     public ChangingStation Station { get; set; }
