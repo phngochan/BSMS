@@ -1,0 +1,315 @@
+﻿@page
+@model CreateModel
+@{
+    ViewData["Title"] = "Phân công nhân viên";
+}
+
+<div class="container-fluid py-3">
+    <div class="mb-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-page="./Index">Staff Schedule</a></li>
+                <li class="breadcrumb-item active">Phân công mới</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-plus-fill me-2"></i>Phân công nhân viên mới
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="staffAssignmentForm">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label asp-for="StaffAssignment.UserId" class="form-label">
+                                    <i class="bi bi-person me-1"></i>Nhân viên <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="StaffAssignment.UserId" 
+                                        asp-items="Model.AvailableStaff" 
+                                        class="form-select"
+                                        required>
+                                    <option value="">-- Chọn nhân viên --</option>
+                                </select>
+                                <span asp-validation-for="StaffAssignment.UserId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="StaffAssignment.StationId" class="form-label">
+                                    <i class="bi bi-geo-alt me-1"></i>Trạm <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="StaffAssignment.StationId" 
+                                        asp-items="Model.AvailableStations" 
+                                        class="form-select"
+                                        required>
+                                    <option value="">-- Chọn trạm --</option>
+                                </select>
+                                <span asp-validation-for="StaffAssignment.StationId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Lưu ý:</strong> Ca làm việc phải từ 4-12 giờ và trong khung 06:00 - 22:00
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="StaffAssignment.ShiftStart" class="form-label">
+                                    <i class="bi bi-clock me-1"></i>Giờ bắt đầu <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="StaffAssignment.ShiftStart" 
+                                       type="time" 
+                                       class="form-control" 
+                                       id="shiftStartInput"
+                                       min="06:00" 
+                                       max="22:00"
+                                       required />
+                                <span asp-validation-for="StaffAssignment.ShiftStart" class="text-danger"></span>
+                                <small class="text-muted">Từ 06:00 đến 22:00</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="StaffAssignment.ShiftEnd" class="form-label">
+                                    <i class="bi bi-clock-fill me-1"></i>Giờ kết thúc <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="StaffAssignment.ShiftEnd" 
+                                       type="time" 
+                                       class="form-control" 
+                                       id="shiftEndInput"
+                                       min="06:00" 
+                                       max="22:00"
+                                       required />
+                                <span asp-validation-for="StaffAssignment.ShiftEnd" class="text-danger"></span>
+                                <small class="text-muted">Từ 06:00 đến 22:00</small>
+                            </div>
+
+                            <div class="col-12">
+                                <div id="shiftDurationDisplay" class="alert alert-secondary d-none">
+                                    <i class="bi bi-hourglass-split me-2"></i>
+                                    <strong>Thời lượng ca:</strong> <span id="durationText">-</span>
+                                </div>
+                                <div id="shiftValidationError" class="alert alert-danger d-none">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <span id="validationErrorText"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="StaffAssignment.AssignedAt" class="form-label">
+                                    <i class="bi bi-calendar-check me-1"></i>Ngày phân công
+                                </label>
+                                <input asp-for="StaffAssignment.AssignedAt" 
+                                       type="datetime-local" 
+                                       class="form-control"
+                                       id="assignedAtInput"
+                                       readonly />
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>Tự động điền thời gian hiện tại
+                                </small>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input asp-for="StaffAssignment.IsActive" 
+                                           class="form-check-input" 
+                                           type="checkbox" 
+                                           checked />
+                                    <label asp-for="StaffAssignment.IsActive" class="form-check-label">
+                                        Kích hoạt ca làm việc ngay
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a asp-page="./Index" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Hủy
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-check-circle me-1"></i>Phân công
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        (function() {
+            'use strict';
+            
+            const shiftStartInput = document.getElementById('shiftStartInput');
+            const shiftEndInput = document.getElementById('shiftEndInput');
+            const assignedAtInput = document.getElementById('assignedAtInput');
+            const durationDisplay = document.getElementById('shiftDurationDisplay');
+            const durationText = document.getElementById('durationText');
+            const validationError = document.getElementById('shiftValidationError');
+            const validationErrorText = document.getElementById('validationErrorText');
+            const submitBtn = document.getElementById('submitBtn');
+            const form = document.getElementById('staffAssignmentForm');
+            
+            // ✅ Set default AssignedAt to current datetime
+            function setDefaultAssignedAt() {
+                if (assignedAtInput && !assignedAtInput.value) {
+                    const now = new Date();
+                    // Format: YYYY-MM-DDTHH:mm
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    assignedAtInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                }
+            }
+            
+            // ✅ Parse time string to minutes
+            function timeToMinutes(timeStr) {
+                if (!timeStr) return 0;
+                const [hours, minutes] = timeStr.split(':').map(Number);
+                return hours * 60 + minutes;
+            }
+            
+            // ✅ Format minutes to readable duration
+            function formatDuration(minutes) {
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                return mins > 0 ? `${hours} giờ ${mins} phút` : `${hours} giờ`;
+            }
+            
+            // ✅ Validate shift times
+            function validateShiftTimes() {
+                const startTime = shiftStartInput?.value;
+                const endTime = shiftEndInput?.value;
+                
+                if (!startTime || !endTime) {
+                    hideValidation();
+                    return true;
+                }
+                
+                const startMinutes = timeToMinutes(startTime);
+                const endMinutes = timeToMinutes(endTime);
+                
+                // Check: Start < End
+                if (startMinutes >= endMinutes) {
+                    showError('Giờ bắt đầu phải trước giờ kết thúc!');
+                    return false;
+                }
+                
+                const durationMinutes = endMinutes - startMinutes;
+                const durationHours = durationMinutes / 60;
+                
+                // Check: Duration 4-12 hours
+                if (durationHours < 4) {
+                    showError('Ca làm việc phải ít nhất 4 giờ!');
+                    return false;
+                }
+                
+                if (durationHours > 12) {
+                    showError('Ca làm việc không được vượt quá 12 giờ!');
+                    return false;
+                }
+                
+                // Check: Working hours 06:00 - 22:00
+                const minTime = timeToMinutes('06:00');
+                const maxTime = timeToMinutes('22:00');
+                
+                if (startMinutes < minTime) {
+                    showError('Ca làm việc không được bắt đầu trước 06:00!');
+                    return false;
+                }
+                
+                if (endMinutes > maxTime) {
+                    showError('Ca làm việc không được kết thúc sau 22:00!');
+                    return false;
+                }
+                
+                // All validations passed
+                showDuration(durationMinutes);
+                return true;
+            }
+            
+            // ✅ Show duration display
+            function showDuration(minutes) {
+                if (durationDisplay && durationText) {
+                    durationText.textContent = formatDuration(minutes);
+                    durationDisplay.classList.remove('d-none');
+                }
+                if (validationError) {
+                    validationError.classList.add('d-none');
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+            }
+            
+            // ✅ Show error message
+            function showError(message) {
+                if (validationError && validationErrorText) {
+                    validationErrorText.textContent = message;
+                    validationError.classList.remove('d-none');
+                }
+                if (durationDisplay) {
+                    durationDisplay.classList.add('d-none');
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+            }
+            
+            // ✅ Hide all validation messages
+            function hideValidation() {
+                if (durationDisplay) {
+                    durationDisplay.classList.add('d-none');
+                }
+                if (validationError) {
+                    validationError.classList.add('d-none');
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+            }
+            
+            // ✅ Event listeners
+            if (shiftStartInput) {
+                shiftStartInput.addEventListener('change', validateShiftTimes);
+                shiftStartInput.addEventListener('input', validateShiftTimes);
+            }
+            
+            if (shiftEndInput) {
+                shiftEndInput.addEventListener('change', validateShiftTimes);
+                shiftEndInput.addEventListener('input', validateShiftTimes);
+            }
+            
+            // ✅ Form submit validation
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    if (!validateShiftTimes()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return false;
+                    }
+                });
+            }
+            
+            // ✅ Initialize
+            setDefaultAssignedAt();
+            validateShiftTimes();
+            
+            console.log('[StaffSchedule] Client validation initialized');
+        })();
+    </script>
+}

@@ -1,52 +1,37 @@
-using System.ComponentModel.DataAnnotations;
 using BSMS.BLL.Services;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace BSMS.WebApp.Pages.Admin.Operations.Stations;
 
 [Authorize(Roles = "Admin")]
-public class EditModel : BasePageModel
+public class EditModel : PageModel
 {
     private readonly IChangingStationService _stationService;
-    private readonly IStationStaffService _stationStaffService;
-    private readonly IBatteryService _batteryService;
 
-    public EditModel(
-        IChangingStationService stationService,
-        IStationStaffService stationStaffService,
-        IBatteryService batteryService,
-        IUserActivityLogService activityLogService) : base(activityLogService)
+    public EditModel(IChangingStationService stationService)
     {
         _stationService = stationService;
-        _stationStaffService = stationStaffService;
-        _batteryService = batteryService;
     }
 
-    [BindProperty(SupportsGet = true)]
-    public int? StationId { get; set; }
-
-    [BindProperty(SupportsGet = true)]
-    public string? ReturnUrl { get; set; }
+    [BindProperty]
+    public StationFormModel StationForm { get; set; } = new();
 
     [BindProperty]
-    public StationInput StationForm { get; set; } = new();
+    public string? ReturnUrl { get; set; }
 
-    public IEnumerable<SelectListItem> StationStatusOptions =>
-        Enum.GetValues<StationStatus>()
-            .Cast<StationStatus>()
-            .Select(status => new SelectListItem(status.ToString(), status.ToString()));
+    public SelectList StationStatusOptions { get; set; } = new(Enum.GetValues(typeof(StationStatus)));
 
-    public async Task<IActionResult> OnGetAsync(int? stationId)
+    public async Task<IActionResult> OnGetAsync(int? stationId, string? returnUrl)
     {
-        StationId = stationId;
-        ReturnUrl ??= Url.Page("/Admin/Operations/Index");
-        StationForm = new StationInput { Status = StationStatus.Active };
-        if (stationId.HasValue)
+        ReturnUrl = returnUrl;
+
+        if (stationId.HasValue && stationId.Value > 0)
         {
             var station = await _stationService.GetStationAsync(stationId.Value);
             if (station == null)
@@ -54,7 +39,7 @@ public class EditModel : BasePageModel
                 return NotFound();
             }
 
-            StationForm = new StationInput
+            StationForm = new StationFormModel
             {
                 StationId = station.StationId,
                 Name = station.Name,
@@ -65,169 +50,97 @@ public class EditModel : BasePageModel
                 Status = station.Status
             };
         }
+        else
+        {
+            StationForm = new StationFormModel
+            {
+                Latitude = 10.8144,
+                Longitude = 106.7102,
+                Capacity = 20,
+                Status = StationStatus.Active
+            };
+        }
 
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(string? returnUrl)
+    public async Task<IActionResult> OnPostAsync()
     {
-        ReturnUrl = returnUrl ?? ReturnUrl ?? Url.Page("/Admin/Operations/Index");
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
+        // ✅ CUSTOM VALIDATION: Round coordinates to 6 decimal places
+        StationForm.Latitude = Math.Round(StationForm.Latitude, 6);
+        StationForm.Longitude = Math.Round(StationForm.Longitude, 6);
 
-        var validationMessage = await ValidateStationStatusRulesAsync();
-        if (!string.IsNullOrEmpty(validationMessage))
+        // ✅ Revalidate after rounding
+        ModelState.Clear();
+        if (!TryValidateModel(StationForm, nameof(StationForm)))
         {
-            ModelState.AddModelError(string.Empty, validationMessage);
             return Page();
         }
 
         try
         {
+            var station = new ChangingStation
+            {
+                StationId = StationForm.StationId,
+                Name = StationForm.Name,
+                Address = StationForm.Address,
+                Latitude = StationForm.Latitude,
+                Longitude = StationForm.Longitude,
+                Capacity = StationForm.Capacity,
+                Status = StationForm.Status
+            };
+
             if (StationForm.StationId == 0)
             {
-                await _stationService.CreateStationAsync(new ChangingStation
-                {
-                    Name = StationForm.Name,
-                    Address = StationForm.Address,
-                    Latitude = StationForm.Latitude,
-                    Longitude = StationForm.Longitude,
-                    Capacity = StationForm.Capacity,
-                    Status = StationForm.Status
-                });
-                TempData["SuccessMessage"] = "Đã tạo trạm mới.";
-                await LogActivityAsync("Station", $"Created station {StationForm.Name}");
+                station.CreatedAt = DateTime.UtcNow;
+                await _stationService.CreateStationAsync(station);
+                TempData["SuccessMessage"] = $"Đã tạo trạm {station.Name} thành công!";
             }
             else
             {
-                await _stationService.UpdateStationAsync(new ChangingStation
-                {
-                    StationId = StationForm.StationId,
-                    Name = StationForm.Name,
-                    Address = StationForm.Address,
-                    Latitude = StationForm.Latitude,
-                    Longitude = StationForm.Longitude,
-                    Capacity = StationForm.Capacity,
-                    Status = StationForm.Status
-                });
-                TempData["SuccessMessage"] = "Đã cập nhật thông tin trạm.";
-                await LogActivityAsync("Station", $"Updated station #{StationForm.StationId}");
+                await _stationService.UpdateStationAsync(station);
+                TempData["SuccessMessage"] = $"Đã cập nhật trạm {station.Name} thành công!";
             }
 
-            return LocalRedirect(ReturnUrl ?? Url.Page("/Admin/Operations/Index"));
+            if (!string.IsNullOrEmpty(ReturnUrl))
+            {
+                return Redirect(ReturnUrl);
+            }
+
+            return RedirectToPage("/Admin/Operations/Index");
         }
         catch (Exception ex)
         {
-            ModelState.AddModelError(string.Empty, GetFriendlyErrorMessage(ex));
+            ModelState.AddModelError(string.Empty, $"Lỗi: {ex.Message}");
             return Page();
         }
     }
 
-    private string GetFriendlyErrorMessage(Exception ex)
+    public class StationFormModel
     {
-        if (ex is DbUpdateException dbEx)
-        {
-            var detail = dbEx.InnerException?.Message ?? dbEx.Message;
-            if (!string.IsNullOrWhiteSpace(detail) &&
-                detail.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Không thể thao tác vì bản ghi đang được tham chiếu ở khu vực khác. Vui lòng xử lý dữ liệu liên quan trước khi thử lại.";
-            }
+        public int StationId { get; set; }
 
-            return detail;
-        }
-
-        return ex.Message;
-    }
-
-    private async Task<string?> ValidateStationStatusRulesAsync()
-    {
-        if (StationForm == null || StationForm.StationId == 0)
-        {
-            return null;
-        }
-
-        var assignments = (await _stationStaffService.GetAssignmentsByStationAsync(StationForm.StationId)).ToList();
-
-        if (StationForm.Status == StationStatus.Inactive)
-        {
-            if (assignments.Any())
-            {
-                return "Không thể chuyển trạm sang trạng thái Inactive khi vẫn còn nhân viên đang được phân công.";
-            }
-
-            var hasBookedBattery = (await _batteryService.GetBatteriesByStationAsync(StationForm.StationId))
-                .Any(b => b.Status == BatteryStatus.Booked);
-            if (hasBookedBattery)
-            {
-                return "Không thể chuyển trạm sang trạng thái Inactive khi vẫn còn pin đang ở trạng thái Booked.";
-            }
-        }
-
-        if (StationForm.Status == StationStatus.Active && !assignments.Any())
-        {
-            return "Trạm ở trạng thái Active phải có ít nhất một nhân viên.";
-        }
-
-        return null;
-    }
-
-    // ✅ Nested StationInput class - ĐÃ SỬA LỖI
-    public class StationInput : IValidatableObject
-    {
-        public int StationId { get; set; }  
-
-        [Required(ErrorMessage = "Tên trạm là bắt buộc")]
-        [StringLength(150, ErrorMessage = "Tên trạm không được vượt quá 150 ký tự")]
+        [Required(ErrorMessage = "Tên trạm không được để trống")]
+        [StringLength(200)]
         public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Địa chỉ là bắt buộc")]
-        [StringLength(250, ErrorMessage = "Địa chỉ không được vượt quá 250 ký tự")]
+        [Required(ErrorMessage = "Địa chỉ không được để trống")]
+        [StringLength(500)]
         public string Address { get; set; } = string.Empty;
 
-        [Range(-90, 90, ErrorMessage = "Latitude phải nằm trong khoảng -90 đến 90")]
+        [Required(ErrorMessage = "Vĩ độ không được để trống")]
+        [Range(-90, 90, ErrorMessage = "Vĩ độ phải từ -90 đến 90")]
         public double Latitude { get; set; }
 
-        [Range(-180, 180, ErrorMessage = "Longitude phải nằm trong khoảng -180 đến 180")]
+        [Required(ErrorMessage = "Kinh độ không được để trống")]
+        [Range(-180, 180, ErrorMessage = "Kinh độ phải từ -180 đến 180")]
         public double Longitude { get; set; }
 
+        [Required(ErrorMessage = "Sức chứa không được để trống")]
         [Range(1, 1000, ErrorMessage = "Sức chứa phải từ 1 đến 1000")]
         public int Capacity { get; set; }
 
         [Required]
-        public StationStatus Status { get; set; } = StationStatus.Active;
-
-        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-        {
-            // Validate Latitude có đúng 6 chữ số thập phân
-            var latDecimalPlaces = GetDecimalPlaces(Latitude);
-            if (latDecimalPlaces > 6)
-            {
-                yield return new ValidationResult(
-                    "Latitude chỉ được phép tối đa 6 chữ số thập phân (ví dụ: 10.844445)",
-                    new[] { nameof(Latitude) });
-            }
-
-            // Validate Longitude có đúng 6 chữ số thập phân
-            var lngDecimalPlaces = GetDecimalPlaces(Longitude);
-            if (lngDecimalPlaces > 6)
-            {
-                yield return new ValidationResult(
-                    "Longitude chỉ được phép tối đa 6 chữ số thập phân (ví dụ: 106.715696)",
-                    new[] { nameof(Longitude) });
-            }
-        }
-
-        private static int GetDecimalPlaces(double value)
-        {
-            var valueString = value.ToString("G17", System.Globalization.CultureInfo.InvariantCulture);
-            var decimalIndex = valueString.IndexOf('.');
-            if (decimalIndex == -1)
-                return 0;
-            
-            return valueString.Length - decimalIndex - 1;
-        }
+        public StationStatus Status { get; set; }
     }
 }

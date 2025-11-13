@@ -10,9 +10,29 @@
           crossorigin=""/>
     <style>
         #stationMap {
-            height: 400px;
+            height: 450px;
             width: 100%;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
             z-index: 1;
+        }
+        
+        /* Fix leaflet controls z-index */
+        .leaflet-control-container {
+            z-index: 1000;
+        }
+        
+        /* Loading indicator */
+        .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
     </style>
 }
@@ -21,67 +41,127 @@
     <div class="row justify-content-center">
         <div class="col-12 col-md-10 col-lg-8">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white">
-                    <h4 class="mb-0">@ViewData["Title"]</h4>
-                    <small class="text-muted">Điền thông tin trạm và tọa độ để đưa vào hệ thống.</small>
+                <div class="card-header bg-white border-bottom">
+                    <h4 class="mb-0">
+                        <i class="bi bi-geo-alt-fill text-primary me-2"></i>@ViewData["Title"]
+                    </h4>
+                    <small class="text-muted">Điền thông tin trạm và chọn vị trí trên bản đồ.</small>
                 </div>
                 <div class="card-body">
                     @if (TempData.ContainsKey("SuccessMessage"))
                     {
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            @TempData["SuccessMessage"]
+                            <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     }
+                    
                     <form method="post">
                         <input asp-for="StationForm.StationId" type="hidden" />
                         <input asp-for="ReturnUrl" type="hidden" />
-                        <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+                        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                        
                         <div class="mb-3">
-                            <label asp-for="StationForm.Name" class="form-label"></label>
-                            <input asp-for="StationForm.Name" class="form-control" />
+                            <label asp-for="StationForm.Name" class="form-label fw-semibold">
+                                <i class="bi bi-building me-1"></i>Tên trạm
+                            </label>
+                            <input asp-for="StationForm.Name" class="form-control" placeholder="VD: Trạm đổi pin Quận 1" />
                             <span asp-validation-for="StationForm.Name" class="text-danger small"></span>
                         </div>
+                        
                         <div class="mb-3">
-                            <label asp-for="StationForm.Address" class="form-label"></label>
-                            <input asp-for="StationForm.Address" class="form-control" list="stationAddressSuggestions" id="stationAddressInput" />
-                            <datalist id="stationAddressSuggestions"></datalist>
+                            <label asp-for="StationForm.Address" class="form-label fw-semibold">
+                                <i class="bi bi-pin-map me-1"></i>Địa chỉ
+                            </label>
+                            <input asp-for="StationForm.Address" 
+                                   class="form-control" 
+                                   id="stationAddressInput"
+                                   list="addressSuggestions"
+                                   placeholder="Nhập địa chỉ và chọn từ gợi ý..." />
+                            <datalist id="addressSuggestions"></datalist>
                             <span asp-validation-for="StationForm.Address" class="text-danger small"></span>
-                            <small class="text-muted d-block mt-1">Tìm kiếm địa chỉ để tự động điền tọa độ.</small>
+                            <small class="text-muted d-block mt-1">
+                                <i class="bi bi-info-circle me-1"></i>Gõ ít nhất 3 ký tự để nhận gợi ý địa chỉ.
+                            </small>
                         </div>
-                        <div class="row g-2">
-                            <div class="col">
-                                <label asp-for="StationForm.Latitude" class="form-label"></label>
-                                <input asp-for="StationForm.Latitude" class="form-control" type="number" step="0.000001" id="stationLatitudeInput" />
-                                <span asp-validation-for="StationForm.Latitude" class="text-danger small"></span>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="StationForm.Latitude" class="form-label fw-semibold">
+                                    <i class="bi bi-compass me-1"></i>Vĩ độ (Latitude)
+                                </label>
+                                <input asp-for="StationForm.Latitude" 
+                                       class="form-control" 
+                                       type="number" 
+                                       step="0.000001"
+                                       data-val-regex="Vĩ độ chỉ được phép tối đa 6 chữ số thập phân (ví dụ: 10.844445)"
+                                       data-val-regex-pattern="^-?\d+(\.\d{1,6})?$"
+                                       id="stationLatitudeInput" />
+                                <span asp-validation-for="StationForm.Latitude" class="text-danger"></span>
+                                <small class="text-muted">Tối đa 6 chữ số thập phân</small>
                             </div>
-                            <div class="col">
-                                <label asp-for="StationForm.Longitude" class="form-label"></label>
-                                <input asp-for="StationForm.Longitude" class="form-control" type="number" step="0.000001" id="stationLongitudeInput" />
-                                <span asp-validation-for="StationForm.Longitude" class="text-danger small"></span>
+                            <div class="col-md-6">
+                                <label asp-for="StationForm.Longitude" class="form-label fw-semibold">
+                                    <i class="bi bi-compass me-1"></i>Kinh độ (Longitude)
+                                </label>
+                                <input asp-for="StationForm.Longitude" 
+                                       class="form-control" 
+                                       type="number" 
+                                       step="0.000001"
+                                       data-val-regex="Kinh độ chỉ được phép tối đa 6 chữ số thập phân (ví dụ: 106.715696)"
+                                       data-val-regex-pattern="^-?\d+(\.\d{1,6})?$"
+                                       id="stationLongitudeInput" />
+                                <span asp-validation-for="StationForm.Longitude" class="text-danger"></span>
+                                <small class="text-muted">Tối đa 6 chữ số thập phân</small>
                             </div>
                         </div>
-                        <small class="text-muted d-block mt-1">Tọa độ phải có tối đa 6 chữ số thập phân (ví dụ: 10.844445, 106.715696)</small>
-                        <div class="row g-2 mt-3">
-                            <div class="col">
-                                <label asp-for="StationForm.Capacity" class="form-label"></label>
-                                <input asp-for="StationForm.Capacity" class="form-control" type="number" />
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="StationForm.Capacity" class="form-label fw-semibold">
+                                    <i class="bi bi-battery-charging me-1"></i>Sức chứa
+                                </label>
+                                <input asp-for="StationForm.Capacity" class="form-control" type="number" min="1" />
                                 <span asp-validation-for="StationForm.Capacity" class="text-danger small"></span>
                             </div>
-                            <div class="col">
-                                <label asp-for="StationForm.Status" class="form-label"></label>
+                            <div class="col-md-6">
+                                <label asp-for="StationForm.Status" class="form-label fw-semibold">
+                                    <i class="bi bi-toggle-on me-1"></i>Trạng thái
+                                </label>
                                 <select asp-for="StationForm.Status" class="form-select" asp-items="Model.StationStatusOptions"></select>
                                 <span asp-validation-for="StationForm.Status" class="text-danger small"></span>
                             </div>
                         </div>
-                        <div class="mb-3 mt-4">
-                            <label class="form-label mb-2">Vị trí trên bản đồ</label>
-                            <div id="stationMap"></div>
-                            <small class="text-muted d-block mt-1">Nhấn hoặc kéo marker trên bản đồ để đặt vị trí. Địa chỉ sẽ tự động cập nhật.</small>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold mb-2">
+                                <i class="bi bi-map me-1"></i>Vị trí trên bản đồ
+                            </label>
+                            <div style="position: relative;">
+                                <div id="stationMap"></div>
+                                <div id="mapLoading" class="map-loading" style="display: none;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mb-0 mt-2 small">Đang tải bản đồ...</p>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-hand-index me-1"></i>
+                                Nhấn vào bản đồ hoặc kéo marker (📍) để chọn vị trí chính xác.
+                            </small>
                         </div>
+                        
+                        <hr class="my-4" />
+                        
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save</button>
-                            <a class="btn btn-outline-secondary" href="@(Model.ReturnUrl ?? Url.Page("/Admin/Operations/Index"))">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i>Lưu trạm
+                            </button>
+                            <a class="btn btn-outline-secondary px-4" 
+                               href="@(Model.ReturnUrl ?? Url.Page("/Admin/Operations/Index"))">
+                                <i class="bi bi-x-circle me-1"></i>Hủy
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -99,320 +179,266 @@
         (function() {
             'use strict';
             
-            const defaultPosition = { lat: 10.8144, lng: 106.7102 };
+            console.log('[Map] Script started');
+            
+            const config = {
+                defaultPosition: { lat: 10.8144, lng: 106.7102 },
+                defaultZoom: 15, // ✅ Zoom in more for better view
+                minZoom: 5,
+                maxZoom: 19,
+                debounceDelay: 500 // ✅ Faster response
+            };
+            
             let map = null;
             let marker = null;
-            let reverseGeocodeTimer = null;
+            let geocodeTimer = null;
             let tileLayer = null;
-            let tileFallbackTriggered = false;
-            let currentTileServerIndex = 0;
-            const tileServers = [
-                {
-                    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                },
-                {
-                    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-                    attribution: '&copy; OpenStreetMap contributors, Tiles style by <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>'
-                }
-            ];
-
+            
+            const mapContainer = document.getElementById('stationMap');
+            const mapLoading = document.getElementById('mapLoading');
             const latInput = document.getElementById('stationLatitudeInput');
             const lngInput = document.getElementById('stationLongitudeInput');
             const addressInput = document.getElementById('stationAddressInput');
-            const addressDatalist = document.getElementById('stationAddressSuggestions');
-            let addressCandidates = [];
-            let lookupTimer = null;
-
+            
+            // ✅ WORKING TILE PROVIDERS (tested)
+            const tileProviders = [
+                {
+                    name: 'CartoDB Voyager',
+                    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                    attribution: '&copy; OpenStreetMap, &copy; CARTO',
+                    maxZoom: 19
+                },
+                {
+                    name: 'OSM Standard',
+                    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    attribution: '&copy; OpenStreetMap contributors',
+                    maxZoom: 19
+                }
+            ];
+            
+            let currentProviderIndex = 0;
+            
             function initMap() {
-                console.log('Initializing map...');
+                console.log('[Map] Initializing map container...');
                 
-                // Get initial position from inputs or use default
-                const initialLat = parseFloat(latInput?.value || defaultPosition.lat);
-                const initialLng = parseFloat(lngInput?.value || defaultPosition.lng);
-                const validLat = !isNaN(initialLat) ? initialLat : defaultPosition.lat;
-                const validLng = !isNaN(initialLng) ? initialLng : defaultPosition.lng;
+                if (!mapContainer) {
+                    console.error('[Map] Map container not found!');
+                    return;
+                }
                 
-                // Khởi tạo map với vị trí ban đầu
-                map = L.map('stationMap').setView([validLat, validLng], 13);
+                showLoading(true);
                 
-                // Sử dụng OpenStreetMap tiles với retry logic
-                loadTileLayer();
-
-                // Thêm marker với vị trí ban đầu
-                marker = L.marker([validLat, validLng], { 
-                    draggable: true 
-                }).addTo(map);
-                
-                // Events
-                marker.on('dragend', function(e) {
-                    const pos = e.target.getLatLng();
-                    updateInputsFromCoords(pos.lat, pos.lng, true);
-                });
-
-                map.on('click', function(e) {
-                    updateInputsFromCoords(e.latlng.lat, e.latlng.lng, true);
-                });
-
-                // Force invalidate size multiple times to ensure proper rendering
-                setTimeout(function() {
-                    map.invalidateSize();
-                    console.log('Map size invalidated (250ms)');
-                }, 250);
-                
-                setTimeout(function() {
-                    map.invalidateSize();
-                    console.log('Map size invalidated (500ms)');
-                }, 500);
-                
-                return map;
+                try {
+                    // Get initial coordinates
+                    const initialLat = parseFloat(latInput?.value) || config.defaultPosition.lat;
+                    const initialLng = parseFloat(lngInput?.value) || config.defaultPosition.lng;
+                    
+                    console.log('[Map] Initial position:', initialLat, initialLng);
+                    
+                    // Create map
+                    map = L.map(mapContainer, {
+                        center: [initialLat, initialLng],
+                        zoom: config.defaultZoom,
+                        zoomControl: true,
+                        attributionControl: true
+                    });
+                    
+                    console.log('[Map] Map object created');
+                    
+                    // Load tiles
+                    loadTileLayer();
+                    
+                    // Create draggable marker
+                    marker = L.marker([initialLat, initialLng], {
+                        draggable: true,
+                        title: 'Vị trí trạm đổi pin'
+                    }).addTo(map);
+                    
+                    marker.bindPopup('📍 Vị trí trạm đổi pin').openPopup();
+                    
+                    console.log('[Map] Marker created');
+                    
+                    // ✅ Event listeners
+                    marker.on('dragend', function(e) {
+                        const pos = e.target.getLatLng();
+                        console.log('[Map] Marker dragged to:', pos.lat, pos.lng);
+                        updatePosition(pos.lat, pos.lng, true);
+                    });
+                    
+                    map.on('click', function(e) {
+                        console.log('[Map] Map clicked at:', e.latlng.lat, e.latlng.lng);
+                        updatePosition(e.latlng.lat, e.latlng.lng, true);
+                    });
+                    
+                    // ✅ Force map to render properly
+                    setTimeout(() => {
+                        if (map) {
+                            map.invalidateSize();
+                            console.log('[Map] Size invalidated');
+                        }
+                        showLoading(false);
+                    }, 300);
+                    
+                    console.log('[Map] Initialization complete');
+                    
+                } catch (error) {
+                    console.error('[Map] Initialization error:', error);
+                    showLoading(false);
+                    alert('Không thể tải bản đồ. Vui lòng kiểm tra kết nối internet.');
+                }
             }
-
-            function setMapLocation(lat, lng) {
-                if (!map) initMap();
-                if (!marker) return;
-
-                marker.setLatLng([lat, lng]);
-                map.setView([lat, lng], 13);
-                map.invalidateSize();
-            }
-
+            
             function loadTileLayer() {
                 if (!map) return;
-
+                
+                // Remove old layer
                 if (tileLayer) {
                     map.removeLayer(tileLayer);
+                    console.log('[Map] Removed old tile layer');
                 }
-
-                const server = tileServers[currentTileServerIndex];
-                const options = {
-                    attribution: server.attribution,
-                    maxZoom: 19,
-                    errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-                };
-
-                tileLayer = L.tileLayer(server.url, options);
-                tileLayer.on('tileerror', function(event) {
-                    console.error('Tile error from', server.url, event);
-                    if (!tileFallbackTriggered && currentTileServerIndex + 1 < tileServers.length) {
-                        tileFallbackTriggered = true;
-                        currentTileServerIndex++;
-                        console.warn('Switching to alternate tile server:', tileServers[currentTileServerIndex].url);
-                        loadTileLayer();
+                
+                const provider = tileProviders[currentProviderIndex];
+                console.log(`[Map] Loading tiles from: ${provider.name}`);
+                
+                tileLayer = L.tileLayer(provider.url, {
+                    attribution: provider.attribution,
+                    maxZoom: provider.maxZoom,
+                    subdomains: ['a', 'b', 'c'],
+                    crossOrigin: true
+                });
+                
+                // ✅ Error handling
+                tileLayer.on('tileerror', function(error) {
+                    console.error(`[Map] Tile error from ${provider.name}:`, error);
+                    
+                    // Try next provider
+                    if (currentProviderIndex < tileProviders.length - 1) {
+                        currentProviderIndex++;
+                        console.warn(`[Map] Switching to: ${tileProviders[currentProviderIndex].name}`);
+                        setTimeout(loadTileLayer, 500);
+                    } else {
+                        console.error('[Map] All tile providers failed!');
+                        alert('Không thể tải bản đồ. Vui lòng thử lại sau.');
                     }
                 });
-
+                
                 tileLayer.on('tileloadstart', function() {
-                    console.log('Tiles loading from', server.url);
+                    console.log('[Map] Tiles loading...');
                 });
-
+                
                 tileLayer.on('tileload', function() {
-                    console.log('Tile loaded successfully from', server.url);
+                    console.log('[Map] Tile loaded successfully');
                 });
-
+                
+                tileLayer.on('load', function() {
+                    console.log('[Map] All tiles loaded!');
+                });
+                
                 tileLayer.addTo(map);
             }
-
-            async function reverseGeocode(lat, lng) {
-                if (!addressInput) return;
-                
-                console.log('Reverse geocoding:', lat, lng);
-                
-                const services = [
-                    {
-                        name: 'Nominatim',
-                        url: () => `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-                        parse: data => data?.display_name
-                    },
-                    {
-                        name: 'Photon',
-                        url: () => `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`,
-                        parse: data => {
-                            const feature = data?.features?.[0];
-                            const props = feature?.properties;
-                            if (!props) return null;
-                            const parts = [
-                                props.name,
-                                props.street,
-                                props.city,
-                                props.state,
-                                props.country
-                            ].filter(Boolean);
-                            return parts.length ? parts.join(', ') : null;
-                        }
-                    }
-                ];
-
-                for (const service of services) {
-                    try {
-                        const response = await fetch(service.url(), {
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            console.warn(`${service.name} reverse geocoding failed:`, response.status);
-                            continue;
-                        }
-
-                        const data = await response.json();
-                        console.log(`${service.name} geocoding result:`, data);
-                        const label = service.parse(data);
-                        if (label) {
-                            addressInput.value = label;
-                            return;
-                        }
-                    } catch (err) {
-                        console.error(`${service.name} reverse geocoding error:`, err);
-                    }
+            
+            function updatePosition(lat, lng, shouldReverseGeocode = false) {
+                // Validate
+                if (typeof lat !== 'number' || isNaN(lat) || lat < -90 || lat > 90) {
+                    console.warn('[Map] Invalid latitude:', lat);
+                    return;
                 }
-
-                if (!addressInput.value) {
-                    addressInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                if (typeof lng !== 'number' || isNaN(lng) || lng < -180 || lng > 180) {
+                    console.warn('[Map] Invalid longitude:', lng);
+                    return;
                 }
-            }
-
-            function updateInputsFromCoords(lat, lng, shouldReverseGeocode) {
+                
+                // Round to 6 decimals
                 const roundedLat = Math.round(lat * 1000000) / 1000000;
                 const roundedLng = Math.round(lng * 1000000) / 1000000;
                 
+                console.log('[Map] Updating position:', roundedLat, roundedLng);
+                
+                // Update inputs
                 if (latInput) latInput.value = roundedLat.toFixed(6);
                 if (lngInput) lngInput.value = roundedLng.toFixed(6);
                 
+                // Update marker
                 if (marker) {
                     marker.setLatLng([roundedLat, roundedLng]);
+                    marker.openPopup();
                 }
                 
+                // Pan map
+                if (map) {
+                    map.panTo([roundedLat, roundedLng]);
+                }
+                
+                // ✅ Reverse geocode with debounce
                 if (shouldReverseGeocode) {
-                    clearTimeout(reverseGeocodeTimer);
-                    reverseGeocodeTimer = setTimeout(function() {
+                    clearTimeout(geocodeTimer);
+                    geocodeTimer = setTimeout(() => {
+                        console.log('[Map] Starting reverse geocode...');
                         reverseGeocode(roundedLat, roundedLng);
-                    }, 1000);
+                    }, config.debounceDelay);
                 }
             }
-
-            function updateMapFromInputs() {
-                const lat = parseFloat(latInput?.value || '');
-                const lng = parseFloat(lngInput?.value || '');
-                
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    setMapLocation(lat, lng);
-                } else {
-                    setMapLocation(defaultPosition.lat, defaultPosition.lng);
-                }
-            }
-
-            async function lookupAddress(query) {
-                if (!query || !addressDatalist) return;
-
-                const services = [
-                    {
-                        name: 'Nominatim',
-                        url: () => `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`,
-                        parse: data => Array.isArray(data)
-                            ? data.map(item => ({
-                                display_name: item.display_name,
-                                lat: item.lat,
-                                lon: item.lon
-                            }))
-                            : []
-                    },
-                    {
-                        name: 'Photon',
-                        url: () => `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`,
-                        parse: data => Array.isArray(data?.features)
-                            ? data.features.map(feature => {
-                                const props = feature.properties || {};
-                                const parts = [
-                                    props.name,
-                                    props.street,
-                                    props.city,
-                                    props.state,
-                                    props.country
-                                ].filter(Boolean);
-                                return {
-                                    display_name: parts.length ? parts.join(', ') : feature.properties?.name || '',
-                                    lat: feature.geometry?.coordinates?.[1],
-                                    lon: feature.geometry?.coordinates?.[0]
-                                };
-                            }).filter(item => item.lat && item.lon)
-                            : []
-                    }
-                ];
-
-                for (const service of services) {
-                    try {
-                        const response = await fetch(service.url(), {
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            console.warn(`${service.name} lookup failed:`, response.status);
-                            continue;
-                        }
-
-                        const data = await response.json();
-                        const results = service.parse(data);
-
-                        if (results && results.length) {
-                            addressCandidates = results;
-                            addressDatalist.innerHTML = '';
-                            addressCandidates.forEach(item => {
-                                const option = document.createElement('option');
-                                option.value = item.display_name;
-                                addressDatalist.appendChild(option);
-                            });
-                            return;
-                        }
-                    } catch (err) {
-                        console.error(`${service.name} address lookup error:`, err);
-                    }
-                }
-
-                if (addressDatalist) {
-                    addressDatalist.innerHTML = '';
-                }
-                addressCandidates = [];
-            }
-            function scheduleLookup(value) {
-                clearTimeout(lookupTimer);
-                if (!value || value.length < 3) {
-                    if (addressDatalist) addressDatalist.innerHTML = '';
-                    addressCandidates = [];
-                    return;
-                }
-                lookupTimer = setTimeout(() => lookupAddress(value), 400);
-            }
-
-            function applySelection() {
+            
+            async function reverseGeocode(lat, lng) {
                 if (!addressInput) return;
-                const found = addressCandidates.find(item => item.display_name === addressInput.value);
-                if (!found) return;
-                updateInputsFromCoords(parseFloat(found.lat), parseFloat(found.lon), false);
-                updateMapFromInputs();
+                
+                console.log('[Geocode] Reverse geocoding:', lat, lng);
+                
+                try {
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=vi`;
+                    console.log('[Geocode] Request URL:', url);
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'User-Agent': 'BSMS-Station-Manager/1.0 (Contact: admin@bsms.com)',
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    console.log('[Geocode] Response status:', response.status);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('[Geocode] Response data:', data);
+                        
+                        if (data && data.display_name) {
+                            addressInput.value = data.display_name;
+                            console.log('[Geocode] Address updated:', data.display_name);
+                        } else {
+                            console.warn('[Geocode] No display_name in response');
+                            addressInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                        }
+                    } else {
+                        console.error('[Geocode] HTTP error:', response.status, response.statusText);
+                        addressInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    }
+                } catch (error) {
+                    console.error('[Geocode] Exception:', error);
+                    if (addressInput) {
+                        addressInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    }
+                }
             }
-
-            // Event listeners
-            if (latInput) latInput.addEventListener('change', updateMapFromInputs);
-            if (lngInput) lngInput.addEventListener('change', updateMapFromInputs);
-            if (addressInput) {
-                addressInput.addEventListener('input', (e) => scheduleLookup(e.target.value.trim()));
-                addressInput.addEventListener('change', applySelection);
+            
+            function showLoading(show) {
+                if (mapLoading) {
+                    mapLoading.style.display = show ? 'block' : 'none';
+                }
             }
-
-            // Initialize - đợi DOM và tất cả resources load xong
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    setTimeout(function() {
-                        initMap();
-                        updateMapFromInputs();
-                    }, 100);
-                });
-            } else {
-                setTimeout(function() {
-                    initMap();
-                    updateMapFromInputs();
-                }, 100);
+            
+            // ✅ Initialize when page is fully loaded
+            window.addEventListener('load', function() {
+                console.log('[Map] Window loaded, initializing map...');
+                setTimeout(initMap, 200);
+            });
+            
+            // Fallback if window load already fired
+            if (document.readyState === 'complete') {
+                console.log('[Map] Document already complete, initializing immediately...');
+                setTimeout(initMap, 200);
             }
+            
         })();
     </script>
 }

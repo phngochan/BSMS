@@ -1,4 +1,4 @@
-using BSMS.BLL.Services;
+﻿using BSMS.BLL.Services;
 using BSMS.BLL.Services.Background;
 using BSMS.BLL.Services.Implementations;
 using BSMS.BusinessObjects.Configurations;
@@ -56,6 +56,8 @@ builder.Services.AddScoped<IVnpayService, VnpayService>();
 builder.Services.AddScoped<IChangingStationService, ChangingStationService>();
 builder.Services.AddScoped<IBatteryService, BatteryService>();
 builder.Services.AddScoped<IBatteryTransferService, BatteryTransferService>();
+// ✅ Important: Register IScheduleService BEFORE IStationStaffService (dependency)
+// builder.Services.AddScoped<IScheduleService, ScheduleService>();
 builder.Services.AddScoped<IStationStaffService, StationStaffService>();
 builder.Services.AddScoped<ISupportService, SupportService>();
 builder.Services.AddScoped<ISwapTransactionService, SwapTransactionService>();
@@ -66,10 +68,12 @@ builder.Services.AddScoped<IVehicleService, VehicleService>();
 
 // Background Services
 builder.Services.AddHostedService<ReservationAutoCancelService>();
+
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHttpContextAccessor();
+
 // Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -95,7 +99,6 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-
 var app = builder.Build();
 
 // ========== Seed Database ==========
@@ -110,7 +113,6 @@ using (var scope = app.Services.CreateScope())
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -127,6 +129,5 @@ app.UseSession();
 app.MapRazorPages();
 app.MapHub<BSMS.WebApp.Hubs.NotificationHub>("/notificationHub");
 app.MapHub<PaymentHub>("/paymentHub");
-
 
 app.Run();
