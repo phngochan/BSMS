@@ -1,4 +1,4 @@
-using BSMS.BLL.Services;
+﻿using BSMS.BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
@@ -63,7 +63,7 @@ public class IndexModel : BasePageModel
     public IList<SwapTransaction> SwapTransactions { get; set; } = new List<SwapTransaction>();
     public IList<Config> Configs { get; set; } = new List<Config>();
     public HashSet<int> IdleStations { get; private set; } = new();
-    public HashSet<int> StationsWithoutStaff { get; private set; } = new(); // ✅ THÊM
+    public HashSet<int> StationsWithoutStaff { get; private set; } = new();
 
     public IList<Reservation> UpcomingReservations { get; private set; } = new List<Reservation>();
     public Dictionary<int, StationDriverSignal> StationDriverSignals { get; private set; } = new();
@@ -123,11 +123,15 @@ public class IndexModel : BasePageModel
     [BindProperty]
     public StaffUserCreateInput StaffUserCreateForm { get; set; } = new();
 
+    public string? ActiveForm { get; set; }
+
+    // ✅ THÊM OnGetAsync
     public async Task OnGetAsync()
     {
         await LoadReferenceDataAsync();
     }
 
+    // ✅ THÊM METHOD SaveStationAsync NẾU CẦN
     public async Task<IActionResult> OnPostSaveStationAsync()
     {
         if (!ValidateForm(StationForm, nameof(StationForm)))
@@ -138,14 +142,6 @@ public class IndexModel : BasePageModel
 
         try
         {
-            var validationMessage = await ValidateStationStatusRulesAsync();
-            if (!string.IsNullOrEmpty(validationMessage))
-            {
-                TempData["ErrorMessage"] = validationMessage;
-                await LoadReferenceDataAsync();
-                return Page();
-            }
-
             if (StationForm.StationId == 0)
             {
                 await _stationService.CreateStationAsync(new ChangingStation
@@ -158,7 +154,7 @@ public class IndexModel : BasePageModel
                     Status = StationForm.Status
                 });
 
-                TempData["SuccessMessage"] = "Đã tạo trạm mới.";
+                TempData["SuccessMessage"] = "Đã thêm trạm mới.";
                 await LogActivityAsync("Station", $"Created station {StationForm.Name}");
             }
             else
@@ -174,7 +170,7 @@ public class IndexModel : BasePageModel
                     Status = StationForm.Status
                 });
 
-                TempData["SuccessMessage"] = "Đã cập nhật thông tin trạm.";
+                TempData["SuccessMessage"] = "Đã cập nhật trạm.";
                 await LogActivityAsync("Station", $"Updated station #{StationForm.StationId}");
             }
 
@@ -186,38 +182,6 @@ public class IndexModel : BasePageModel
             await LoadReferenceDataAsync();
             return Page();
         }
-    }
-
-    private async Task<string?> ValidateStationStatusRulesAsync()
-    {
-        if (StationForm == null || StationForm.StationId == 0)
-        {
-            return null;
-        }
-
-        var assignments = (await _stationStaffService.GetAssignmentsByStationAsync(StationForm.StationId)).ToList();
-
-        if (StationForm.Status == StationStatus.Inactive)
-        {
-            if (assignments.Any())
-            {
-                return "Không thể chuyển trạm sang trạng thái Inactive khi vẫn còn nhân viên đang được phân công.";
-            }
-
-            var hasBookedBattery = (await _batteryService.GetBatteriesByStationAsync(StationForm.StationId))
-                .Any(b => b.Status == BatteryStatus.Booked);
-            if (hasBookedBattery)
-            {
-                return "Không thể chuyển trạm sang trạng thái Inactive khi vẫn còn pin đang ở trạng thái Booked.";
-            }
-        }
-
-        if (StationForm.Status == StationStatus.Active && !assignments.Any())
-        {
-            return "Trạm ở trạng thái Active phải có ít nhất một nhân viên.";
-        }
-
-        return null;
     }
 
     public async Task<IActionResult> OnPostDeleteStationAsync(int stationId)
@@ -344,11 +308,10 @@ public class IndexModel : BasePageModel
 
         try
         {
-            // ✅ THÊM VALIDATION CHO TRƯỜNG HỢP TẠO MỚI
             if (TransferForm.TransferId == 0)
             {
                 var battery = await _batteryService.GetBatteryAsync(TransferForm.BatteryId);
-                
+
                 if (battery == null)
                 {
                     ModelState.AddModelError(string.Empty, "Không tìm thấy pin.");
@@ -356,7 +319,6 @@ public class IndexModel : BasePageModel
                     return Page();
                 }
 
-                // Kiểm tra pin phải ở trạng thái Full
                 if (battery.Status != BatteryStatus.Full)
                 {
                     ModelState.AddModelError(string.Empty, $"Pin chỉ có thể điều phối khi trạng thái = Full. Hiện tại: {battery.Status}");
@@ -364,7 +326,6 @@ public class IndexModel : BasePageModel
                     return Page();
                 }
 
-                // Kiểm tra pin phải ở đúng trạm xuất phát
                 if (battery.StationId != TransferForm.FromStationId)
                 {
                     ModelState.AddModelError(string.Empty, $"Pin hiện đang ở trạm #{battery.StationId}, không phải trạm xuất phát đã chọn.");
@@ -417,7 +378,6 @@ public class IndexModel : BasePageModel
     {
         try
         {
-            // ✅ THÊM LOGIC DI CHUYỂN PIN KHI HOÀN TẤT
             if (status == TransferStatus.Completed)
             {
                 var transfer = await _transferService.GetTransferAsync(transferId);
@@ -430,7 +390,6 @@ public class IndexModel : BasePageModel
                 var battery = await _batteryService.GetBatteryAsync(transfer.BatteryId);
                 if (battery != null)
                 {
-                    // Di chuyển pin sang trạm đích
                     battery.StationId = transfer.ToStationId;
                     await _batteryService.UpdateBatteryAsync(battery);
                 }
@@ -589,7 +548,6 @@ public class IndexModel : BasePageModel
     {
         try
         {
-            // ✅ THÊM VALIDATION
             var assignment = await _stationStaffService.GetAssignmentAsync(staffId);
             if (assignment == null)
             {
@@ -604,7 +562,6 @@ public class IndexModel : BasePageModel
                 return RedirectToPage();
             }
 
-            // Kiểm tra nếu trạm Active và đây là nhân viên cuối cùng
             if (station.Status == StationStatus.Active)
             {
                 var staffCount = (await _stationStaffService.GetAssignmentsByStationAsync(assignment.StationId)).Count();
@@ -869,7 +826,7 @@ public class IndexModel : BasePageModel
         Supports = supportList;
         SwapTransactions = swapList;
         Configs = configList;
-        
+
         var idleThreshold = TimeSpan.FromHours(12);
         IdleStations = stationList
             .Where(s =>
@@ -883,13 +840,12 @@ public class IndexModel : BasePageModel
             .Select(s => s.StationId)
             .ToHashSet();
 
-        // ✅ THÊM: Tính trạm Active không có nhân viên
         var stationStaffCounts = staffAssignments
             .GroupBy(s => s.StationId)
             .ToDictionary(g => g.Key, g => g.Count());
 
         StationsWithoutStaff = stationList
-            .Where(s => s.Status == StationStatus.Active && 
+            .Where(s => s.Status == StationStatus.Active &&
                         !stationStaffCounts.ContainsKey(s.StationId))
             .Select(s => s.StationId)
             .ToHashSet();
@@ -957,6 +913,7 @@ public class IndexModel : BasePageModel
 
     private bool ValidateForm<TModel>(TModel formModel, string prefix)
     {
+        ActiveForm = prefix;
         ModelState.Clear();
         var isValid = TryValidateModel(formModel, prefix);
 
@@ -1019,6 +976,7 @@ public class IndexModel : BasePageModel
         public DateTime? NextReservationTime { get; set; }
         public bool NeedsAttention => PendingReservations > 0 && FullBatteries == 0;
     }
+
     public class StationInput
     {
         public int StationId { get; set; }
@@ -1105,6 +1063,14 @@ public class IndexModel : BasePageModel
         public int StationId { get; set; }
 
         public DateTime? AssignedAt { get; set; }
+        
+        [Required(ErrorMessage = "Giờ bắt đầu ca là bắt buộc")]
+        public TimeSpan ShiftStart { get; set; } = TimeSpan.FromHours(8);
+        
+        [Required(ErrorMessage = "Giờ kết thúc ca là bắt buộc")]
+        public TimeSpan ShiftEnd { get; set; } = TimeSpan.FromHours(17);
+        
+        public bool IsActive { get; set; } = true;
     }
 
     public class SupportInput

@@ -4,6 +4,37 @@
     ViewData["Title"] = "Tìm Trạm";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #stationMap {
+            height: 500px;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+        }
+        .station-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .station-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        }
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+    </style>
+}
+
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
@@ -14,21 +45,43 @@
         </div>
     </div>
 
+    <!-- Map Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Bản đồ trạm</h5>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="centerOnCurrentLocation()">
+                            <i class="bi bi-geo-alt-fill"></i> Vị trí của tôi
+                        </button>
+                    </div>
+                    <div id="stationMap"></div>
+                    <div class="mt-2 text-muted small">
+                        <i class="bi bi-info-circle"></i> Kéo marker màu xanh dương để thay đổi vị trí tìm kiếm
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Search Section -->
     <div class="row mb-4">
         <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <form method="get">
+                    <form method="get" id="searchForm">
                         <div class="row g-3">
                             <div class="col-md-8">
                                 <div class="input-group">
                                     <span class="input-group-text bg-white">
                                         <i class="bi bi-search"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="location" 
+                                    <input type="text" class="form-control" name="location" id="locationInput"
                                            placeholder="Nhập địa chỉ hoặc dùng vị trí hiện tại"
                                            value="@Model.SearchLocation">
+                                    <input type="hidden" name="lat" id="latInput" value="@(Model.UserLatitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")">
+                                    <input type="hidden" name="lng" id="lngInput" value="@(Model.UserLongitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")">
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -36,11 +89,6 @@
                                     <i class="bi bi-search"></i> Tìm Kiếm
                                 </button>
                             </div>
-                        </div>
-                        <div class="mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="useCurrentLocation()">
-                                <i class="bi bi-geo-alt-fill"></i> Dùng Vị Trí Hiện Tại
-                            </button>
                         </div>
                     </form>
                 </div>
@@ -74,7 +122,7 @@
             @foreach (var station in Model.Stations)
             {
                 <div class="col-lg-6 mb-4">
-                    <div class="card h-100 shadow-sm station-card">
+                    <div class="card h-100 shadow-sm station-card" data-station-id="@station.StationId">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div>
@@ -111,17 +159,14 @@
                                 </div>
                             </div>
 
-                            <!-- Contact phone removed: not available in model -->
-
                             <div class="d-flex gap-2">
                                 <a asp-page="/Driver/StationDetails" asp-route-id="@station.StationId" 
                                    class="btn btn-success flex-fill">
                                     <i class="bi bi-calendar-check"></i> Đặt Ngay
                                 </a>
-                                <a href="https://www.google.com/maps/dir/?api=1&destination=@station.Latitude,@station.Longitude" 
-                                   target="_blank" class="btn btn-outline-primary flex-fill">
-                                    <i class="bi bi-map"></i> Chỉ Đường
-                                </a>
+                                <button type="button" class="btn btn-outline-primary flex-fill" onclick="focusStation(@station.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture), @station.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture))">
+                                    <i class="bi bi-map"></i> Xem trên bản đồ
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -143,37 +188,170 @@
     </div>
 </div>
 
-<style>
-    .station-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .station-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    }
-    .icon-circle {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-    }
-</style>
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let userMarker;
+        let stationMarkers = [];
+        
+        // Initialize map
+        document.addEventListener('DOMContentLoaded', function() {
+            // Default center (Hanoi, Vietnam)
+            let defaultLat = 21.0285;
+            let defaultLng = 105.8542;
+            
+            // Try to get user's current location from localStorage or model
+            const storedLocation = localStorage.getItem('userLocation');
+            if (storedLocation) {
+                try {
+                    const loc = JSON.parse(storedLocation);
+                    if (loc.lat && loc.lng) {
+                        defaultLat = loc.lat;
+                        defaultLng = loc.lng;
+                    }
+                } catch (e) {
+                    console.error('Error parsing stored location:', e);
+                }
+            }
+            
+            @if (Model.UserLatitude.HasValue && Model.UserLongitude.HasValue)
+            {
+                <text>
+                defaultLat = @Model.UserLatitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                defaultLng = @Model.UserLongitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                </text>
+            }
+            
 
-<script>
-    function useCurrentLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                window.location.href = `/Driver/FindStations?lat=${lat}&lng=${lng}`;
-            }, function(error) {
-                alert('Không thể lấy vị trí của bạn. Vui lòng nhập thủ công.');
+            map = L.map('stationMap').setView([defaultLat, defaultLng], 13);
+            
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+  
+            const userIcon = L.divIcon({
+                className: 'custom-user-marker',
+                html: '<div style="background-color: #007bff; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
             });
-        } else {
-            alert('Trình duyệt của bạn không hỗ trợ định vị.');
+            
+            // Add draggable user marker
+            userMarker = L.marker([defaultLat, defaultLng], {
+                icon: userIcon,
+                draggable: true,
+                title: 'Vị trí của bạn (có thể kéo)'
+            }).addTo(map);
+            
+            // Add popup to user marker
+            userMarker.bindPopup('<strong>Vị trí của bạn</strong><br>Kéo marker để thay đổi');
+            
+            // Handle marker drag
+            userMarker.on('dragend', function(e) {
+                const position = e.target.getLatLng();
+                updateSearchLocation(position.lat, position.lng);
+            });
+            
+            // Add station markers
+            @if (Model.Stations != null && Model.Stations.Any())
+            {
+                <text>
+                const stations = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Stations.Select(s => new {
+                    id = s.StationId,
+                    name = s.Name,
+                    address = s.Address,
+                    lat = s.Latitude,
+                    lng = s.Longitude,
+                    available = s.AvailableBatteries,
+                    capacity = s.Capacity,
+                    distance = s.Distance
+                })));
+                
+                stations.forEach(station => {
+                    const stationIcon = L.divIcon({
+                        className: 'custom-station-marker',
+                        html: `<div style="background-color: #00c853; width: 35px; height: 35px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
+                                   <i class="bi bi-lightning-charge-fill" style="color: white; transform: rotate(45deg); font-size: 18px;"></i>
+                               </div>`,
+                        iconSize: [35, 35],
+                        iconAnchor: [17, 35],
+                        popupAnchor: [0, -35]
+                    });
+                    
+                    const marker = L.marker([station.lat, station.lng], {
+                        icon: stationIcon,
+                        title: station.name
+                    }).addTo(map);
+                    
+                    marker.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h6 class="mb-2">${station.name}</h6>
+                            <p class="small text-muted mb-2">${station.address}</p>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="small">Có sẵn:</span>
+                                <strong class="text-success">${station.available}/${station.capacity}</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="small">Khoảng cách:</span>
+                                <strong>${station.distance.toFixed(1)} km</strong>
+                            </div>
+                            <a href="/Driver/StationDetails?id=${station.id}" class="btn btn-sm btn-success w-100">
+                                <i class="bi bi-calendar-check"></i> Đặt ngay
+                            </a>
+                        </div>
+                    `);
+                    
+                    stationMarkers.push(marker);
+                });
+                </text>
+            }
+        });
+        
+        // Update search location inputs
+        function updateSearchLocation(lat, lng) {
+            document.getElementById('latInput').value = lat;
+            document.getElementById('lngInput').value = lng;
+            
+            // Update localStorage
+            localStorage.setItem('userLocation', JSON.stringify({
+                lat: lat,
+                lng: lng,
+                timestamp: Date.now()
+            }));
+            
+            // Optionally auto-submit form to update results
+            // document.getElementById('searchForm').submit();
         }
-    }
-</script>
+        
+        // Center on current location
+        function centerOnCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    map.setView([lat, lng], 13);
+                    userMarker.setLatLng([lat, lng]);
+                    updateSearchLocation(lat, lng);
+                    
+                    // Submit form to update results
+                    document.getElementById('searchForm').submit();
+                }, function(error) {
+                    alert('Không thể lấy vị trí của bạn. Vui lòng kiểm tra quyền truy cập.');
+                });
+            } else {
+                alert('Trình duyệt của bạn không hỗ trợ định vị.');
+            }
+        }
+        
+        // Focus on specific station
+        function focusStation(lat, lng) {
+            map.setView([lat, lng], 16);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+}

@@ -4,7 +4,7 @@
 @using System.Linq
 @model BSMS.WebApp.Pages.Admin.Operations.IndexModel
 @{
-    ViewData["Title"] = "OPERATIONS & SYSTEM MONITORING";
+    ViewData["Title"] = "VẬN HÀNH & GIÁM SÁT HỆ THỐNG";
 }
 
 @functions {
@@ -53,11 +53,11 @@
 
 <div class="container-fluid py-3 operations-wrapper">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
-        <div>
-            <p class="text-uppercase text-muted fw-semibold mb-1">Operation & Monitoring Flow</p>
-            <h2 class="fw-bold mb-0">@ViewData["Title"]</h2>
-            <p class="text-muted mb-0">Choose the tab that fits the action you need to perform.</p>
-        </div>
+            <div>
+                <p class="text-uppercase text-muted fw-semibold mb-1">Luồng vận hành và giám sát</p>
+                <h2 class="fw-bold mb-0">@ViewData["Title"]</h2>
+                <p class="text-muted mb-0">Chọn tab phù hợp với hành động bạn muốn thực hiện.</p>
+            </div>
         <span class="badge bg-success-subtle text-success-emphasis px-3 py-2 mt-3 mt-md-0">
             <i class="bi bi-activity me-2"></i>Last updated @Model.Overview.GeneratedAt.ToLocalTime().ToString("HH:mm:ss")
         </span>
@@ -65,25 +65,25 @@
 
     <ul class="nav nav-pills flex-wrap gap-2" id="operationsTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab">Overview</button>
+            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#tab-overview" type="button" role="tab">Tổng quan</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="stations-tab" data-bs-toggle="tab" data-bs-target="#tab-stations" type="button" role="tab">Stations & Batteries</button>
+            <button class="nav-link" id="stations-tab" data-bs-toggle="tab" data-bs-target="#tab-stations" type="button" role="tab">Trạm & Pin</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="transfer-tab" data-bs-toggle="tab" data-bs-target="#tab-transfer" type="button" role="tab">Transfers</button>
+            <button class="nav-link" id="transfer-tab" data-bs-toggle="tab" data-bs-target="#tab-transfer" type="button" role="tab">Đơn điều phối</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#tab-staff" type="button" role="tab">Station Staff</button>
+            <button class="nav-link" id="staff-tab" data-bs-toggle="tab" data-bs-target="#tab-staff" type="button" role="tab">Nhân sự trạm</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="support-tab" data-bs-toggle="tab" data-bs-target="#tab-support" type="button" role="tab">Support</button>
+            <button class="nav-link" id="support-tab" data-bs-toggle="tab" data-bs-target="#tab-support" type="button" role="tab">Hỗ trợ</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="swap-tab" data-bs-toggle="tab" data-bs-target="#tab-swap" type="button" role="tab">Swap Transactions</button>
+            <button class="nav-link" id="swap-tab" data-bs-toggle="tab" data-bs-target="#tab-swap" type="button" role="tab">Giao dịch đổi pin</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#tab-config" type="button" role="tab">Configuration</button>
+            <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#tab-config" type="button" role="tab">Cấu hình</button>
         </li>
     </ul>
 
@@ -95,9 +95,9 @@
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-body d-flex justify-content-between align-items-center">
                             <div>
-                                <p class="text-muted text-uppercase small mb-1">Active stations</p>
+                                <p class="text-muted text-uppercase small mb-1">Trạm đang hoạt động</p>
                                 <div class="fs-2 fw-bold">@Model.Overview.StationCount</div>
-                                <small class="text-success">@Model.Overview.ActiveStationCount active</small>
+                                <small class="text-success">@Model.Overview.ActiveStationCount đang hoạt động</small>
                             </div>
                             <i class="bi bi-ev-station text-success fs-1"></i>
                         </div>
@@ -107,9 +107,9 @@
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-body d-flex justify-content-between align-items-center">
                             <div>
-                                <p class="text-muted text-uppercase small mb-1">Battery inventory</p>
+                                <p class="text-muted text-uppercase small mb-1">Tồn kho pin</p>
                                 <div class="fs-2 fw-bold">@Model.Overview.BatteryTotal</div>
-                                <small class="text-primary">@Model.Overview.TransfersInProgress transfers in progress</small>
+                                <small class="text-primary">@Model.Overview.TransfersInProgress đang điều phối</small>
                             </div>
                             <i class="bi bi-battery-charging text-primary fs-1"></i>
                         </div>
@@ -119,9 +119,9 @@
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-body d-flex justify-content-between align-items-center">
                             <div>
-                                <p class="text-muted text-uppercase small mb-1">Open tickets</p>
+                                <p class="text-muted text-uppercase small mb-1">Ticket mở</p>
                                 <div class="fs-2 fw-bold">@Model.Overview.OpenSupports</div>
-                                <small class="text-warning">Needs attention</small>
+                                <small class="text-warning">Cần lưu ý</small>
                             </div>
                             <i class="bi bi-life-preserver text-warning fs-1"></i>
                         </div>
@@ -131,9 +131,9 @@
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-body d-flex justify-content-between align-items-center">
                             <div>
-                                <p class="text-muted text-uppercase small mb-1">Revenue</p>
+                                <p class="text-muted text-uppercase small mb-1">Doanh thu</p>
                                 <div class="fs-2 fw-bold">@Model.Overview.MonthlyRevenue.ToString("C0")</div>
-                                <small class="text-info">@Model.Overview.DailyTransactions transactions/day</small>
+                                <small class="text-info">@Model.Overview.DailyTransactions giao dịch/ngày</small>
                             </div>
                             <i class="bi bi-currency-exchange text-info fs-1"></i>
                         </div>
@@ -143,15 +143,15 @@
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-body d-flex justify-content-between align-items-center">
                             <div>
-                                <p class="text-muted text-uppercase small mb-1">Driver queue (6h)</p>
+                                <p class="text-muted text-uppercase small mb-1">Hàng chờ tài xế (6h)</p>
                                 <div class="fs-2 fw-bold">@Model.Overview.DriverQueueCount</div>
                                 @{
                                     var nextReservation = Model.UpcomingReservations.FirstOrDefault();
                                     var nextSlot = nextReservation?.ScheduledTime.ToLocalTime().ToString("HH:mm");
                                 }
-                                <small class="text-danger">
-                                    @(nextSlot is not null ? $"Next pickup {nextSlot}" : "No driver scheduled")
-                                </small>
+                                    <small class="text-danger">
+                                        @(nextSlot is not null ? $"Lần lấy tiếp theo {nextSlot}" : "Chưa có tài xế được lên lịch")
+                                    </small>
                             </div>
                             <i class="bi bi-person-raised-hand text-danger fs-1"></i>
                         </div>
@@ -163,8 +163,8 @@
                 <div class="col-12 col-xl-8">
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Driver pipeline (next 6h)</h5>
-                            <small class="text-muted">Match upcoming drivers with prepared batteries.</small>
+                            <h5 class="mb-0">Luồng tài xế (6h tới)</h5>
+                            <small class="text-muted">Phối tài xế sắp tới với pin đã chuẩn bị.</small>
                         </div>
                         <div class="card-body">
                             @if (Model.UpcomingReservations.Any())
@@ -173,10 +173,10 @@
                                     <table class="table table-sm align-middle mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Driver</th>
-                                                <th>Station &amp; slot</th>
-                                                <th>Battery</th>
-                                                <th class="text-end">Status</th>
+                                                <th>Tài xế</th>
+                                                <th>Trạm &amp; ca</th>
+                                                <th>Pin</th>
+                                                <th class="text-end">Trạng thái</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -193,7 +193,7 @@
                                                     </td>
                                                     <td>
                                                         <div class="fw-semibold">
-                                                            @reservation.Station?.Name ?? $"Station #{reservation.StationId}"
+                                                            @(reservation.Station?.Name ?? $"Station #{reservation.StationId}")
                                                         </div>
                                                         <small class="text-muted">@scheduledTime</small>
                                                     </td>
@@ -211,7 +211,7 @@
                             }
                             else
                             {
-                                <p class="text-muted mb-0">No drivers queued in the next 6 hours.</p>
+                                <p class="text-muted mb-0">Chưa có tài xế trong 6 giờ tới.</p>
                             }
                         </div>
                     </div>
@@ -219,8 +219,8 @@
                 <div class="col-12 col-xl-4">
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Stations needing prep</h5>
-                            <small class="text-muted">Alert if drivers arrive before fresh packs are ready.</small>
+                            <h5 class="mb-0">Trạm cần chuẩn bị</h5>
+                            <small class="text-muted">Cảnh báo nếu tài xế đến trước khi pin mới sẵn sàng.</small>
                         </div>
                         <div class="card-body">
                             @{
@@ -295,23 +295,28 @@
         <!-- Stations & Batteries -->
         <div class="tab-pane fade" id="tab-stations" role="tabpanel" aria-labelledby="stations-tab">
             <div class="row g-4 mb-4">
-                <div class="col-12 col-lg-8">
+                <div class="col-12">
                     <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Swap stations</h5>
-                            <small class="text-muted">Track station status and capacity.</small>
+                        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">Trạm đổi pin</h5>
+                                <small class="text-muted">Theo dõi trạng thái và sức chứa trạm</small>
+                            </div>
+                            <a class="btn btn-primary btn-sm" asp-page="/Admin/Operations/Stations/Edit" asp-route-returnUrl="@Url.Page("/Admin/Operations/Index")">
+                                <i class="bi bi-plus-lg me-1"></i>Tạo trạm
+                            </a>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover mb-0 align-middle">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Station name</th>
-                                            <th>Address</th>
-                                            <th>Capacity</th>
+                                            <th>Tên trạm</th>
+                                            <th>Địa chỉ</th>
+                                            <th>Sức chứa</th>
                                             <th>Pin</th>
-                                            <th>Drivers</th>
-                                            <th>Status</th>
+                                            <th>Tài xế</th>
+                                            <th>Trạng thái</th>
                                             <th></th>
                                         </tr>
                                     </thead>
@@ -325,64 +330,46 @@
                                                 <td class="fw-semibold">@station.Name</td>
                                                 <td>@station.Address</td>
                                                 <td>@station.Capacity</td>
-                                            <td>
-                                                <div class="d-flex gap-2 flex-wrap">
-                                                    @foreach (BatteryStatus status in Enum.GetValues(typeof(BatteryStatus)))
-                                                    {
-                                                        var value = batteryGroups.TryGetValue(status, out var v) ? v : 0;
-                                                        <span class="badge bg-light text-dark border">@status: @value</span>
-                                                    }
-                                                </div>
-                                            </td>
-                                            <td>
-                                                @if (Model.StationDriverSignals.TryGetValue(station.StationId, out var driverSignal))
-                                                {
-                                                    <div class="d-flex flex-column gap-1">
-                                                        <span class="fw-semibold">@driverSignal.PendingReservations pending</span>
-                                                        <small class="text-muted">Next: @(driverSignal.NextReservationTime?.ToLocalTime().ToString("HH:mm") ?? "--")</small>
-                                                        <small class="text-muted">Full ready: @driverSignal.FullBatteries &middot; Booked: @driverSignal.BookedBatteries</small>
-                                                        @if (driverSignal.DriverNames.Any())
+                                                <td>
+                                                    <div class="d-flex gap-2 flex-wrap">
+                                                        @foreach (BatteryStatus status in Enum.GetValues(typeof(BatteryStatus)))
                                                         {
-                                                            <small class="text-muted">Queue: @string.Join(", ", driverSignal.DriverNames)</small>
+                                                            var value = batteryGroups.TryGetValue(status, out var v) ? v : 0;
+                                                            <span class="badge bg-light text-dark border">@status: @value</span>
                                                         }
                                                     </div>
-                                                    @if (driverSignal.NeedsAttention)
+                                                </td>
+                                                <td>
+                                                    @if (Model.StationDriverSignals.TryGetValue(station.StationId, out var driverSignal))
                                                     {
-                                                        <span class="badge bg-danger text-white mt-1">Prep battery</span>
+                                                        <div class="d-flex flex-column gap-1">
+                                                            <span>@driverSignal.PendingReservations lượt tài xế chờ</span>
+                                                            <span>@driverSignal.DriverNames.Count tài xế</span>
+                                                        </div>
                                                     }
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-muted">No queue</span>
-                                                }
-                                            </td>
-                                            <td>
-                                                @{
-                                                    var stationBadgeClass = GetStationBadgeClass(station.Status);
-                                                }
+                                                    else
+                                                    {
+                                                        <span class="text-muted small">Không có hàng chờ</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @{ var stationBadgeClass = GetStationBadgeClass(station.Status); }
                                                     <span class="@stationBadgeClass">@station.Status</span>
                                                     @if (Model.IdleStations.Contains(station.StationId))
                                                     {
-                                                        <span class="badge bg-danger text-white ms-1" title="Station has no completed swaps in the last 12h">Idle &gt; 12h</span>
+                                                        <span class="badge bg-danger text-white ms-1" title="Trạm không có giao dịch trong 12h">Không có trao đổi trong 12h</span>
                                                     }
                                                     @if (Model.StationsWithoutStaff.Contains(station.StationId))
                                                     {
-                                                        <span class="badge bg-warning text-dark ms-1" title="Active station without staff">&#9888; No staff</span>
+                                                        <span class="badge bg-warning text-dark ms-1" title="Trạm hoạt động nhưng không có nhân sự">&#9888; Chưa có nhân sự</span>
                                                     }
                                                 </td>
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button type="button"
                                                                 class="btn btn-outline-secondary station-edit-btn"
-                                                                data-payload='@Html.Raw(JsonSerializer.Serialize(new {
-                                                                    StationId = station.StationId,
-                                                                    station.Name,
-                                                                    station.Address,
-                                                                    station.Latitude,
-                                                                    station.Longitude,
-                                                                    station.Capacity,
-                                                                    Status = station.Status.ToString()
-                                                                }))'>
+                                                                data-station-id="@station.StationId"
+                                                                title="Edit station">
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
                                                         <form method="post" asp-page-handler="DeleteStation" class="d-inline"
@@ -408,379 +395,154 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-lg-4">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Add / update station</h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="post" asp-page-handler="SaveStation" id="stationForm">
-                                <input asp-for="StationForm.StationId" type="hidden" />
-                                <div asp-validation-summary="All" class="text-danger small"></div>
-                                <div class="mb-3">
-                                    <label asp-for="StationForm.Name" class="form-label"></label>
-                                    <input asp-for="StationForm.Name" class="form-control" />
-                                    <span asp-validation-for="StationForm.Name" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-3">
-                                    <label asp-for="StationForm.Address" class="form-label"></label>
-                                    <textarea asp-for="StationForm.Address" class="form-control" rows="2"></textarea>
-                                    <span asp-validation-for="StationForm.Address" class="text-danger small"></span>
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col">
-                                        <label asp-for="StationForm.Latitude" class="form-label"></label>
-                                        <input asp-for="StationForm.Latitude" class="form-control" type="number" step="0.0001" />
-                                        <span asp-validation-for="StationForm.Latitude" class="text-danger small"></span>
-                                    </div>
-                                    <div class="col">
-                                        <label asp-for="StationForm.Longitude" class="form-label"></label>
-                                        <input asp-for="StationForm.Longitude" class="form-control" type="number" step="0.0001" />
-                                        <span asp-validation-for="StationForm.Longitude" class="text-danger small"></span>
-                                    </div>
-                                </div>
-                                <div class="row g-2 mt-2">
-                                    <div class="col">
-                                        <label asp-for="StationForm.Capacity" class="form-label"></label>
-                                        <input asp-for="StationForm.Capacity" class="form-control" type="number" />
-                                        <span asp-validation-for="StationForm.Capacity" class="text-danger small"></span>
-                                    </div>
-                                    <div class="col">
-                                        <label asp-for="StationForm.Status" class="form-label"></label>
-                                        <select asp-for="StationForm.Status" class="form-select" asp-items="Model.StationStatusOptions"></select>
-                                        <span asp-validation-for="StationForm.Status" class="text-danger small"></span>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2 mt-3">
-                                    <button type="submit" class="btn btn-primary px-3"><i class="bi bi-save me-1"></i>Save</button>
-                                    <button type="button" class="btn btn-outline-secondary px-3" data-reset-target="stationForm">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i>New
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
             </div>
-
+        </div>        <!-- Transfers -->
+        @await Html.PartialAsync("_TransferTab", Model)        <!-- Station Staff -->
+        <div class="tab-pane fade" id="tab-staff" role="tabpanel" aria-labelledby="staff-tab">
             <div class="row g-4">
-                <div class="col-12 col-lg-8">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Battery inventory</h5>
-                            <small class="text-muted">Top 50 recently updated batteries.</small>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0 align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Model</th>
-                                            <th>SoH</th>
-                                            <th>Status</th>
-                                            <th>Station</th>
-                                            <th>Updated</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var battery in Model.Batteries)
-                                        {
-                                            <tr>
-                                                <td>#@battery.BatteryId</td>
-                                                <td>@battery.Model<br /><small class="text-muted">@battery.Capacity Wh</small></td>
-                                                <td>@battery.Soh %</td>
-                                                <td>
-                                                    <span class="@GetBatteryBadgeClass(battery.Status)">@battery.Status</span>
-                                                    @if (!string.IsNullOrWhiteSpace(battery.DefectNote))
-                                                    {
-                                                        <div class="text-danger small fst-italic">Reason: @battery.DefectNote</div>
-                                                    }
-                                                </td>
-                                                <td>@battery.Station?.Name</td>
-                                                <td>@battery.UpdatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
-                                                <td class="text-end">
-                                                    <div class="btn-group btn-group-sm">
-                                                        <button type="button"
-                                                                class="btn btn-outline-secondary battery-edit-btn"
-                                                                data-payload='@Html.Raw(JsonSerializer.Serialize(new {
-                                                                    BatteryId = battery.BatteryId,
-                                                                    battery.Model,
-                                                                    battery.Capacity,
-                                                                    battery.Soh,
-                                                                    Status = battery.Status.ToString(),
-                                                                    battery.StationId,
-                                                                    LastMaintenance = battery.LastMaintenance?.ToString("yyyy-MM-ddTHH:mm")
-                                                                }))'>
-                                                            <i class="bi bi-pencil"></i>
-                                                        </button>
-                                                        <form method="post" asp-page-handler="DeleteBattery" class="d-inline"
-                                                              onsubmit="return confirm('Delete battery #@battery.BatteryId?');">
-                                                            <input type="hidden" name="batteryId" value="@battery.BatteryId" />
-                                                            <button class="btn btn-outline-danger">
-                                                                <i class="bi bi-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        }
-                                        @if (!Model.Batteries.Any())
-                                        {
-                                            <tr>
-                                                <td colspan="7" class="text-center text-muted py-4">No battery data available yet.</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-lg-4">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white van-white border-0">
-                            <h5 class="mb-0">Add / update battery</h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="post" asp-page-handler="SaveBattery" id="batteryForm">
-                                <input asp-for="BatteryForm.BatteryId" type="hidden" />
-                                <div asp-validation-summary="All" class="text-danger small"></div>
-                                <div class="mb-3">
-                                    <label asp-for="BatteryForm.Model" class="form-label"></label>
-                                    <input asp-for="BatteryForm.Model" class="form-control" />
-                                    <span asp-validation-for="BatteryForm.Model" class="text-danger small"></span>
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col">
-                                        <label asp-for="BatteryForm.Capacity" class="form-label"></label>
-                                        <input asp-for="BatteryForm.Capacity" class="form-control" type="number" />
-                                        <span asp-validation-for="BatteryForm.Capacity" class="text-danger small"></span>
-                                    </div>
-                                    <div class="col">
-                                        <label asp-for="BatteryForm.Soh" class="form-label"></label>
-                                        <input asp-for="BatteryForm.Soh" class="form-control" type="number" step="0.1" />
-                                        <span asp-validation-for="BatteryForm.Soh" class="text-danger small"></span>
-                                    </div>
-                                </div>
-                                <div class="row g-2 mt-2">
-                                    <div class="col">
-                                        <label asp-for="BatteryForm.Status" class="form-label"></label>
-                                        <select asp-for="BatteryForm.Status" class="form-select" asp-items="Model.BatteryStatusOptions"></select>
-                                        <span asp-validation-for="BatteryForm.Status" class="text-danger small"></span>
-                                    </div>
-                                    <div class="col">
-                                        <label asp-for="BatteryForm.StationId" class="form-label">Station</label>
-                                        <select asp-for="BatteryForm.StationId" class="form-select" asp-items="Model.StationOptions">
-                                            <option value="">-- Select station --</option>
-                                        </select>
-                                        <span asp-validation-for="BatteryForm.StationId" class="text-danger small"></span>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <label asp-for="BatteryForm.LastMaintenance" class="form-label"></label>
-                                    <input asp-for="BatteryForm.LastMaintenance" class="form-control" type="datetime-local" />
-                                    <span asp-validation-for="BatteryForm.LastMaintenance" class="text-danger small"></span>
-                                </div>
-                                <div class="mt-2">
-                                    <label asp-for="BatteryForm.DefectNote" class="form-label">Defect note</label>
-                                    <textarea asp-for="BatteryForm.DefectNote" class="form-control" rows="2" placeholder="Reason when marking battery defective"></textarea>
-                                    <small class="text-muted">Required only when status is set to Defective.</small>
-                                    <span asp-validation-for="BatteryForm.DefectNote" class="text-danger small"></span>
-                                </div>
-                                <div class="d-flex gap-2 mt-3">
-                                    <button type="submit" class="btn btn-primary px-3"><i class="bi bi-save me-1"></i>Save</button>
-                                    <button type="button" class="btn btn-outline-secondary px-3" data-reset-target="batteryForm">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i>New
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Transfers -->
-        <div class="tab-pane fade" id="tab-transfer" role="tabpanel" aria-labelledby="transfer-tab">
-            <div class="row g-4">
+                <!-- FORM PHÂN CÔNG NẰM TRÊN -->
                 <div class="col-12">
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Battery transfers</h5>
-                            <small class="text-muted">Most recent transfer runs.</small>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-0">Phân công nhân sự</h5>
+                                    <small class="text-muted">Phân công nhân viên vào trạm với ca làm việc cụ thể.</small>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#staffEditorCollapse">
+                                    <i class="bi bi-pencil-square me-1"></i>Editor
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-sm align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Pin</th>
-                                            <th>From</th>
-                                            <th>To</th>
-                                            <th>Status</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var transfer in Model.Transfers)
-                                        {
-                                            <tr>
-                                                <td>@transfer.TransferId</td>
-                                                <td>#@transfer.BatteryId</td>
-                                                <td>@transfer.FromStation?.Name</td>
-                                                <td>@transfer.ToStation?.Name</td>
-                                                <td>
-                                                    @{
-                                                        var transferBadgeClass = GetTransferBadgeClass(transfer.Status);
-                                                    }
-                                                    <span class="@transferBadgeClass">@transfer.Status</span>
-                                                </td>
-                                                <td class="text-end">
-                                                    <div class="btn-group btn-group-sm">
-                                                        <button type="button"
-                                                                class="btn btn-outline-secondary transfer-edit-btn"
-                                                                data-payload='@Html.Raw(JsonSerializer.Serialize(new {
-                                                                    TransferId = transfer.TransferId,
-                                                                    transfer.BatteryId,
-                                                                    transfer.FromStationId,
-                                                                    transfer.ToStationId,
-                                                                    Status = transfer.Status.ToString(),
-                                                                    TransferTime = transfer.TransferTime.ToString("yyyy-MM-ddTHH:mm")
-                                                                }))'>
-                                                            <i class="bi bi-pencil-square"></i>
-                                                        </button>
-                                                        @if (transfer.Status != TransferStatus.Completed)
-                                                        {
-                                                            <form method="post" asp-page-handler="UpdateTransferStatus" class="d-inline">
-                                                                <input type="hidden" name="transferId" value="@transfer.TransferId" />
-                                                                <input type="hidden" name="status" value="Completed" />
-                                                                <button class="btn btn-outline-success" title="Complete">
-                                                                    <i class="bi bi-check2-circle"></i>
-                                                                </button>
-                                                            </form>
-                                                        }
-                                                        <form method="post" asp-page-handler="DeleteTransfer" class="d-inline"
-                                                              onsubmit="return confirm('Cancel transfer #@transfer.TransferId?');">
-                                                            <input type="hidden" name="transferId" value="@transfer.TransferId" />
-                                                            <button class="btn btn-outline-danger">
-                                                                <i class="bi bi-x-lg"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        }
-                                        @if (!Model.Transfers.Any())
-                                        {
-                                            <tr>
-                                                <td colspan="6" class="text-center text-muted py-4">No transfer orders yet.</td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
+                            <div class="collapse" id="staffEditorCollapse">
+                                <form method="post" asp-page-handler="SaveStationStaff" id="staffForm" class="row g-3">
+                                    <input asp-for="StationStaffForm.StaffId" type="hidden" />
+                                    @if (Model.ActiveForm == nameof(Model.StationStaffForm))
+                                    {
+                                        <div asp-validation-summary="All" class="text-danger small"></div>
+                                    }
+                                    <div class="col-md-3">
+                                        <label asp-for="StationStaffForm.UserId" class="form-label"></label>
+                                        <select asp-for="StationStaffForm.UserId" class="form-select" asp-items="Model.StaffUserOptions">
+                                            <option value="">-- Chọn nhân sự --</option>
+                                        </select>
+                                        <span asp-validation-for="StationStaffForm.UserId" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="StationStaffForm.StationId" class="form-label"></label>
+                                        <select asp-for="StationStaffForm.StationId" class="form-select" asp-items="Model.StationOptions">
+                                            <option value="">-- Chọn trạm --</option>
+                                        </select>
+                                        <span asp-validation-for="StationStaffForm.StationId" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="StationStaffForm.ShiftStart" class="form-label">Giờ bắt đầu ca</label>
+                                        <input asp-for="StationStaffForm.ShiftStart" class="form-control" type="time" />
+                                        <span asp-validation-for="StationStaffForm.ShiftStart" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="StationStaffForm.ShiftEnd" class="form-label">Giờ kết thúc ca</label>
+                                        <input asp-for="StationStaffForm.ShiftEnd" class="form-control" type="time" />
+                                        <span asp-validation-for="StationStaffForm.ShiftEnd" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label asp-for="StationStaffForm.AssignedAt" class="form-label"></label>
+                                        <input asp-for="StationStaffForm.AssignedAt" class="form-control" type="datetime-local" />
+                                        <span asp-validation-for="StationStaffForm.AssignedAt" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Trạng thái</label>
+                                        <div class="form-check form-switch mt-2">
+                                            <input asp-for="StationStaffForm.IsActive" class="form-check-input" type="checkbox" role="switch" />
+                                            <label asp-for="StationStaffForm.IsActive" class="form-check-label">Đang làm việc</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <div class="d-flex gap-2 w-100">
+                                            <button type="submit" class="btn btn-primary flex-fill">
+                                                <i class="bi bi-people-fill me-1"></i>Lưu
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary flex-fill" data-reset-target="staffForm">
+                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Mới
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
-                            <hr />
-                            <h6 class="fw-semibold mb-3">Plan transfer</h6>
-                              <form method="post" asp-page-handler="SaveTransfer" id="transferForm">
-                                  <input asp-for="TransferForm.TransferId" type="hidden" />
-                                  <div asp-validation-summary="All" class="text-danger small"></div>
-                                  <div class="mb-2">
-                                      <label asp-for="TransferForm.BatteryId" class="form-label"></label>
-                                      <select asp-for="TransferForm.BatteryId" class="form-select" id="transfer-battery-select">
-                                          <option value="">-- Select battery --</option>
-                                          @foreach (var battery in Model.TransferEligibleBatteries)
-                                          {
-                                              <option value="@battery.BatteryId" data-station="@battery.StationId">
-                                                  #@battery.BatteryId - @battery.Model (@battery.Station?.Name)
-                                              </option>
-                                          }
-                                      </select>
-                                      @if (!Model.TransferEligibleBatteries.Any())
-                                      {
-                                          <small class="text-warning d-block mt-1">No Full batteries are ready for transfer. Please review the warehouse.</small>
-                                      }
-                                      <span asp-validation-for="TransferForm.BatteryId" class="text-danger small"></span>
-                                  </div>
-                                  <div class="row g-2">
-                                      <div class="col">
-                                          <label asp-for="TransferForm.FromStationId" class="form-label">Origin station</label>
-                                          <select asp-for="TransferForm.FromStationId" class="form-select" asp-items="Model.StationOptions">
-                                              <option value="">-- From --</option>
-                                          </select>
-                                          <span asp-validation-for="TransferForm.FromStationId" class="text-danger small"></span>
-                                      </div>
-                                      <div class="col">
-                                          <label asp-for="TransferForm.ToStationId" class="form-label">Destination station</label>
-                                          <select asp-for="TransferForm.ToStationId" class="form-select" asp-items="Model.StationOptions">
-                                              <option value="">-- To --</option>
-                                          </select>
-                                          <span asp-validation-for="TransferForm.ToStationId" class="text-danger small"></span>
-                                      </div>
-                                  </div>
-                                  <div class="mt-2">
-                                      <label asp-for="TransferForm.TransferTime" class="form-label"></label>
-                                      <input asp-for="TransferForm.TransferTime" class="form-control" type="datetime-local" />
-                                      <span asp-validation-for="TransferForm.TransferTime" class="text-danger small"></span>
-                                  </div>
-                                <div class="d-flex gap-2 mt-3">
-                                    <button type="submit" class="btn btn-primary px-3"><i class="bi bi-truck me-1"></i>Save</button>
-                                    <button type="button" class="btn btn-outline-secondary px-3" data-reset-target="transferForm">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i>New
-                                    </button>
-                                </div>
-                            </form>
+                            <p class="small text-muted mb-0 mt-2">Nhấn nút <strong>Editor</strong> để phân công hoặc cập nhật nhân sự.</p>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Station Staff -->
-        <div class="tab-pane fade" id="tab-staff" role="tabpanel" aria-labelledby="staff-tab">
-            <div class="row g-4">
-                <div class="col-12 col-xl-7">
+                <!-- BẢNG DANH SÁCH PHÂN CÔNG -->
+                <div class="col-12">
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Station staffing</h5>
-                            <small class="text-muted">Assignments and shifts.</small>
+                            <h5 class="mb-0">Danh sách phân công nhân sự trạm</h5>
+                            <small class="text-muted">Quản lý phân công và ca làm việc.</small>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive mb-3">
-                                <table class="table table-sm align-middle">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle table-hover">
                                     <thead class="table-light">
                                         <tr>
-                                            <th>Station Staff</th>
-                                            <th>Station</th>
-                                            <th>Assignments</th>
-                                            <th></th>
+                                            <th>Nhân sự</th>
+                                            <th>Trạm</th>
+                                            <th>Ca làm việc</th>
+                                            <th>Ngày phân công</th>
+                                            <th>Trạng thái</th>
+                                            <th class="text-end">Thao tác</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach (var staff in Model.Assignments)
                                         {
                                             <tr>
-                                                <td>@staff.User?.FullName <br /><small class="text-muted">@staff.User?.Username</small></td>
+                                                <td>
+                                                    <div class="fw-semibold">@staff.User?.FullName</div>
+                                                    <small class="text-muted">@staff.User?.Username</small>
+                                                </td>
                                                 <td>@staff.Station?.Name</td>
-                                                <td>@staff.AssignedAt.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    <div class="fw-semibold">
+                                                        @staff.ShiftStart.ToString(@"hh\:mm") - @staff.ShiftEnd.ToString(@"hh\:mm")
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        (@((staff.ShiftEnd - staff.ShiftStart).TotalHours.ToString("0.#")) giờ)
+                                                    </small>
+                                                </td>
+                                                <td>@staff.AssignedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td>
+                                                    @if (staff.IsActive)
+                                                    {
+                                                        <span class="badge bg-success text-white">Đang làm việc</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary text-white">Nghỉ việc</span>
+                                                    }
+                                                </td>
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button type="button"
                                                                 class="btn btn-outline-secondary staff-edit-btn"
+                                                                title="Chỉnh sửa"
                                                                 data-payload='@Html.Raw(JsonSerializer.Serialize(new {
                                                                     StaffId = staff.StaffId,
                                                                     staff.UserId,
                                                                     staff.StationId,
-                                                                    AssignedAt = staff.AssignedAt.ToString("yyyy-MM-ddTHH:mm")
+                                                                    AssignedAt = staff.AssignedAt.ToString("yyyy-MM-ddTHH:mm"),
+                                                                    ShiftStart = staff.ShiftStart.ToString(@"hh\:mm"),
+                                                                    ShiftEnd = staff.ShiftEnd.ToString(@"hh\:mm"),
+                                                                    staff.IsActive
                                                                 }))'>
                                                             <i class="bi bi-pencil-square"></i>
                                                         </button>
                                                         <form method="post" asp-page-handler="DeleteStationStaff" class="d-inline"
-                                                              onsubmit="return confirm('Remove this staff member?');">
+                                                              onsubmit="return confirm('Gỡ nhân sự này?');">
                                                             <input type="hidden" name="staffId" value="@staff.StaffId" />
-                                                            <button class="btn btn-outline-danger">
+                                                            <button class="btn btn-outline-danger" type="submit" title="Xóa">
                                                                 <i class="bi bi-x-lg"></i>
                                                             </button>
                                                         </form>
@@ -791,94 +553,12 @@
                                         @if (!Model.Assignments.Any())
                                         {
                                             <tr>
-                                                <td colspan="4" class="text-center text-muted py-4">No assignments yet.</td>
+                                                <td colspan="6" class="text-center text-muted py-4">Chưa có phân công nào.</td>
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
                             </div>
-                            <hr />
-                            <h6 class="fw-semibold mb-3">Assign staff</h6>
-                            <form method="post" asp-page-handler="SaveStationStaff" id="staffForm">
-                                <input asp-for="StationStaffForm.StaffId" type="hidden" />
-                                <div asp-validation-summary="All" class="text-danger small"></div>
-                                <div class="mb-2">
-                                    <label asp-for="StationStaffForm.UserId" class="form-label"></label>
-                                    <select asp-for="StationStaffForm.UserId" class="form-select" asp-items="Model.StaffUserOptions">
-                                        <option value="">-- Select staff --</option>
-                                    </select>
-                                    <span asp-validation-for="StationStaffForm.UserId" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="StationStaffForm.StationId" class="form-label"></label>
-                                    <select asp-for="StationStaffForm.StationId" class="form-select" asp-items="Model.StationOptions">
-                                        <option value="">-- Select station --</option>
-                                    </select>
-                                    <span asp-validation-for="StationStaffForm.StationId" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="StationStaffForm.AssignedAt" class="form-label"></label>
-                                    <input asp-for="StationStaffForm.AssignedAt" class="form-control" type="datetime-local" />
-                                    <span asp-validation-for="StationStaffForm.AssignedAt" class="text-danger small"></span>
-                                </div>
-                                <div class="d-flex gap-2 mt-3">
-                                    <button type="submit" class="btn btn-primary px-3"><i class="bi bi-save me-1"></i>Save</button>
-                                    <button type="button" class="btn btn-outline-secondary px-3" data-reset-target="staffForm">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i>New
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-xl-5">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Create station staff</h5>
-                            <small class="text-muted">Create a new staff account.</small>
-                        </div>
-                        <div class="card-body">
-                            <form method="post" asp-page-handler="CreateStaffUser" id="staffUserForm">
-                                <div asp-validation-summary="All" class="text-danger small mb-2"></div>
-                                <div class="mb-2">
-                                    <label asp-for="StaffUserCreateForm.FullName" class="form-label"></label>
-                                    <input asp-for="StaffUserCreateForm.FullName" class="form-control" />
-                                    <span asp-validation-for="StaffUserCreateForm.FullName" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="StaffUserCreateForm.Username" class="form-label"></label>
-                                    <input asp-for="StaffUserCreateForm.Username" class="form-control" />
-                                    <span asp-validation-for="StaffUserCreateForm.Username" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="StaffUserCreateForm.Email" class="form-label"></label>
-                                    <input asp-for="StaffUserCreateForm.Email" class="form-control" />
-                                    <span asp-validation-for="StaffUserCreateForm.Email" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="StaffUserCreateForm.Phone" class="form-label"></label>
-                                    <input asp-for="StaffUserCreateForm.Phone" class="form-control" />
-                                    <span asp-validation-for="StaffUserCreateForm.Phone" class="text-danger small"></span>
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col">
-                                        <label asp-for="StaffUserCreateForm.Password" class="form-label"></label>
-                                        <input asp-for="StaffUserCreateForm.Password" class="form-control" type="password" />
-                                        <span asp-validation-for="StaffUserCreateForm.Password" class="text-danger small"></span>
-                                    </div>
-                                    <div class="col">
-                                        <label asp-for="StaffUserCreateForm.ConfirmPassword" class="form-label"></label>
-                                        <input asp-for="StaffUserCreateForm.ConfirmPassword" class="form-control" type="password" />
-                                        <span asp-validation-for="StaffUserCreateForm.ConfirmPassword" class="text-danger small"></span>
-                                    </div>
-                                </div>
-                                <div class="d-flex gap-2 mt-3">
-                                    <button type="submit" class="btn btn-primary px-3"><i class="bi bi-person-plus me-1"></i>Create</button>
-                                    <button type="button" class="btn btn-outline-secondary px-3" data-reset-target="staffUserForm">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i>New
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -887,25 +567,108 @@
 
         <!-- Support -->
         <div class="tab-pane fade" id="tab-support" role="tabpanel" aria-labelledby="support-tab">
-            <div class="row g-4">
-                <div class="col-12 col-xl-7">
+            <div class="row g-4 mb-4">
+                <div class="col-12">
                     <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Support tickets & alerts</h5>
-                            <small class="text-muted">Monitor and resolve escalations.</small>
+                        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">Danh sách yêu cầu hỗ trợ</h5>
+                                <small class="text-muted">Theo dõi và quản lý các ticket hỗ trợ</small>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#supportEditorCollapse">
+                                <i class="bi bi-plus-lg me-1"></i>Tạo ticket
+                            </button>
                         </div>
                         <div class="card-body p-0">
+                            <!-- Form tạo/cập nhật ticket (ẩn mặc định) -->
+                            <div class="collapse" id="supportEditorCollapse">
+                                <div class="border-bottom p-3 bg-light">
+                                    <form method="post" asp-page-handler="SaveSupport" id="supportForm">
+                                        <input asp-for="SupportForm.SupportId" type="hidden" />
+                                        @if (Model.ActiveForm == nameof(Model.SupportForm))
+                                        {
+                                            <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+                                        }
+                                        <div class="row g-3">
+                                            <div class="col-md-3">
+                                                <label asp-for="SupportForm.UserId" class="form-label">Người yêu cầu</label>
+                                                <select asp-for="SupportForm.UserId" class="form-select form-select-sm" asp-items="Model.SupportUserOptions">
+                                                    <option value="">-- Chọn người yêu cầu --</option>
+                                                </select>
+                                                <span asp-validation-for="SupportForm.UserId" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label asp-for="SupportForm.StationId" class="form-label">Trạm</label>
+                                                <select asp-for="SupportForm.StationId" class="form-select form-select-sm" asp-items="Model.StationOptions">
+                                                    <option value="">-- Chọn trạm --</option>
+                                                </select>
+                                                <span asp-validation-for="SupportForm.StationId" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label asp-for="SupportForm.Type" class="form-label">Loại</label>
+                                                <select asp-for="SupportForm.Type" class="form-select form-select-sm" asp-items="Model.SupportTypeOptions"></select>
+                                                <span asp-validation-for="SupportForm.Type" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label asp-for="SupportForm.Status" class="form-label">Trạng thái</label>
+                                                <select asp-for="SupportForm.Status" class="form-select form-select-sm" asp-items="Model.SupportStatusOptions"></select>
+                                                <span asp-validation-for="SupportForm.Status" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Đánh giá</label>
+                                                <input name="SupportForm.Rating" class="form-control form-control-sm" value="@(Model.SupportForm.Rating.HasValue ? Model.SupportForm.Rating.Value + " ★" : "Chưa có")" readonly />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label asp-for="SupportForm.Description" class="form-label">Mô tả</label>
+                                                <textarea asp-for="SupportForm.Description" class="form-control form-control-sm" rows="2" placeholder="Nhập mô tả chi tiết..."></textarea>
+                                                <span asp-validation-for="SupportForm.Description" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label asp-for="SupportForm.StaffNote" class="form-label">Ghi chú nội bộ</label>
+                                                <textarea asp-for="SupportForm.StaffNote" class="form-control form-control-sm" rows="2" placeholder="Ghi chú cho nhân viên..."></textarea>
+                                                <span asp-validation-for="SupportForm.StaffNote" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-12">
+                                                @{
+                                                    var isClosedSupport = Model.SupportForm.SupportId != 0 && Model.SupportForm.Status == SupportStatus.Closed;
+                                                }
+                                                @if (isClosedSupport)
+                                                {
+                                                    <div class="alert alert-warning small mb-2">
+                                                        Ticket đã đóng, nhấn <strong>Mới</strong> để tạo yêu cầu mới.
+                                                    </div>
+                                                }
+                                                <div class="d-flex gap-2">
+                                                    <button type="submit" class="btn btn-primary btn-sm" @(isClosedSupport ? "disabled" : null)>
+                                                        <i class="bi bi-save me-1"></i>Lưu
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-reset-target="supportForm">
+                                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Mới
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#supportEditorCollapse">
+                                                        <i class="bi bi-x-lg me-1"></i>Đóng
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Bảng danh sách ticket -->
                             <div class="table-responsive">
-                                <table class="table align-middle mb-0">
+                                <table class="table table-hover align-middle mb-0">
                                     <thead class="table-light">
                                         <tr>
                                             <th>#</th>
-                                            <th>Requester</th>
-                                            <th>Station</th>
-                                            <th>Details</th>
-                                            <th>Status</th>
-                                            <th>Rating</th>
-                                            <th></th>
+                                            <th>Người yêu cầu</th>
+                                            <th>Trạm</th>
+                                            <th>Loại</th>
+                                            <th>Mô tả</th>
+                                            <th>Trạng thái</th>
+                                            <th>Đánh giá</th>
+                                            <th>Ngày tạo</th>
+                                            <th class="text-end">Thao tác</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -913,14 +676,23 @@
                                         {
                                             <tr>
                                                 <td>@support.SupportId</td>
-                                                <td>@support.User?.FullName <br /><small class="text-muted">@support.User?.Username</small></td>
+                                                <td>
+                                                    <div class="fw-semibold">@support.User?.FullName</div>
+                                                    <small class="text-muted">@support.User?.Username</small>
+                                                </td>
                                                 <td>@support.Station?.Name</td>
                                                 <td>
-                                                    @support.Type
-                                                    <div class="text-muted small">@support.Description</div>
+                                                    <span class="badge bg-light text-dark border">@support.Type</span>
+                                                </td>
+                                                <td>
+                                                    <div style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="@support.Description">
+                                                        @support.Description
+                                                    </div>
                                                     @if (!string.IsNullOrWhiteSpace(support.StaffNote))
                                                     {
-                                                        <div class="text-success small mt-1">Ghi chú trạm: @support.StaffNote</div>
+                                                        <small class="text-muted d-block">
+                                                            <i class="bi bi-sticky"></i> @support.StaffNote
+                                                        </small>
                                                     }
                                                 </td>
                                                 <td>
@@ -932,44 +704,37 @@
                                                 <td>
                                                     @if (support.Rating.HasValue)
                                                     {
-                                                        <span class="badge bg-success text-white">@support.Rating</span>
+                                                        <span class="text-warning">@string.Concat(Enumerable.Repeat("★", support.Rating.Value))</span>
                                                     }
                                                     else
                                                     {
                                                         <span class="text-muted small">Chưa đánh giá</span>
                                                     }
                                                 </td>
+                                                <td>
+                                                    <small>@support.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                                                </td>
                                                 <td class="text-end">
                                                     <div class="btn-group btn-group-sm">
                                                         <button type="button"
                                                                 class="btn btn-outline-secondary support-edit-btn"
-                                                                @(support.Status == SupportStatus.Closed ? "disabled" : string.Empty)
+                                                                title="Chỉnh sửa"
                                                                 data-payload='@Html.Raw(JsonSerializer.Serialize(new {
-                                                                    SupportId = support.SupportId,
+                                                                    support.SupportId,
                                                                     support.UserId,
                                                                     support.StationId,
                                                                     Type = support.Type.ToString(),
                                                                     support.Description,
                                                                     Status = support.Status.ToString(),
-                                                                    StaffNote = support.StaffNote,
-                                                                    Rating = support.Rating
+                                                                    support.Rating,
+                                                                    support.StaffNote
                                                                 }))'>
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
-                                                        @if (support.Status != SupportStatus.Closed)
-                                                        {
-                                                            <form method="post" asp-page-handler="UpdateSupportStatus" class="d-inline">
-                                                                <input type="hidden" name="supportId" value="@support.SupportId" />
-                                                                <input type="hidden" name="status" value="Closed" />
-                                                                <button class="btn btn-outline-success" title="Close ticket">
-                                                                    <i class="bi bi-check2"></i>
-                                                                </button>
-                                                            </form>
-                                                        }
                                                         <form method="post" asp-page-handler="DeleteSupport" class="d-inline"
-                                                              onsubmit="return confirm('Delete ticket #@support.SupportId?');">
+                                                              onsubmit="return confirm('Xóa ticket hỗ trợ này?');">
                                                             <input type="hidden" name="supportId" value="@support.SupportId" />
-                                                            <button class="btn btn-outline-danger">
+                                                            <button class="btn btn-outline-danger" type="submit" title="Xóa">
                                                                 <i class="bi bi-trash"></i>
                                                             </button>
                                                         </form>
@@ -980,80 +745,12 @@
                                         @if (!Model.Supports.Any())
                                         {
                                             <tr>
-                                                <td colspan="6" class="text-center text-muted py-4">No open tickets.</td>
+                                                <td colspan="9" class="text-center text-muted py-4">Chưa có yêu cầu hỗ trợ nào.</td>
                                             </tr>
                                         }
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-xl-5">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Create / update ticket</h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="post" asp-page-handler="SaveSupport" id="supportForm">
-                                <input asp-for="SupportForm.SupportId" type="hidden" />
-                                <div asp-validation-summary="All" class="text-danger small"></div>
-                                <div class="mb-2">
-                                    <label asp-for="SupportForm.UserId" class="form-label"></label>
-                                    <select asp-for="SupportForm.UserId" class="form-select" asp-items="Model.SupportUserOptions">
-                                        <option value="">-- Requester --</option>
-                                    </select>
-                                    <span asp-validation-for="SupportForm.UserId" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="SupportForm.StationId" class="form-label"></label>
-                                    <select asp-for="SupportForm.StationId" class="form-select" asp-items="Model.StationOptions">
-                                        <option value="">-- Select station --</option>
-                                    </select>
-                                    <span asp-validation-for="SupportForm.StationId" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="SupportForm.Type" class="form-label"></label>
-                                    <select asp-for="SupportForm.Type" class="form-select" asp-items="Model.SupportTypeOptions"></select>
-                                    <span asp-validation-for="SupportForm.Type" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="SupportForm.Description" class="form-label"></label>
-                                    <textarea asp-for="SupportForm.Description" class="form-control" rows="3"></textarea>
-                                    <span asp-validation-for="SupportForm.Description" class="text-danger small"></span>
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col">
-                                        <label asp-for="SupportForm.Status" class="form-label"></label>
-                                        <select asp-for="SupportForm.Status" class="form-select" asp-items="Model.SupportStatusOptions"></select>
-                                        <span asp-validation-for="SupportForm.Status" class="text-danger small"></span>
-                                    </div>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="SupportForm.StaffNote" class="form-label"></label>
-                                    <textarea asp-for="SupportForm.StaffNote" class="form-control" rows="2"></textarea>
-                                    <span asp-validation-for="SupportForm.StaffNote" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Driver rating</label>
-                                    <input name="SupportForm.Rating" class="form-control" value="@(Model.SupportForm.Rating?.ToString() ?? "Chưa đánh giá")" readonly />
-                                </div>
-                                @{
-                                    var isClosedSupport = Model.SupportForm.SupportId != 0 && Model.SupportForm.Status == SupportStatus.Closed;
-                                }
-                                @if (isClosedSupport)
-                                {
-                                    <div class="alert alert-warning small">
-                                        Ticket đã đóng, nhấn <strong>New</strong> để tạo yêu cầu mới.
-                                    </div>
-                                }
-                                <div class="d-flex gap-2 mt-3">
-                                    <button type="submit" class="btn btn-primary px-3" @(isClosedSupport ? "disabled" : null)><i class="bi bi-save me-1"></i>Save</button>
-                                    <button type="button" class="btn btn-outline-secondary px-3" data-reset-target="supportForm">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i>New
-                                    </button>
-                                </div>
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -1064,8 +761,8 @@
         <div class="tab-pane fade" id="tab-swap" role="tabpanel" aria-labelledby="swap-tab">
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-white border-0">
-                    <h5 class="mb-0">Battery swap transactions</h5>
-                    <small class="text-muted">Top 20 latest transactions.</small>
+                    <h5 class="mb-0">Giao dịch đổi pin</h5>
+                    <small class="text-muted">20 giao dịch gần nhất.</small>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -1073,11 +770,11 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
-                                    <th>User</th>
-                                    <th>Station</th>
+                                    <th>Người dùng</th>
+                                    <th>Trạm</th>
                                     <th>Pin</th>
-                                    <th>Cost</th>
-                                    <th>Status</th>
+                                    <th>Chi phí</th>
+                                    <th>Trạng thái</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -1088,7 +785,7 @@
                                         <td>@tx.TransactionId</td>
                                         <td>@tx.User?.FullName <br /><small class="text-muted">@tx.Vehicle?.Vin</small></td>
                                         <td>@tx.Station?.Name</td>
-                                        <td>Taken: #@tx.BatteryTakenId<br />Returned: #@tx.BatteryReturnedId</td>
+                                        <td>Lấy: #@tx.BatteryTakenId<br />Trả: #@tx.BatteryReturnedId</td>
                                         <td>@tx.TotalCost.ToString("C0")</td>
                                         <td>
                                             @{
@@ -1103,22 +800,22 @@
                                                     <form method="post" asp-page-handler="UpdateSwapStatus" class="d-inline">
                                                         <input type="hidden" name="transactionId" value="@tx.TransactionId" />
                                                         <input type="hidden" name="status" value="Completed" />
-                                                        <button class="btn btn-outline-success" title="Complete">
+                                                        <button class="btn btn-outline-success" title="Hoàn thành">
                                                             <i class="bi bi-check2"></i>
                                                         </button>
                                                     </form>
                                                     <form method="post" asp-page-handler="UpdateSwapStatus" class="d-inline">
                                                         <input type="hidden" name="transactionId" value="@tx.TransactionId" />
                                                         <input type="hidden" name="status" value="Cancelled" />
-                                                        <button class="btn btn-outline-warning" title="Cancel">
+                                                        <button class="btn btn-outline-warning" title="Hủy">
                                                             <i class="bi bi-x-circle"></i>
                                                         </button>
                                                     </form>
                                                 }
                                                 <form method="post" asp-page-handler="DeleteSwap" class="d-inline"
-                                                      onsubmit="return confirm('Delete transaction #@tx.TransactionId?');">
+                                                      onsubmit="return confirm('Xóa giao dịch #@tx.TransactionId?');">
                                                     <input type="hidden" name="transactionId" value="@tx.TransactionId" />
-                                                    <button class="btn btn-outline-danger">
+                                                    <button class="btn btn-outline-danger" title="Xóa">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
@@ -1129,7 +826,7 @@
                                 @if (!Model.SwapTransactions.Any())
                                 {
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-4">No transactions yet.</td>
+                                        <td colspan="7" class="text-center text-muted py-4">Chưa có giao dịch nào.</td>
                                     </tr>
                                 }
                             </tbody>
@@ -1141,93 +838,123 @@
 
         <!-- Configuration -->
         <div class="tab-pane fade" id="tab-config" role="tabpanel" aria-labelledby="config-tab">
-            <div class="row g-4">
-                <div class="col-12 col-xl-6">
+            <div class="row g-4 mb-4">
+                <div class="col-12">
                     <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">System configuration</h5>
-                            <small class="text-muted">KPIs, SLAs, and operational parameters.</small>
+                        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">Cấu hình hệ thống</h5>
+                                <small class="text-muted">KPIs, SLAs và các tham số vận hành</small>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#configEditorCollapse">
+                                <i class="bi bi-plus-lg me-1"></i>Tạo cấu hình
+                            </button>
                         </div>
-                        <div class="card-body p-0" style="max-height:320px; overflow:auto;">
-                            <table class="table table-sm align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Value</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var cfg in Model.Configs)
-                                    {
-                                        <tr>
-                                            <td>@cfg.Name</td>
-                                            <td>@cfg.Value</td>
-                                            <td class="text-end">
-                                                <div class="btn-group btn-group-sm">
-                                                    <button type="button"
-                                                            class="btn btn-outline-secondary config-edit-btn"
-                                                            data-payload='@Html.Raw(JsonSerializer.Serialize(new {
-                                                                ConfigId = cfg.ConfigId,
-                                                                cfg.Name,
-                                                                cfg.Value,
-                                                                cfg.Description
-                                                            }))'>
-                                                        <i class="bi bi-pencil"></i>
+                        <div class="card-body p-0">
+                            <!-- Form tạo/cập nhật cấu hình (ẩn mặc định) -->
+                            <div class="collapse" id="configEditorCollapse">
+                                <div class="border-bottom p-3 bg-light">
+                                    <form method="post" asp-page-handler="SaveConfig" id="configForm">
+                                        <input asp-for="ConfigForm.ConfigId" type="hidden" />
+                                        @if (Model.ActiveForm == nameof(Model.ConfigForm))
+                                        {
+                                            <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+                                        }
+                                        <div class="row g-3">
+                                            <div class="col-md-3">
+                                                <label asp-for="ConfigForm.Name" class="form-label">Tên cấu hình</label>
+                                                <input asp-for="ConfigForm.Name" class="form-control form-control-sm" placeholder="VD: MaxReservationsPerDay" />
+                                                <span asp-validation-for="ConfigForm.Name" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label asp-for="ConfigForm.Value" class="form-label">Giá trị</label>
+                                                <input asp-for="ConfigForm.Value" class="form-control form-control-sm" placeholder="VD: 100" />
+                                                <span asp-validation-for="ConfigForm.Value" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label asp-for="ConfigForm.Description" class="form-label">Mô tả</label>
+                                                <textarea asp-for="ConfigForm.Description" class="form-control form-control-sm" rows="1" placeholder="Mô tả ý nghĩa của cấu hình..."></textarea>
+                                                <span asp-validation-for="ConfigForm.Description" class="text-danger small"></span>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="d-flex gap-2">
+                                                    <button type="submit" class="btn btn-primary btn-sm">
+                                                        <i class="bi bi-save me-1"></i>Lưu
                                                     </button>
-                                                    <form method="post" asp-page-handler="DeleteConfig" class="d-inline"
-                                                          onsubmit="return confirm('Delete configuration @cfg.Name?');">
-                                                        <input type="hidden" name="configId" value="@cfg.ConfigId" />
-                                                        <button class="btn btn-outline-danger">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </form>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-reset-target="configForm">
+                                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Mới
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#configEditorCollapse">
+                                                        <i class="bi bi-x-lg me-1"></i>Đóng
+                                                    </button>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                    @if (!Model.Configs.Any())
-                                    {
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Bảng danh sách cấu hình -->
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
                                         <tr>
-                                            <td colspan="3" class="text-center text-muted py-4">No configuration data yet.</td>
+                                            <th>#</th>
+                                            <th>Tên cấu hình</th>
+                                            <th>Giá trị</th>
+                                            <th>Mô tả</th>
+                                            <th class="text-end">Thao tác</th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-xl-6">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-0">
-                            <h5 class="mb-0">Save configuration</h5>
-                        </div>
-                        <div class="card-body">
-                            <form method="post" asp-page-handler="SaveConfig" id="configForm">
-                                <input asp-for="ConfigForm.ConfigId" type="hidden" />
-                                <div asp-validation-summary="All" class="text-danger small"></div>
-                                <div class="mb-2">
-                                    <label asp-for="ConfigForm.Name" class="form-label"></label>
-                                    <input asp-for="ConfigForm.Name" class="form-control" />
-                                    <span asp-validation-for="ConfigForm.Name" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="ConfigForm.Value" class="form-label"></label>
-                                    <input asp-for="ConfigForm.Value" class="form-control" />
-                                    <span asp-validation-for="ConfigForm.Value" class="text-danger small"></span>
-                                </div>
-                                <div class="mb-2">
-                                    <label asp-for="ConfigForm.Description" class="form-label"></label>
-                                    <textarea asp-for="ConfigForm.Description" class="form-control" rows="2"></textarea>
-                                    <span asp-validation-for="ConfigForm.Description" class="text-danger small"></span>
-                                </div>
-                                <div class="d-flex gap-2 mt-3">
-                                    <button type="submit" class="btn btn-primary px-3"><i class="bi bi-save me-1"></i>Save</button>
-                                    <button type="button" class="btn btn-outline-secondary px-3" data-reset-target="configForm">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i>New
-                                    </button>
-                                </div>
-                            </form>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var cfg in Model.Configs)
+                                        {
+                                            <tr>
+                                                <td>@cfg.ConfigId</td>
+                                                <td>
+                                                    <span class="fw-semibold">@cfg.Name</span>
+                                                </td>
+                                                <td>
+                                                    <span class="fw-semibold text-dark">@cfg.Value</span>
+                                                </td>
+                                                <td>
+                                                    <div style="max-width: 400px;">
+                                                        @(string.IsNullOrWhiteSpace(cfg.Description) ? "-" : cfg.Description)
+                                                    </div>
+                                                </td>
+                                                <td class="text-end">
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button type="button"
+                                                                class="btn btn-outline-secondary config-edit-btn"
+                                                                title="Chỉnh sửa"
+                                                                data-payload='@Html.Raw(JsonSerializer.Serialize(new {
+                                                                    ConfigId = cfg.ConfigId,
+                                                                    cfg.Name,
+                                                                    cfg.Value,
+                                                                    cfg.Description
+                                                                }))'>
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <form method="post" asp-page-handler="DeleteConfig" class="d-inline"
+                                                              onsubmit="return confirm('Xóa cấu hình @cfg.Name?');">
+                                                            <input type="hidden" name="configId" value="@cfg.ConfigId" />
+                                                            <button class="btn btn-outline-danger" type="submit" title="Xóa">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                        @if (!Model.Configs.Any())
+                                        {
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-4">Chưa có cấu hình nào.</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1240,6 +967,14 @@
     <partial name="_ValidationScriptsPartial" />
     <script>
         (() => {
+            const collapseByForm = {
+                batteryForm: 'batteryEditorCollapse',
+                transferForm: 'transferEditorCollapse',
+                staffForm: 'staffEditorCollapse',
+                supportForm: 'supportEditorCollapse',
+                configForm: 'configEditorCollapse'
+            };
+
             const parsePayload = (btn) => {
                 try { return JSON.parse(btn.dataset.payload); }
                 catch { return null; }
@@ -1249,9 +984,7 @@
                 const form = document.getElementById(formId);
                 if (!form || !payload) return;
 
-                // Reset the form before filling it
                 form.reset();
-                
                 Object.entries(payload).forEach(([key, value]) => {
                     const control = form.querySelector(`[name="${prefix}.${key}"]`);
                     if (!control) return;
@@ -1263,67 +996,75 @@
             const resetForm = (formId) => {
                 const form = document.getElementById(formId);
                 if (!form) return;
-                
-                // Reset the entire form
+
                 form.reset();
-                
-                // Clear validation errors
-                const validationElements = form.querySelectorAll('.field-validation-error');
-                validationElements.forEach(el => {
+                form.querySelectorAll('.field-validation-error').forEach(el => {
                     el.textContent = '';
                     el.classList.remove('field-validation-error');
                     el.classList.add('field-validation-valid');
                 });
-                
-                // Reset validation summary
-                const validationSummary = form.querySelector('[data-valmsg-summary="true"]');
-                if (validationSummary) {
-                    validationSummary.classList.remove('validation-summary-errors');
-                    validationSummary.classList.add('validation-summary-valid');
-                    const ul = validationSummary.querySelector('ul');
-                    if (ul) ul.innerHTML = '';
+
+                const summary = form.querySelector('[data-valmsg-summary="true"]');
+                if (summary) {
+                    summary.classList.remove('validation-summary-errors');
+                    summary.classList.add('validation-summary-valid');
+                    const list = summary.querySelector('ul');
+                    if (list) {
+                        list.innerHTML = '';
+                    }
                 }
-                
-                // Reset all hidden ID fields to 0
+
                 form.querySelectorAll('input[type="hidden"]').forEach(input => {
                     if (input.name.includes('Id')) {
                         input.value = '0';
                     }
                 });
-                
-                // Remove is-invalid class from inputs
-                form.querySelectorAll('.is-invalid').forEach(el => {
-                    el.classList.remove('is-invalid');
-                });
+
+                form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
             };
 
-            const wireEditor = (selector, formId, prefix) => {
+            const showEditorPanel = (collapseId) => {
+                const panel = document.getElementById(collapseId);
+                if (!panel) return;
+                const collapse = bootstrap.Collapse.getOrCreateInstance(panel, { toggle: false });
+                collapse.show();
+            };
+
+            const wireEditor = (selector, formId, prefix, collapseId) => {
                 document.querySelectorAll(selector).forEach(btn => {
                     btn.addEventListener('click', () => {
                         const payload = parsePayload(btn);
                         if (payload) {
                             fillForm(formId, prefix, payload);
+                            if (collapseId) {
+                                showEditorPanel(collapseId);
+                            }
                         }
                     });
                 });
             };
 
-            // Wire up reset buttons
             document.querySelectorAll('[data-reset-target]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     resetForm(btn.dataset.resetTarget);
                 });
             });
 
-            // Wire up edit buttons
-            wireEditor('.station-edit-btn', 'stationForm', 'StationForm');
-            wireEditor('.battery-edit-btn', 'batteryForm', 'BatteryForm');
-            wireEditor('.transfer-edit-btn', 'transferForm', 'TransferForm');
-            wireEditor('.staff-edit-btn', 'staffForm', 'StationStaffForm');
-            wireEditor('.support-edit-btn', 'supportForm', 'SupportForm');
-            wireEditor('.config-edit-btn', 'configForm', 'ConfigForm');
+            wireEditor('.battery-edit-btn', 'batteryForm', 'BatteryForm', collapseByForm.batteryForm);
+            wireEditor('.transfer-edit-btn', 'transferForm', 'TransferForm', collapseByForm.transferForm);
+            wireEditor('.staff-edit-btn', 'staffForm', 'StationStaffForm', collapseByForm.staffForm);
+            wireEditor('.support-edit-btn', 'supportForm', 'SupportForm', collapseByForm.supportForm);
+            wireEditor('.config-edit-btn', 'configForm', 'ConfigForm', collapseByForm.configForm);
 
-            // Tab persistence
+            document.querySelectorAll('.station-edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const stationId = btn.dataset.stationId;
+                    if (!stationId) return;
+                    const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                    window.location.href = `/Admin/Operations/Stations/Edit/${stationId}?returnUrl=${returnUrl}`;
+                });
+            });
+
             const tabsKey = 'operations.activeTab';
             const tabButtons = document.querySelectorAll('#operationsTabs button[data-bs-toggle="tab"]');
             tabButtons.forEach(btn => {
@@ -1341,7 +1082,6 @@
                 }
             }
 
-            // Transfer battery helper
             const transferBatterySelect = document.getElementById('transfer-battery-select');
             const transferFromSelect = document.querySelector('[name="TransferForm.FromStationId"]');
 
@@ -1358,10 +1098,40 @@
             }
             syncFromStation();
 
-            // Form submission validation
+            const transferDateFilter = document.getElementById('transfer-date-filter');
+            const transferStatusFilter = document.getElementById('transfer-status-filter');
+            const transferFilterApply = document.getElementById('transfer-filter-apply');
+
+            const filterTransferRows = () => {
+                const rows = document.querySelectorAll('#transferScheduleTable tbody tr');
+                const dateValue = transferDateFilter?.value;
+                const statusValue = transferStatusFilter?.value;
+
+                rows.forEach(row => {
+                    const rowDate = row.dataset.transferTime
+                        ? new Date(row.dataset.transferTime).toISOString().split('T')[0]
+                        : '';
+                    const rowStatus = row.dataset.transferStatus ?? '';
+                    let isVisible = true;
+
+                    if (dateValue && rowDate !== dateValue) {
+                        isVisible = false;
+                    }
+                    if (statusValue && statusValue !== '' && rowStatus !== statusValue) {
+                        isVisible = false;
+                    }
+
+                    row.style.display = isVisible ? '' : 'none';
+                });
+            };
+
+            [transferDateFilter, transferStatusFilter].forEach(filter => {
+                filter?.addEventListener('change', filterTransferRows);
+            });
+            transferFilterApply?.addEventListener('click', filterTransferRows);
+
             document.querySelectorAll('form[method="post"]').forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    // Let ASP.NET validation handle it
+                form.addEventListener('submit', function (e) {
                     if (!form.checkValidity()) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -1370,7 +1140,6 @@
                 });
             });
 
-            // Auto-hide alerts after 5 seconds
             setTimeout(() => {
                 const alerts = document.querySelectorAll('.alert');
                 alerts.forEach(alert => {
@@ -1383,8 +1152,4 @@
         })();
     </script>
 }
-
-
-
-
 

@@ -1,0 +1,418 @@
+@page "/Admin/Operations/Stations/Edit/{stationId?}"
+@model BSMS.WebApp.Pages.Admin.Operations.Stations.EditModel
+@{
+    ViewData["Title"] = Model.StationForm.StationId == 0 ? "Tạo trạm mới" : "Cập nhật trạm";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <style>
+        #stationMap {
+            height: 400px;
+            width: 100%;
+            z-index: 1;
+        }
+    </style>
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">@ViewData["Title"]</h4>
+                    <small class="text-muted">Điền thông tin trạm và tọa độ để đưa vào hệ thống.</small>
+                </div>
+                <div class="card-body">
+                    @if (TempData.ContainsKey("SuccessMessage"))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    <form method="post">
+                        <input asp-for="StationForm.StationId" type="hidden" />
+                        <input asp-for="ReturnUrl" type="hidden" />
+                        <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+                        <div class="mb-3">
+                            <label asp-for="StationForm.Name" class="form-label"></label>
+                            <input asp-for="StationForm.Name" class="form-control" />
+                            <span asp-validation-for="StationForm.Name" class="text-danger small"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="StationForm.Address" class="form-label"></label>
+                            <input asp-for="StationForm.Address" class="form-control" list="stationAddressSuggestions" id="stationAddressInput" />
+                            <datalist id="stationAddressSuggestions"></datalist>
+                            <span asp-validation-for="StationForm.Address" class="text-danger small"></span>
+                            <small class="text-muted d-block mt-1">Tìm kiếm địa chỉ để tự động điền tọa độ.</small>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col">
+                                <label asp-for="StationForm.Latitude" class="form-label"></label>
+                                <input asp-for="StationForm.Latitude" class="form-control" type="number" step="0.000001" id="stationLatitudeInput" />
+                                <span asp-validation-for="StationForm.Latitude" class="text-danger small"></span>
+                            </div>
+                            <div class="col">
+                                <label asp-for="StationForm.Longitude" class="form-label"></label>
+                                <input asp-for="StationForm.Longitude" class="form-control" type="number" step="0.000001" id="stationLongitudeInput" />
+                                <span asp-validation-for="StationForm.Longitude" class="text-danger small"></span>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">Tọa độ phải có tối đa 6 chữ số thập phân (ví dụ: 10.844445, 106.715696)</small>
+                        <div class="row g-2 mt-3">
+                            <div class="col">
+                                <label asp-for="StationForm.Capacity" class="form-label"></label>
+                                <input asp-for="StationForm.Capacity" class="form-control" type="number" />
+                                <span asp-validation-for="StationForm.Capacity" class="text-danger small"></span>
+                            </div>
+                            <div class="col">
+                                <label asp-for="StationForm.Status" class="form-label"></label>
+                                <select asp-for="StationForm.Status" class="form-select" asp-items="Model.StationStatusOptions"></select>
+                                <span asp-validation-for="StationForm.Status" class="text-danger small"></span>
+                            </div>
+                        </div>
+                        <div class="mb-3 mt-4">
+                            <label class="form-label mb-2">Vị trí trên bản đồ</label>
+                            <div id="stationMap"></div>
+                            <small class="text-muted d-block mt-1">Nhấn hoặc kéo marker trên bản đồ để đặt vị trí. Địa chỉ sẽ tự động cập nhật.</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Save</button>
+                            <a class="btn btn-outline-secondary" href="@(Model.ReturnUrl ?? Url.Page("/Admin/Operations/Index"))">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script>
+        (function() {
+            'use strict';
+            
+            const defaultPosition = { lat: 10.8144, lng: 106.7102 };
+            let map = null;
+            let marker = null;
+            let reverseGeocodeTimer = null;
+            let tileLayer = null;
+            let tileFallbackTriggered = false;
+            let currentTileServerIndex = 0;
+            const tileServers = [
+                {
+                    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                },
+                {
+                    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                    attribution: '&copy; OpenStreetMap contributors, Tiles style by <a href="https://www.openstreetmap.fr/">OpenStreetMap France</a>'
+                }
+            ];
+
+            const latInput = document.getElementById('stationLatitudeInput');
+            const lngInput = document.getElementById('stationLongitudeInput');
+            const addressInput = document.getElementById('stationAddressInput');
+            const addressDatalist = document.getElementById('stationAddressSuggestions');
+            let addressCandidates = [];
+            let lookupTimer = null;
+
+            function initMap() {
+                console.log('Initializing map...');
+                
+                // Get initial position from inputs or use default
+                const initialLat = parseFloat(latInput?.value || defaultPosition.lat);
+                const initialLng = parseFloat(lngInput?.value || defaultPosition.lng);
+                const validLat = !isNaN(initialLat) ? initialLat : defaultPosition.lat;
+                const validLng = !isNaN(initialLng) ? initialLng : defaultPosition.lng;
+                
+                // Khởi tạo map với vị trí ban đầu
+                map = L.map('stationMap').setView([validLat, validLng], 13);
+                
+                // Sử dụng OpenStreetMap tiles với retry logic
+                loadTileLayer();
+
+                // Thêm marker với vị trí ban đầu
+                marker = L.marker([validLat, validLng], { 
+                    draggable: true 
+                }).addTo(map);
+                
+                // Events
+                marker.on('dragend', function(e) {
+                    const pos = e.target.getLatLng();
+                    updateInputsFromCoords(pos.lat, pos.lng, true);
+                });
+
+                map.on('click', function(e) {
+                    updateInputsFromCoords(e.latlng.lat, e.latlng.lng, true);
+                });
+
+                // Force invalidate size multiple times to ensure proper rendering
+                setTimeout(function() {
+                    map.invalidateSize();
+                    console.log('Map size invalidated (250ms)');
+                }, 250);
+                
+                setTimeout(function() {
+                    map.invalidateSize();
+                    console.log('Map size invalidated (500ms)');
+                }, 500);
+                
+                return map;
+            }
+
+            function setMapLocation(lat, lng) {
+                if (!map) initMap();
+                if (!marker) return;
+
+                marker.setLatLng([lat, lng]);
+                map.setView([lat, lng], 13);
+                map.invalidateSize();
+            }
+
+            function loadTileLayer() {
+                if (!map) return;
+
+                if (tileLayer) {
+                    map.removeLayer(tileLayer);
+                }
+
+                const server = tileServers[currentTileServerIndex];
+                const options = {
+                    attribution: server.attribution,
+                    maxZoom: 19,
+                    errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+                };
+
+                tileLayer = L.tileLayer(server.url, options);
+                tileLayer.on('tileerror', function(event) {
+                    console.error('Tile error from', server.url, event);
+                    if (!tileFallbackTriggered && currentTileServerIndex + 1 < tileServers.length) {
+                        tileFallbackTriggered = true;
+                        currentTileServerIndex++;
+                        console.warn('Switching to alternate tile server:', tileServers[currentTileServerIndex].url);
+                        loadTileLayer();
+                    }
+                });
+
+                tileLayer.on('tileloadstart', function() {
+                    console.log('Tiles loading from', server.url);
+                });
+
+                tileLayer.on('tileload', function() {
+                    console.log('Tile loaded successfully from', server.url);
+                });
+
+                tileLayer.addTo(map);
+            }
+
+            async function reverseGeocode(lat, lng) {
+                if (!addressInput) return;
+                
+                console.log('Reverse geocoding:', lat, lng);
+                
+                const services = [
+                    {
+                        name: 'Nominatim',
+                        url: () => `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+                        parse: data => data?.display_name
+                    },
+                    {
+                        name: 'Photon',
+                        url: () => `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`,
+                        parse: data => {
+                            const feature = data?.features?.[0];
+                            const props = feature?.properties;
+                            if (!props) return null;
+                            const parts = [
+                                props.name,
+                                props.street,
+                                props.city,
+                                props.state,
+                                props.country
+                            ].filter(Boolean);
+                            return parts.length ? parts.join(', ') : null;
+                        }
+                    }
+                ];
+
+                for (const service of services) {
+                    try {
+                        const response = await fetch(service.url(), {
+                            headers: { 'Accept': 'application/json' }
+                        });
+
+                        if (!response.ok) {
+                            console.warn(`${service.name} reverse geocoding failed:`, response.status);
+                            continue;
+                        }
+
+                        const data = await response.json();
+                        console.log(`${service.name} geocoding result:`, data);
+                        const label = service.parse(data);
+                        if (label) {
+                            addressInput.value = label;
+                            return;
+                        }
+                    } catch (err) {
+                        console.error(`${service.name} reverse geocoding error:`, err);
+                    }
+                }
+
+                if (!addressInput.value) {
+                    addressInput.value = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                }
+            }
+
+            function updateInputsFromCoords(lat, lng, shouldReverseGeocode) {
+                const roundedLat = Math.round(lat * 1000000) / 1000000;
+                const roundedLng = Math.round(lng * 1000000) / 1000000;
+                
+                if (latInput) latInput.value = roundedLat.toFixed(6);
+                if (lngInput) lngInput.value = roundedLng.toFixed(6);
+                
+                if (marker) {
+                    marker.setLatLng([roundedLat, roundedLng]);
+                }
+                
+                if (shouldReverseGeocode) {
+                    clearTimeout(reverseGeocodeTimer);
+                    reverseGeocodeTimer = setTimeout(function() {
+                        reverseGeocode(roundedLat, roundedLng);
+                    }, 1000);
+                }
+            }
+
+            function updateMapFromInputs() {
+                const lat = parseFloat(latInput?.value || '');
+                const lng = parseFloat(lngInput?.value || '');
+                
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    setMapLocation(lat, lng);
+                } else {
+                    setMapLocation(defaultPosition.lat, defaultPosition.lng);
+                }
+            }
+
+            async function lookupAddress(query) {
+                if (!query || !addressDatalist) return;
+
+                const services = [
+                    {
+                        name: 'Nominatim',
+                        url: () => `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`,
+                        parse: data => Array.isArray(data)
+                            ? data.map(item => ({
+                                display_name: item.display_name,
+                                lat: item.lat,
+                                lon: item.lon
+                            }))
+                            : []
+                    },
+                    {
+                        name: 'Photon',
+                        url: () => `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`,
+                        parse: data => Array.isArray(data?.features)
+                            ? data.features.map(feature => {
+                                const props = feature.properties || {};
+                                const parts = [
+                                    props.name,
+                                    props.street,
+                                    props.city,
+                                    props.state,
+                                    props.country
+                                ].filter(Boolean);
+                                return {
+                                    display_name: parts.length ? parts.join(', ') : feature.properties?.name || '',
+                                    lat: feature.geometry?.coordinates?.[1],
+                                    lon: feature.geometry?.coordinates?.[0]
+                                };
+                            }).filter(item => item.lat && item.lon)
+                            : []
+                    }
+                ];
+
+                for (const service of services) {
+                    try {
+                        const response = await fetch(service.url(), {
+                            headers: { 'Accept': 'application/json' }
+                        });
+
+                        if (!response.ok) {
+                            console.warn(`${service.name} lookup failed:`, response.status);
+                            continue;
+                        }
+
+                        const data = await response.json();
+                        const results = service.parse(data);
+
+                        if (results && results.length) {
+                            addressCandidates = results;
+                            addressDatalist.innerHTML = '';
+                            addressCandidates.forEach(item => {
+                                const option = document.createElement('option');
+                                option.value = item.display_name;
+                                addressDatalist.appendChild(option);
+                            });
+                            return;
+                        }
+                    } catch (err) {
+                        console.error(`${service.name} address lookup error:`, err);
+                    }
+                }
+
+                if (addressDatalist) {
+                    addressDatalist.innerHTML = '';
+                }
+                addressCandidates = [];
+            }
+            function scheduleLookup(value) {
+                clearTimeout(lookupTimer);
+                if (!value || value.length < 3) {
+                    if (addressDatalist) addressDatalist.innerHTML = '';
+                    addressCandidates = [];
+                    return;
+                }
+                lookupTimer = setTimeout(() => lookupAddress(value), 400);
+            }
+
+            function applySelection() {
+                if (!addressInput) return;
+                const found = addressCandidates.find(item => item.display_name === addressInput.value);
+                if (!found) return;
+                updateInputsFromCoords(parseFloat(found.lat), parseFloat(found.lon), false);
+                updateMapFromInputs();
+            }
+
+            // Event listeners
+            if (latInput) latInput.addEventListener('change', updateMapFromInputs);
+            if (lngInput) lngInput.addEventListener('change', updateMapFromInputs);
+            if (addressInput) {
+                addressInput.addEventListener('input', (e) => scheduleLookup(e.target.value.trim()));
+                addressInput.addEventListener('change', applySelection);
+            }
+
+            // Initialize - đợi DOM và tất cả resources load xong
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(function() {
+                        initMap();
+                        updateMapFromInputs();
+                    }, 100);
+                });
+            } else {
+                setTimeout(function() {
+                    initMap();
+                    updateMapFromInputs();
+                }, 100);
+            }
+        })();
+    </script>
+}

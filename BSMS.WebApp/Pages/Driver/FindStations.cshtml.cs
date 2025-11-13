@@ -16,11 +16,15 @@ public class FindStationsModel : PageModel
     }
 
     public string? SearchLocation { get; set; }
+    public double? UserLatitude { get; set; }
+    public double? UserLongitude { get; set; }
     public List<StationViewModel> Stations { get; set; } = new();
 
     public async Task OnGetAsync(string? location, double? lat, double? lng)
     {
         SearchLocation = location;
+        UserLatitude = lat;
+        UserLongitude = lng;
 
         if (lat.HasValue && lng.HasValue)
         {

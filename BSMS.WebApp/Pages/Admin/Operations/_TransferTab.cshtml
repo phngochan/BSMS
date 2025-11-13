@@ -1,0 +1,271 @@
+@model BSMS.WebApp.Pages.Admin.Operations.IndexModel
+@using BSMS.BusinessObjects.Enums
+@using System.Text.Json
+
+@functions {
+    public static string GetTransferBadgeClass(TransferStatus status) => status switch
+    {
+        TransferStatus.InProgress => "badge bg-info text-white fw-semibold",
+        TransferStatus.Completed => "badge bg-success text-white fw-semibold",
+        TransferStatus.Cancelled => "badge bg-danger text-white fw-semibold",
+        _ => "badge bg-light text-dark border fw-semibold"
+    };
+}
+<div class="tab-pane fade" id="tab-transfer" role="tabpanel" aria-labelledby="transfer-tab">
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0">
+                    <h5 class="mb-0">Lên lịch điều phối</h5>
+                    <small class="text-muted">Tạo lệnh điều phối pin giữa các trạm.</small>
+                </div>
+                <div class="card-body">
+                    <form method="post" asp-page-handler="SaveTransfer" id="transferForm" class="row g-3">
+                        <input asp-for="TransferForm.TransferId" type="hidden" />
+                        @if (Model.ActiveForm == nameof(Model.TransferForm))
+                        {
+                            <div asp-validation-summary="All" class="text-danger small"></div>
+                        }
+                        <div class="col-md-4">
+                            <label asp-for="TransferForm.BatteryId" class="form-label"></label>
+                            <select asp-for="TransferForm.BatteryId" class="form-select" id="transfer-battery-select">
+                                <option value="">-- Chọn pin --</option>
+                                @foreach (var battery in Model.TransferEligibleBatteries)
+                                {
+                                    <option value="@battery.BatteryId" data-station="@battery.StationId">
+                                        #@battery.BatteryId - @battery.Model (@battery.Station?.Name)
+                                    </option>
+                                }
+                            </select>
+                            @if (!Model.TransferEligibleBatteries.Any())
+                            {
+                                <small class="text-warning d-block mt-1">Chưa có pin đầy sẵn sàng để điều phối. Vui lòng kiểm tra kho.</small>
+                            }
+                            <span asp-validation-for="TransferForm.BatteryId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Trạm đi</label>
+                            <select asp-for="TransferForm.FromStationId" class="form-select" asp-items="Model.StationOptions">
+                                <option value="">-- Trạm đi --</option>
+                            </select>
+                            <span asp-validation-for="TransferForm.FromStationId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Trạm đến</label>
+                            <select asp-for="TransferForm.ToStationId" class="form-select" asp-items="Model.StationOptions">
+                                <option value="">-- Trạm đích --</option>
+                            </select>
+                            <span asp-validation-for="TransferForm.ToStationId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="TransferForm.TransferTime" class="form-label"></label>
+                            <input asp-for="TransferForm.TransferTime" class="form-control" type="datetime-local" />
+                            <span asp-validation-for="TransferForm.TransferTime" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="TransferForm.Status" class="form-label"></label>
+                            <select asp-for="TransferForm.Status" class="form-select" asp-items="Model.TransferStatusOptions"></select>
+                            <span asp-validation-for="TransferForm.Status" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="d-flex gap-2 w-100">
+                                <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-truck me-1"></i>Lưu</button>
+                                <button type="button" class="btn btn-outline-secondary flex-fill" data-reset-target="transferForm">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Mới
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-12">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="mb-0">Điều phối pin</h5>
+                            <small class="text-muted">Danh sách các lần điều phối.</small>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#transfer-filter-form">
+                            <i class="bi bi-funnel me-1"></i>Bộ lọc
+                        </button>
+                    </div>
+                    <div class="collapse" id="transfer-filter-form">
+                        <div class="row g-3 align-items-end mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label mb-1">Ngày điều phối</label>
+                                <input type="date" id="transfer-date-filter" class="form-control" />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label mb-1">Trạng thái</label>
+                                <select id="transfer-status-filter" class="form-select">
+                                    <option value="">Tất cả trạng thái</option>
+                                    @foreach (TransferStatus status in Enum.GetValues<TransferStatus>())
+                                    {
+                                        <option value="@status">@status</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-primary w-100" type="button" id="transfer-filter-apply">
+                                    <i class="bi bi-search me-1"></i>Tìm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle table-hover" id="transferScheduleTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Pin</th>
+                                    <th>Trạm đi</th>
+                                    <th>Trạm đến</th>
+                                    <th>Ngày điều phối</th>
+                                    <th>Ngày hoàn tất</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ var transferIndex = 0; }
+                                @foreach (var transfer in Model.Transfers)
+                                {
+                                    transferIndex++;
+                                    var isCompleted = transfer.Status == TransferStatus.Completed;
+                                    var isCancelled = transfer.Status == TransferStatus.Cancelled;
+                                    <tr data-transfer-time="@transfer.TransferTime.ToString("yyyy-MM-dd")" data-transfer-status="@transfer.Status">
+                                        <td>@transferIndex</td>
+                                        <td>
+                                            #@transfer.BatteryId
+                                            <div class="text-muted small">@transfer.Battery?.Model</div>
+                                        </td>
+                                        <td>@transfer.FromStation?.Name</td>
+                                        <td>@transfer.ToStation?.Name</td>
+                                        <td>@transfer.TransferTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            @if (isCompleted)
+                                            {
+                                                <span class="text-success">@transfer.TransferTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                                            }
+                                            else if (isCancelled)
+                                            {
+                                                <span class="text-danger">Đã hủy</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Chưa hoàn tất</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="@GetTransferBadgeClass(transfer.Status)">@transfer.Status</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="btn-group btn-group-sm">
+                                                @if (!isCompleted && !isCancelled)
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-secondary transfer-edit-btn"
+                                                            title="Chỉnh sửa"
+                                                            data-payload='@Html.Raw(JsonSerializer.Serialize(new {
+                                                                TransferId = transfer.TransferId,
+                                                                transfer.BatteryId,
+                                                                transfer.FromStationId,
+                                                                transfer.ToStationId,
+                                                                Status = transfer.Status.ToString(),
+                                                                TransferTime = transfer.TransferTime.ToString("yyyy-MM-ddTHH:mm")
+                                                            }))'>
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <form method="post" asp-page-handler="UpdateTransferStatus" class="d-inline">
+                                                        <input type="hidden" name="transferId" value="@transfer.TransferId" />
+                                                        <input type="hidden" name="status" value="Completed" />
+                                                        <button class="btn btn-outline-success" type="submit" title="Hoàn tất">
+                                                            <i class="bi bi-check2-circle"></i>
+                                                        </button>
+                                                    </form>
+                                                    <form method="post" asp-page-handler="DeleteTransfer" class="d-inline" onsubmit="return confirm('Hủy điều phối #@transfer.TransferId?');">
+                                                        <input type="hidden" name="transferId" value="@transfer.TransferId" />
+                                                        <button class="btn btn-outline-danger" type="submit" title="Hủy">
+                                                            <i class="bi bi-x-lg"></i>
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Không thể sửa</span>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!Model.Transfers.Any())
+                                {
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">Chưa có điều phối nào.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function() {
+            'use strict';
+            
+            // Transfer filter functionality
+            const filterBtn = document.getElementById('transfer-filter-apply');
+            const dateFilter = document.getElementById('transfer-date-filter');
+            const statusFilter = document.getElementById('transfer-status-filter');
+            const tableRows = document.querySelectorAll('#transferScheduleTable tbody tr[data-transfer-time]');
+            
+            if (filterBtn && dateFilter && statusFilter) {
+                filterBtn.addEventListener('click', function() {
+                    const selectedDate = dateFilter.value;
+                    const selectedStatus = statusFilter.value;
+                    
+                    tableRows.forEach(row => {
+                        const rowDate = row.getAttribute('data-transfer-time');
+                        const rowStatus = row.getAttribute('data-transfer-status');
+                        
+                        let showRow = true;
+                        
+                        if (selectedDate && rowDate) {
+                            if (rowDate !== selectedDate) {
+                                showRow = false;
+                            }
+                        }
+                        
+                        if (selectedStatus && rowStatus !== selectedStatus) {
+                            showRow = false;
+                        }
+                        
+                        row.style.display = showRow ? '' : 'none';
+                    });
+                });
+                
+                dateFilter.addEventListener('change', function() {
+                    if (!this.value && !statusFilter.value) {
+                        tableRows.forEach(row => row.style.display = '');
+                    }
+                });
+                
+                statusFilter.addEventListener('change', function() {
+                    if (!this.value && !dateFilter.value) {
+                        tableRows.forEach(row => row.style.display = '');
+                    }
+                });
+            }
+        })();
+    </script>
+}
