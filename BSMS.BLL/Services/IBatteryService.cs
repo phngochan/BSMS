@@ -21,4 +21,5 @@ public interface IBatteryService
     Task<Battery?> GetBatteryDetailsAsync(int batteryId);
     Task UpdateBatteryStatusAsync(int batteryId, BatteryStatus newStatus);
     Task<bool> CheckCompatibilityAsync(string batteryModel, string vehicleModel);
+    Task MoveBatteryToStationAsync(int batteryId, int stationId);
 }

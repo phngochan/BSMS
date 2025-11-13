@@ -94,6 +94,20 @@ public class BatteryService : IBatteryService
         await _batteryRepository.DeleteAsync(battery);
     }
 
+    public async Task MoveBatteryToStationAsync(int batteryId, int stationId)
+    {
+        var battery = await _batteryRepository.GetSingleAsync(b => b.BatteryId == batteryId);
+        if (battery == null)
+        {
+            throw new InvalidOperationException("Battery not found");
+        }
+
+        battery.StationId = stationId;
+        battery.UpdatedAt = DateTime.UtcNow;
+
+        await _batteryRepository.UpdateAsync(battery);
+    }
+
     public async Task<IEnumerable<Battery>> GetAvailableBatteriesAsync(int stationId)
     {
         try

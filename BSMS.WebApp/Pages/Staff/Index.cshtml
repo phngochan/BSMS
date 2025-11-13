@@ -237,6 +237,79 @@
                         </ul>
                     </div>
                 </div>
+@if (Model.IncomingTransfers.Any())
+{
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-arrow-down-circle text-primary me-2"></i>Pin đang điều phối đến
+                </h5>
+                <span class="badge bg-primary-subtle text-primary-emphasis">@Model.IncomingTransfers.Count đơn</span>
+            </div>
+            <p class="text-muted small mt-1 mb-0">Xác nhận hoặc từ chối khi đã kiểm tra pin thực tế.</p>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                @foreach (var transfer in Model.IncomingTransfers)
+                {
+                    var battery = transfer.Battery;
+                    var fromStation = transfer.FromStation?.Name ?? $"Station #{transfer.FromStationId}";
+                    var timeRemaining = transfer.TransferTime - DateTime.UtcNow;
+                    var isOverdue = timeRemaining < TimeSpan.Zero;
+                    
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <h6 class="mb-0">Pin #@battery?.BatteryId - @battery?.Model</h6>
+                                    <span class="badge bg-light text-dark border">SoH: @battery?.Soh%</span>
+                                </div>
+                                <div class="small text-muted">
+                                    <div>
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        Từ: <strong>@fromStation</strong>
+                                    </div>
+                                    <div>
+                                        <i class="bi bi-clock me-1"></i>
+                                        Dự kiến: @transfer.TransferTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                        @if (isOverdue)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger-emphasis ms-2">Quá hạn</span>
+                                        }
+                                        else if (timeRemaining < TimeSpan.FromHours(1))
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning-emphasis ms-2">Sắp đến</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <form method="post" asp-page-handler="ConfirmTransfer" class="d-inline">
+                                    <input type="hidden" name="transferId" value="@transfer.TransferId" />
+                                    <button type="submit" 
+                                            class="btn btn-success btn-sm"
+                                            onclick="return confirm('Xác nhận đã nhận pin #@battery?.BatteryId trong tình trạng tốt?');">
+                                        <i class="bi bi-check-circle me-1"></i>Xác nhận nhận
+                                    </button>
+                                </form>
+                                <button type="button" 
+                                        class="btn btn-outline-danger btn-sm"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#rejectModal"
+                                        data-transfer-id="@transfer.TransferId"
+                                        data-battery-id="@battery?.BatteryId">
+                                    <i class="bi bi-x-circle me-1"></i>Từ chối
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -433,9 +506,65 @@
     }
 </div>
 
+@* ✅ MODAL TỪ CHỐI *@
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="RejectTransfer" id="rejectForm">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="rejectModalLabel">
+                        <i class="bi bi-x-circle me-2"></i>Từ chối nhận pin
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="transferId" id="rejectTransferId" />
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Bạn đang từ chối nhận <strong>Pin #<span id="rejectBatteryId"></span></strong>. 
+                        Vui lòng nhập lý do cụ thể.
+                    </div>
+                    <div class="mb-3">
+                        <label for="rejectReason" class="form-label">Lý do từ chối <span class="text-danger">*</span></label>
+                        <textarea name="rejectReason" 
+                                  id="rejectReason" 
+                                  class="form-control" 
+                                  rows="4" 
+                                  required
+                                  placeholder="VD: Pin bị hư hỏng bên ngoài, SoH không đúng, không đúng model..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Hủy
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-check-lg me-1"></i>Xác nhận từ chối
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // ✅ XỬ LÝ MODAL TỪ CHỐI
+            const rejectModal = document.getElementById('rejectModal');
+            if (rejectModal) {
+                rejectModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const transferId = button.getAttribute('data-transfer-id');
+                    const batteryId = button.getAttribute('data-battery-id');
+                    
+                    document.getElementById('rejectTransferId').value = transferId;
+                    document.getElementById('rejectBatteryId').textContent = batteryId;
+                    document.getElementById('rejectReason').value = '';
+                });
+            }
+
+            // ✅ XỬ LÝ FORM DEFECT (existing code)
             document.querySelectorAll('form[data-defect-form="true"]').forEach(form => {
                 const select = form.querySelector('select[name="status"]');
                 const reasonInput = form.querySelector('.defect-reason-input');
@@ -453,7 +582,6 @@
                 select.addEventListener('change', toggleReason);
                 toggleReason();
             });
-
         });
     </script>
 }

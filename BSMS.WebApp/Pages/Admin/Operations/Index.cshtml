@@ -20,7 +20,8 @@
     {
         TransferStatus.InProgress => "badge bg-info text-white fw-semibold",
         TransferStatus.Completed => "badge bg-success text-white fw-semibold",
-        TransferStatus.Cancelled => "badge bg-danger text-white fw-semibold",
+        TransferStatus.Cancelled => "badge bg-secondary text-white fw-semibold",
+        TransferStatus.Rejected => "badge bg-danger text-white fw-semibold", // ✅ MỚI
         _ => "badge bg-light text-dark border fw-semibold"
     };
 

@@ -7,127 +7,144 @@ namespace BSMS.BLL.Services.Implementations;
 public class BatteryTransferService : IBatteryTransferService
 {
     private readonly IBatteryTransferRepository _transferRepository;
-    private readonly IBatteryRepository _batteryRepository;
 
-    public BatteryTransferService(
-        IBatteryTransferRepository transferRepository,
-        IBatteryRepository batteryRepository)
+    public BatteryTransferService(IBatteryTransferRepository transferRepository)
     {
         _transferRepository = transferRepository;
-        _batteryRepository = batteryRepository;
-    }
-
-    public async Task<BatteryTransfer> CreateTransferAsync(BatteryTransfer transfer)
-    {
-        var battery = await _batteryRepository.GetSingleAsync(b => b.BatteryId == transfer.BatteryId);
-        if (battery == null)
-        {
-            throw new InvalidOperationException("Battery not found");
-        }
-
-        if (battery.Status != BatteryStatus.Full)
-        {
-            throw new InvalidOperationException("Chỉ có thể điều phối pin đang ở trạng thái Full.");
-        }
-
-        if (battery.StationId != transfer.FromStationId)
-        {
-            throw new InvalidOperationException("Battery is not available at the source station");
-        }
-
-        transfer.TransferTime = transfer.TransferTime == default
-            ? DateTime.UtcNow
-            : transfer.TransferTime;
-        transfer.Status = TransferStatus.InProgress;
-
-        return await _transferRepository.CreateAsync(transfer);
-    }
-
-    public async Task DeleteTransferAsync(int transferId)
-    {
-        var existing = await _transferRepository.GetSingleAsync(t => t.TransferId == transferId);
-        if (existing == null)
-        {
-            throw new InvalidOperationException("Transfer not found");
-        }
-
-        await _transferRepository.DeleteAsync(existing);
     }
 
     public async Task<IEnumerable<BatteryTransfer>> GetRecentTransfersAsync(int count = 20)
     {
-        return await _transferRepository.GetRecentTransfersAsync(count);
-    }
-
-    public async Task<BatteryTransfer?> GetTransferAsync(int transferId)
-    {
-        return await _transferRepository.GetTransferWithDetailsAsync(transferId);
+        var transfers = await _transferRepository.GetAllAsync(
+            null,
+            q => q.OrderByDescending(t => t.TransferTime),
+            t => t.Battery,
+            t => t.FromStation,
+            t => t.ToStation,
+            t => t.ConfirmedByUser
+        );
+        return transfers.Take(count);
     }
 
     public async Task<IEnumerable<BatteryTransfer>> GetTransfersByStationAsync(int stationId)
     {
-        return await _transferRepository.GetTransfersByStationAsync(stationId);
+        return await _transferRepository.GetAllAsync(
+            t => t.FromStationId == stationId || t.ToStationId == stationId,
+            q => q.OrderByDescending(t => t.TransferTime),
+            t => t.Battery,
+            t => t.FromStation,
+            t => t.ToStation,
+            t => t.ConfirmedByUser
+        );
     }
 
     public async Task<IEnumerable<BatteryTransfer>> GetTransfersInProgressAsync()
     {
-        return await _transferRepository.GetTransfersInProgressAsync();
+        return await _transferRepository.GetAllAsync(
+            t => t.Status == TransferStatus.InProgress,
+            q => q.OrderBy(t => t.TransferTime),
+            t => t.Battery,
+            t => t.FromStation,
+            t => t.ToStation
+        );
+    }
+
+    public async Task<IEnumerable<BatteryTransfer>> GetIncomingTransfersAsync(int toStationId)
+    {
+        return await _transferRepository.GetAllAsync(
+            t => t.ToStationId == toStationId && t.Status == TransferStatus.InProgress,
+            q => q.OrderBy(t => t.TransferTime),
+            t => t.Battery,
+            t => t.FromStation,
+            t => t.ToStation
+        );
+    }
+
+    // ✅ LỊCH SỬ ĐIỀU PHỐI
+    public async Task<IEnumerable<BatteryTransfer>> GetTransferHistoryAsync(int stationId, int pageNumber = 1, int pageSize = 20)
+    {
+        var result = await _transferRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            t => (t.FromStationId == stationId || t.ToStationId == stationId) &&
+                 (t.Status == TransferStatus.Completed ||
+                  t.Status == TransferStatus.Rejected ||
+                  t.Status == TransferStatus.Cancelled),
+            q => q.OrderByDescending(t => t.CompletedAt ?? t.TransferTime),
+            t => t.Battery,
+            t => t.FromStation,
+            t => t.ToStation,
+            t => t.ConfirmedByUser
+        );
+        return result.Items;
+    }
+
+    public async Task<BatteryTransfer?> GetTransferAsync(int transferId)
+    {
+        return await _transferRepository.GetByIdAsync(
+            transferId,
+            t => t.Battery,
+            t => t.FromStation,
+            t => t.ToStation,
+            t => t.ConfirmedByUser
+        );
+    }
+
+    public async Task<BatteryTransfer> CreateTransferAsync(BatteryTransfer transfer)
+    {
+        return await _transferRepository.CreateAsync(transfer);
     }
 
     public async Task UpdateTransferAsync(BatteryTransfer transfer)
     {
-        var existing = await _transferRepository.GetSingleAsync(t => t.TransferId == transfer.TransferId);
-        if (existing == null)
-        {
-            throw new InvalidOperationException("Transfer not found");
-        }
-
-        var battery = await _batteryRepository.GetSingleAsync(b => b.BatteryId == transfer.BatteryId);
-        if (battery == null)
-        {
-            throw new InvalidOperationException("Battery not found");
-        }
-
-        if (battery.Status != BatteryStatus.Full)
-        {
-            throw new InvalidOperationException("Chỉ có thể điều phối pin đang ở trạng thái Full.");
-        }
-
-        if (battery.StationId != transfer.FromStationId)
-        {
-            throw new InvalidOperationException("Battery is not available at the source station");
-        }
-
-        existing.BatteryId = transfer.BatteryId;
-        existing.FromStationId = transfer.FromStationId;
-        existing.ToStationId = transfer.ToStationId;
-        existing.TransferTime = transfer.TransferTime;
-        existing.Status = transfer.Status;
-
-        await _transferRepository.UpdateAsync(existing);
+        await _transferRepository.UpdateAsync(transfer);
     }
 
     public async Task UpdateTransferStatusAsync(int transferId, TransferStatus status)
     {
-        var existing = await _transferRepository.GetTransferWithDetailsAsync(transferId);
-        if (existing == null)
+        var transfer = await _transferRepository.GetByIdAsync(transferId);
+        if (transfer != null)
         {
-            throw new InvalidOperationException("Transfer not found");
-        }
-
-        existing.Status = status;
-        await _transferRepository.UpdateAsync(existing);
-
-        if (status == TransferStatus.Completed)
-        {
-            var battery = await _batteryRepository.GetSingleAsync(b => b.BatteryId == existing.BatteryId);
-            if (battery != null)
+            transfer.Status = status;
+            if (status == TransferStatus.Completed || 
+                status == TransferStatus.Rejected || 
+                status == TransferStatus.Cancelled)
             {
-                battery.StationId = existing.ToStationId;
-                battery.Status = BatteryStatus.Full;
-                battery.UpdatedAt = DateTime.UtcNow;
-                await _batteryRepository.UpdateAsync(battery);
+                transfer.CompletedAt = DateTime.UtcNow;
             }
+            await _transferRepository.UpdateAsync(transfer);
         }
+    }
+
+    // ✅ XÁC NHẬN NHẬN PIN
+    public async Task ConfirmTransferAsync(int transferId, int confirmedByUserId)
+    {
+        var transfer = await _transferRepository.GetByIdAsync(transferId);
+        if (transfer != null)
+        {
+            transfer.Status = TransferStatus.Completed;
+            transfer.CompletedAt = DateTime.UtcNow;
+            transfer.ConfirmedByUserId = confirmedByUserId;
+            await _transferRepository.UpdateAsync(transfer);
+        }
+    }
+
+    // ✅ TỪ CHỐI NHẬN PIN
+    public async Task RejectTransferAsync(int transferId, int rejectedByUserId, string reason)
+    {
+        var transfer = await _transferRepository.GetByIdAsync(transferId);
+        if (transfer != null)
+        {
+            transfer.Status = TransferStatus.Rejected;
+            transfer.CompletedAt = DateTime.UtcNow;
+            transfer.ConfirmedByUserId = rejectedByUserId;
+            transfer.RejectionReason = reason;
+            await _transferRepository.UpdateAsync(transfer);
+        }
+    }
+
+    public async Task DeleteTransferAsync(int transferId)
+    {
+        await _transferRepository.DeleteAsync(transferId);
     }
 }

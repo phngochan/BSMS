@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using BSMS.BLL.Services;
@@ -8,6 +8,8 @@ using BSMS.WebApp.Pages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.SignalR;
+using BSMS.WebApp.Hubs;
 
 namespace BSMS.WebApp.Pages.Staff;
 
@@ -19,6 +21,8 @@ public class IndexModel : BasePageModel
     private readonly ISupportService _supportService;
     private readonly IChangingStationService _stationService;
     private readonly ISwapTransactionService _swapTransactionService;
+    private readonly IBatteryTransferService _batteryTransferService;
+    private readonly IHubContext<NotificationHub> _hubContext; // ✅ THÊM SIGNALR
 
     public IndexModel(
         IStationStaffService stationStaffService,
@@ -26,6 +30,8 @@ public class IndexModel : BasePageModel
         ISupportService supportService,
         IChangingStationService stationService,
         ISwapTransactionService swapTransactionService,
+        IBatteryTransferService batteryTransferService,
+        IHubContext<NotificationHub> hubContext, // ✅ INJECT
         IUserActivityLogService activityLogService) : base(activityLogService)
     {
         _stationStaffService = stationStaffService;
@@ -33,6 +39,8 @@ public class IndexModel : BasePageModel
         _supportService = supportService;
         _stationService = stationService;
         _swapTransactionService = swapTransactionService;
+        _batteryTransferService = batteryTransferService;
+        _hubContext = hubContext;
     }
 
     public StationStaff? Assignment { get; private set; }
@@ -44,6 +52,8 @@ public class IndexModel : BasePageModel
     public StaffShiftViewModel? ShiftInfo { get; private set; }
     public SwapWorkflowViewModel SwapWorkflow { get; private set; } = SwapWorkflowViewModel.Empty;
     public SupportSummaryViewModel SupportSummary { get; private set; } = SupportSummaryViewModel.Empty;
+    public IList<BatteryTransfer> IncomingTransfers { get; private set; } = new List<BatteryTransfer>();
+    public IList<BatteryTransfer> TransferHistory { get; private set; } = new List<BatteryTransfer>(); // ✅ LỊCH SỬ
 
     [TempData]
     public string? SupportSuccessMessage { get; set; }
@@ -218,6 +228,113 @@ public class IndexModel : BasePageModel
         return RedirectToPage();
     }
 
+    // ✅ XÁC NHẬN NHẬN PIN (CÓ SIGNALR)
+    public async Task<IActionResult> OnPostConfirmTransferAsync(int transferId)
+    {
+        await LoadStationDataAsync();
+        if (!HasStation)
+        {
+            TempData["ErrorMessage"] = "Bạn chưa được phân công trạm nào.";
+            return RedirectToPage();
+        }
+
+        var transfer = await _batteryTransferService.GetTransferAsync(transferId);
+        if (transfer == null || transfer.ToStationId != Assignment!.StationId)
+        {
+            TempData["ErrorMessage"] = "Đơn điều phối không tồn tại hoặc không thuộc trạm của bạn.";
+            return RedirectToPage();
+        }
+
+        if (transfer.Status != TransferStatus.InProgress)
+        {
+            TempData["ErrorMessage"] = "Đơn điều phối này đã được xử lý.";
+            return RedirectToPage();
+        }
+
+        // Confirm transfer
+        await _batteryTransferService.ConfirmTransferAsync(transferId, CurrentUserId);
+
+        // Update battery station location
+        await _batteryService.MoveBatteryToStationAsync(transfer.BatteryId, transfer.ToStationId);
+
+        await LogActivityAsync("Transfer", $"Confirmed battery #{transfer.BatteryId} received at station #{transfer.ToStationId}");
+
+        // ✅ GỬI SIGNALR CHO ADMIN
+        try
+        {
+            await _hubContext.Clients.Group("Admin").SendAsync("TransferConfirmed", new
+            {
+                transferId = transfer.TransferId,
+                batteryId = transfer.BatteryId,
+                fromStation = transfer.FromStation?.Name ?? $"Station #{transfer.FromStationId}",
+                toStation = transfer.ToStation?.Name ?? StationInfo?.Name,
+                confirmedBy = User.Identity?.Name,
+                confirmedAt = DateTime.UtcNow,
+                message = $"Pin #{transfer.BatteryId} đã được {StationInfo?.Name} xác nhận nhận"
+            });
+        }
+        catch { /* Ignore SignalR errors */ }
+
+        TempData["SuccessMessage"] = $"Đã xác nhận nhận pin #{transfer.BatteryId}. Pin đã được cập nhật vào kho trạm.";
+        return RedirectToPage();
+    }
+
+    // ✅ TỪ CHỐI NHẬN PIN (CÓ SIGNALR)
+    public async Task<IActionResult> OnPostRejectTransferAsync(int transferId, string rejectReason)
+    {
+        await LoadStationDataAsync();
+        if (!HasStation)
+        {
+            TempData["ErrorMessage"] = "Bạn chưa được phân công trạm nào.";
+            return RedirectToPage();
+        }
+
+        var transfer = await _batteryTransferService.GetTransferAsync(transferId);
+        if (transfer == null || transfer.ToStationId != Assignment!.StationId)
+        {
+            TempData["ErrorMessage"] = "Đơn điều phối không tồn tại hoặc không thuộc trạm của bạn.";
+            return RedirectToPage();
+        }
+
+        if (transfer.Status != TransferStatus.InProgress)
+        {
+            TempData["ErrorMessage"] = "Đơn điều phối này đã được xử lý.";
+            return RedirectToPage();
+        }
+
+        var trimmedReason = rejectReason?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedReason))
+        {
+            TempData["ErrorMessage"] = "Vui lòng nhập lý do từ chối.";
+            return RedirectToPage();
+        }
+
+        // Reject transfer
+        await _batteryTransferService.RejectTransferAsync(transferId, CurrentUserId, trimmedReason);
+
+        await LogActivityAsync("Transfer", $"Rejected battery #{transfer.BatteryId} transfer. Reason: {trimmedReason}");
+
+        // ✅ GỬI SIGNALR CHO ADMIN
+        try
+        {
+            await _hubContext.Clients.Group("Admin").SendAsync("TransferRejected", new
+            {
+                transferId = transfer.TransferId,
+                batteryId = transfer.BatteryId,
+                fromStation = transfer.FromStation?.Name ?? $"Station #{transfer.FromStationId}",
+                toStation = transfer.ToStation?.Name ?? StationInfo?.Name,
+                rejectedBy = User.Identity?.Name,
+                rejectedAt = DateTime.UtcNow,
+                reason = trimmedReason,
+                message = $"Pin #{transfer.BatteryId} bị {StationInfo?.Name} từ chối: {trimmedReason}"
+            });
+        }
+        catch { /* Ignore SignalR errors */ }
+
+        TempData["SuccessMessage"] = $"Đã từ chối nhận pin #{transfer.BatteryId}.";
+        return RedirectToPage();
+    }
+
     private async Task LoadStationDataAsync()
     {
         if (CurrentUserId == 0)
@@ -239,6 +356,13 @@ public class IndexModel : BasePageModel
             .ToList();
         SwapWorkflow = SwapWorkflowViewModel.FromTransactions(stationSwaps, StationInfo?.Name ?? string.Empty);
         SupportSummary = SupportSummaryViewModel.FromTickets(SupportTickets);
+
+        IncomingTransfers = (await _batteryTransferService.GetIncomingTransfersAsync(Assignment.StationId))
+            .ToList();
+
+        // ✅ LOAD LỊCH SỬ
+        TransferHistory = (await _batteryTransferService.GetTransferHistoryAsync(Assignment.StationId, pageNumber: 1, pageSize: 10))
+            .ToList();
     }
 
     private static bool IsValidStatusTransition(BatteryStatus currentStatus, BatteryStatus nextStatus)

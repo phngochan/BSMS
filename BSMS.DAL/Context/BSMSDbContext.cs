@@ -241,25 +241,47 @@ public class BSMSDbContext : DbContext
         modelBuilder.Entity<BatteryTransfer>(entity =>
         {
             entity.HasKey(e => e.TransferId);
-            entity.Property(e => e.TransferTime).HasDefaultValueSql("GETDATE()");
+            
             entity.Property(e => e.Status)
-                  .HasConversion<string>()
-                  .HasMaxLength(50);
-
-            entity.HasOne(t => t.Battery)
-                  .WithMany()
-                  .HasForeignKey(t => t.BatteryId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(t => t.FromStation)
-                  .WithMany(s => s.FromTransfers)
-                  .HasForeignKey(t => t.FromStationId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(t => t.ToStation)
-                  .WithMany(s => s.ToTransfers)
-                  .HasForeignKey(t => t.ToStationId)
-                  .OnDelete(DeleteBehavior.Restrict);
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
+            
+            entity.Property(e => e.RejectionReason)
+                .HasMaxLength(500);
+            
+            entity.Property(e => e.TransferTime)
+                .HasDefaultValueSql("GETDATE()");
+            
+            // Battery relationship
+            entity.HasOne(e => e.Battery)
+                .WithMany()
+                .HasForeignKey(e => e.BatteryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            // FromStation relationship
+            entity.HasOne(e => e.FromStation)
+                .WithMany(s => s.FromTransfers)
+                .HasForeignKey(e => e.FromStationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            // ToStation relationship
+            entity.HasOne(e => e.ToStation)
+                .WithMany(s => s.ToTransfers)
+                .HasForeignKey(e => e.ToStationId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            // ConfirmedByUser relationship (NEW)
+            entity.HasOne(e => e.ConfirmedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ConfirmedByUserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+            
+            // Indexes
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.ToStationId);
+            entity.HasIndex(e => e.ConfirmedByUserId);
         });
 
         // CONFIG

@@ -1,5 +1,7 @@
 ﻿using BSMS.DAL.Context;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace BSMS.DAL.Base;
@@ -8,11 +10,16 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 {
     protected readonly DbSet<T> _dbSet;
     protected readonly BSMSDbContext _context;
+    private readonly IReadOnlyList<string> _primaryKeyProperties;
 
     public GenericRepository(BSMSDbContext context)
     {
         _context = context;
         _dbSet = context.Set<T>();
+        var primaryKey = _context.Model.FindEntityType(typeof(T))?.FindPrimaryKey();
+        _primaryKeyProperties = primaryKey != null
+            ? primaryKey.Properties.Select(p => p.Name).ToList()
+            : Array.Empty<string>();
     }
 
     #region Query Operations
@@ -146,15 +153,40 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 
     public virtual async Task<T> UpdateAsync(T entity)
     {
-        var local = _dbSet.Local.FirstOrDefault(e => e.Equals(entity));
-        if (local != null)
-            _context.Entry(local).State = EntityState.Detached;
+        DetachLocalEntity(entity);
 
         _dbSet.Update(entity);
         await _context.SaveChangesAsync();
         _context.Entry(entity).State = EntityState.Detached;
 
         return entity;
+    }
+
+    private void DetachLocalEntity(T entity)
+    {
+        if (!_primaryKeyProperties.Any())
+        {
+            return;
+        }
+
+        var entry = _context.Entry(entity);
+        var keyValues = _primaryKeyProperties
+            .Select(pk => entry.Property(pk).CurrentValue)
+            .ToList();
+
+        foreach (var localEntry in _dbSet.Local.ToList())
+        {
+            var localEntryProps = _context.Entry(localEntry);
+            var localKeyValues = _primaryKeyProperties
+                .Select(pk => localEntryProps.Property(pk).CurrentValue)
+                .ToList();
+
+            if (keyValues.SequenceEqual(localKeyValues))
+            {
+                localEntryProps.State = EntityState.Detached;
+                break;
+            }
+        }
     }
 
     public virtual async Task<IEnumerable<T>> UpdateRangeAsync(IEnumerable<T> entities)
