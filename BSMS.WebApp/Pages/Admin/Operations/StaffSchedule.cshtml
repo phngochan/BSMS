@@ -256,11 +256,14 @@
                             Ngày phân công
                         </label>
                         <div class="input-group">
+                            <!-- ✅ BỎ READONLY, CHỈ SỬ DỤNG HIDDEN INPUT ĐỂ LƯU GIÁ TRỊ -->
                             <input type="datetime-local" 
-                                   asp-for="Input.AssignedAt" 
                                    class="form-control" 
-                                   id="assignedAtInput"
-                                   disabled />
+                                   id="assignedAtDisplay"
+                                   readonly />
+                            <input type="hidden" 
+                                   asp-for="Input.AssignedAt" 
+                                   id="assignedAtValue" />
                             <button type="button" class="btn btn-outline-secondary" id="toggleManualDate" title="Cho phép chỉnh sửa">
                                 <i class="bi bi-pencil"></i>
                             </button>
@@ -517,6 +520,85 @@
     <partial name="_ValidationScriptsPartial" />
     
     <script>
+        // ✅ Set datetime for AssignedAt (both create and edit mode)
+        document.addEventListener('DOMContentLoaded', function() {
+            const assignedAtDisplay = document.getElementById('assignedAtDisplay');
+            const assignedAtValue = document.getElementById('assignedAtValue');
+            const isEditMode = @(Model.IsEditMode ? "true" : "false");
+            
+            function setCurrentDateTime() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const displayValue = `${year}-${month}-${day}T${hours}:${minutes}`;
+                
+                if (assignedAtDisplay) {
+                    assignedAtDisplay.value = displayValue;
+                }
+                
+                if (assignedAtValue && !assignedAtValue.value) {
+                    assignedAtValue.value = now.toISOString();
+                }
+            }
+            
+            function syncFromServerValue() {
+                // ✅ Sync from server-side value (for edit mode)
+                const serverValue = '@(Model.Input?.AssignedAt?.ToString("yyyy-MM-ddTHH:mm") ?? "")';
+                if (serverValue && assignedAtDisplay) {
+                    assignedAtDisplay.value = serverValue;
+                }
+                
+                // Also set the hidden field if server has value
+                const serverIsoValue = '@(Model.Input?.AssignedAt?.ToUniversalTime().ToString("o") ?? "")';
+                if (serverIsoValue && assignedAtValue) {
+                    assignedAtValue.value = serverIsoValue;
+                }
+            }
+            
+            // ✅ Choose appropriate initialization based on mode
+            if (isEditMode) {
+                syncFromServerValue();
+            } else {
+                setCurrentDateTime();
+            }
+        });
+
+        // ✅ Toggle readonly for AssignedAt
+        document.getElementById('toggleManualDate')?.addEventListener('click', function() {
+            const assignedAtDisplay = document.getElementById('assignedAtDisplay');
+            const assignedAtValue = document.getElementById('assignedAtValue');
+            
+            if (assignedAtDisplay.hasAttribute('readonly')) {
+                assignedAtDisplay.removeAttribute('readonly');
+                assignedAtDisplay.addEventListener('change', function() {
+                    const localDate = new Date(this.value);
+                    assignedAtValue.value = localDate.toISOString();
+                });
+                this.querySelector('i').classList.replace('bi-pencil', 'bi-lock');
+                this.title = 'Khóa chỉnh sửa';
+            } else {
+                assignedAtDisplay.setAttribute('readonly', true);
+                this.querySelector('i').classList.replace('bi-lock', 'bi-pencil');
+                this.title = 'Cho phép chỉnh sửa';
+            }
+        });
+
+        // ✅ Sync before form submit
+        document.getElementById('staffAssignmentForm')?.addEventListener('submit', function(e) {
+            const assignedAtDisplay = document.getElementById('assignedAtDisplay');
+            const assignedAtValue = document.getElementById('assignedAtValue');
+            
+            if (assignedAtDisplay && assignedAtDisplay.value) {
+                const localDate = new Date(assignedAtDisplay.value);
+                assignedAtValue.value = localDate.toISOString();
+            }
+            
+            console.log('Form submitting with AssignedAt:', assignedAtValue.value);
+        });
+
         // ✅ Toggle password visibility
         document.getElementById('togglePassword')?.addEventListener('click', function() {
             const passwordInput = document.getElementById('passwordInput');

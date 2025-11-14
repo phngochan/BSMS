@@ -9,6 +9,7 @@ using BSMS.DAL.Repositories;
 using BSMS.DAL.Repositories.Implementations;
 using BSMS.WebApp.Hubs;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
 
@@ -16,6 +17,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 builder.Services.AddRazorPages();
+
+// ✅ ADD DATA PROTECTION (FIX SESSION COOKIE WARNINGS)
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"./keys"))
+    .SetApplicationName("BSMS");
 
 // SignalR
 builder.Services.AddSignalR();
@@ -56,8 +62,6 @@ builder.Services.AddScoped<IVnpayService, VnpayService>();
 builder.Services.AddScoped<IChangingStationService, ChangingStationService>();
 builder.Services.AddScoped<IBatteryService, BatteryService>();
 builder.Services.AddScoped<IBatteryTransferService, BatteryTransferService>();
-// ✅ Important: Register IScheduleService BEFORE IStationStaffService (dependency)
-// builder.Services.AddScoped<IScheduleService, ScheduleService>();
 builder.Services.AddScoped<IStationStaffService, StationStaffService>();
 builder.Services.AddScoped<ISupportService, SupportService>();
 builder.Services.AddScoped<ISwapTransactionService, SwapTransactionService>();
