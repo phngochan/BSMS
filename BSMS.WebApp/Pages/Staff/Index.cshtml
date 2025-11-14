@@ -2,6 +2,7 @@
 @using BSMS.BusinessObjects.Enums
 @using BSMS.BusinessObjects.Models
 @model BSMS.WebApp.Pages.Staff.IndexModel
+@using BSMS.BusinessObjects.Enums
 @using BSMS.WebApp.Helpers
 @{
     ViewData["Title"] = "Vận hành trạm";
@@ -114,6 +115,55 @@
     }
     else
     {
+        @* ✅ THÔNG BÁO CA LÀM VIỆC CHƯA BẮT ĐẦU *@
+        @if (Model.Assignment != null && !Model.Assignment.IsCurrentlyWorking && Model.Assignment.IsActive)
+        {
+            var currentTime = DateTime.Now.TimeOfDay;
+            var timeUntilShift = Model.Assignment.ShiftStart - currentTime;
+            
+            @if (timeUntilShift > TimeSpan.Zero)
+            {
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-clock-history fs-3"></i>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading mb-1">
+                                <i class="bi bi-info-circle me-2"></i>Ca làm việc chưa bắt đầu
+                            </h5>
+                            <p class="mb-2">
+                                Ca làm việc của bạn sẽ bắt đầu lúc <strong>@Model.Assignment.ShiftStart.ToString(@"hh\:mm")</strong> 
+                                (còn <strong>@FormatDuration(timeUntilShift)</strong>)
+                            </p>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar-check me-1"></i>
+                                Thời gian ca: @Model.Assignment.ShiftTimeDisplay
+                                <span class="mx-2">|</span>
+                                <i class="bi bi-geo-alt me-1"></i>
+                                Trạm: @Model.StationInfo?.Name
+                            </small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-exclamation-triangle fs-3"></i>
+                        <div>
+                            <h5 class="alert-heading mb-1">Ca làm việc đã kết thúc</h5>
+                            <p class="mb-0">
+                                Ca làm việc của bạn đã kết thúc lúc <strong>@Model.Assignment.ShiftEnd.ToString(@"hh\:mm")</strong>. 
+                                Vui lòng liên hệ quản lý để cập nhật lịch trực.
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+        }
+
         @if (Model.ShiftInfo != null)
         {
             <div class="card shadow-sm border-0 mb-4">
@@ -161,6 +211,7 @@
 
         <div class="row g-3 mb-4">
             @foreach (var status in Enum.GetValues(typeof(BSMS.BusinessObjects.Enums.BatteryStatus)).Cast<BSMS.BusinessObjects.Enums.BatteryStatus>())
+
             {
                 var count = Model.BatterySummary.TryGetValue(status, out var value) ? value : 0;
                 <div class="col-12 col-sm-6 col-lg-3">

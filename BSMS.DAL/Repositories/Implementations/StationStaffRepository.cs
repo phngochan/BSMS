@@ -35,7 +35,9 @@ public class StationStaffRepository : GenericRepository<StationStaff>, IStationS
         return await _context.StationStaffs
             .Include(ss => ss.User)
             .Include(ss => ss.Station)
-            .FirstOrDefaultAsync(ss => ss.UserId == userId);
+            .Where(ss => ss.UserId == userId && ss.IsActive)
+            .OrderByDescending(ss => ss.AssignedAt)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<IEnumerable<StationStaff>> GetAssignmentsByUserAsync(int userId)
@@ -68,7 +70,6 @@ public class StationStaffRepository : GenericRepository<StationStaff>, IStationS
             .ToListAsync();
     }
 
-    // ✅ NEW: Get all active assignments for a user (to check conflicts)
     public async Task<IEnumerable<StationStaff>> GetActiveAssignmentsByUserAsync(int userId)
     {
         return await _context.StationStaffs
@@ -78,7 +79,7 @@ public class StationStaffRepository : GenericRepository<StationStaff>, IStationS
             .ToListAsync();
     }
 
-    // ✅ NEW: Check for overlapping shifts at a station
+
     public async Task<IEnumerable<StationStaff>> GetOverlappingShiftsAsync(
         int stationId,
         TimeSpan shiftStart,
@@ -91,7 +92,7 @@ public class StationStaffRepository : GenericRepository<StationStaff>, IStationS
             .Where(ss =>
                 ss.StationId == stationId &&
                 ss.IsActive &&
-                // Check overlap: NOT (end1 <= start2 OR start1 >= end2)
+              
                 !(ss.ShiftEnd <= shiftStart || ss.ShiftStart >= shiftEnd));
 
         if (excludeStaffId.HasValue)
@@ -102,7 +103,7 @@ public class StationStaffRepository : GenericRepository<StationStaff>, IStationS
         return await query.ToListAsync();
     }
 
-    // ✅ NEW: Count active staff in a specific shift at a station
+  
     public async Task<int> CountActiveStaffInShiftAsync(
         int stationId,
         TimeSpan shiftStart,
