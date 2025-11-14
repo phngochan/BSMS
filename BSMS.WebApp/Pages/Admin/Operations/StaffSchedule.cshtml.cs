@@ -1,15 +1,9 @@
 ﻿using BSMS.BLL.Services;
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
-using BSMS.WebApp.Pages;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace BSMS.WebApp.Pages.Admin.Operations;
 
@@ -100,11 +94,11 @@ public class StaffScheduleModel : BasePageModel
                 .Select(x => new { Field = x.Key, Errors = x.Value?.Errors.Select(e => e.ErrorMessage) })
                 .ToList();
 
-            _logger?.LogWarning("ModelState không hợp lệ: {Errors}", 
+            _logger?.LogWarning("ModelState không hợp lệ: {Errors}",
                 string.Join(", ", errors.SelectMany(e => e.Errors ?? Enumerable.Empty<string>())));
 
             ErrorMessage = $"❌ Lỗi: {string.Join(", ", errors.SelectMany(e => e.Errors ?? Enumerable.Empty<string>()))}";
-            
+
             await LoadDataAsync();
             return Page();
         }
@@ -141,7 +135,7 @@ public class StaffScheduleModel : BasePageModel
             };
 
             await _userService.CreateUserAsync(newUser);
-            
+
             await LogActivityAsync("Staff", $"Created new staff user: {newUser.Username} ({newUser.FullName})");
 
             TempData["SuccessMessage"] = $"✅ Đã tạo nhân viên mới: {newUser.FullName} (Username: {newUser.Username})";
@@ -166,17 +160,17 @@ public class StaffScheduleModel : BasePageModel
         {
             ModelState.AddModelError("Input.UserId", "Vui lòng chọn nhân viên");
         }
-        
+
         if (Input.StationId <= 0)
         {
             ModelState.AddModelError("Input.StationId", "Vui lòng chọn trạm");
         }
-        
+
         if (string.IsNullOrWhiteSpace(Input.ShiftStart))
         {
             ModelState.AddModelError("Input.ShiftStart", "Vui lòng nhập giờ bắt đầu");
         }
-        
+
         if (string.IsNullOrWhiteSpace(Input.ShiftEnd))
         {
             ModelState.AddModelError("Input.ShiftEnd", "Vui lòng nhập giờ kết thúc");
@@ -185,6 +179,7 @@ public class StaffScheduleModel : BasePageModel
         if (!ModelState.IsValid)
         {
             await LoadDataAsync();
+            TempData["ErrorMessage"] = "Thông tin không hợp lệ";
             return Page();
         }
 
@@ -270,7 +265,7 @@ public class StaffScheduleModel : BasePageModel
         foreach (var station in Stations)
         {
             var stationAssignments = Assignments.Where(a => a.StationId == station.StationId && a.IsActive).ToList();
-            
+
             var morningShift = stationAssignments.Where(a => a.ShiftStart >= TimeSpan.FromHours(6) && a.ShiftStart < TimeSpan.FromHours(14)).ToList();
             var afternoonShift = stationAssignments.Where(a => a.ShiftStart >= TimeSpan.FromHours(14) && a.ShiftStart < TimeSpan.FromHours(22)).ToList();
 
