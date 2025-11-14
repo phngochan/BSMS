@@ -10,8 +10,12 @@
             <i class="bi bi-calendar-check me-2"></i>Quản lý lịch làm việc nhân viên
         </h2>
         
-        <!-- ✅ Real-time Status Badge -->
-        <div class="d-flex gap-2">
+        <!-- ✅ NÚT TẠO NHÂN VIÊN MỚI -->
+        <div class="d-flex gap-2 align-items-center">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createStaffModal">
+                <i class="bi bi-person-plus-fill me-2"></i>Tạo nhân viên mới
+            </button>
+            
             <span class="badge bg-success fs-6">
                 <i class="bi bi-person-check me-1"></i>
                 @Model.CurrentlyWorkingStaff.Count Nhân viên đang làm việc
@@ -30,6 +34,14 @@
     {
         <div class="alert alert-success alert-dismissible fade show">
             <i class="bi bi-check-circle me-2"></i>@Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>@Model.ErrorMessage
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
@@ -366,10 +378,197 @@
     </div>
 </div>
 
+<!-- ✅ MODAL TẠO NHÂN VIÊN MỚI -->
+<div class="modal fade" id="createStaffModal" tabindex="-1" aria-labelledby="createStaffModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="CreateNewStaff" id="createStaffForm" autocomplete="off">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="createStaffModalLabel">
+                        <i class="bi bi-person-plus-fill me-2"></i>Tạo nhân viên mới
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Lưu ý:</strong> Nhân viên mới sẽ được tạo với vai trò <strong>StationStaff</strong> 
+                        và có thể đăng nhập ngay sau khi tạo.
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- Họ tên -->
+                        <div class="col-md-6">
+                            <label asp-for="NewStaffInput.FullName" class="form-label">
+                                Họ và tên <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   asp-for="NewStaffInput.FullName" 
+                                   class="form-control" 
+                                   placeholder="VD: Nguyễn Văn A"
+                                   required
+                                   maxlength="100" />
+                            <span asp-validation-for="NewStaffInput.FullName" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Username -->
+                        <div class="col-md-6">
+                            <label asp-for="NewStaffInput.Username" class="form-label">
+                                Tên đăng nhập <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   asp-for="NewStaffInput.Username" 
+                                   class="form-control" 
+                                   placeholder="VD: staff5"
+                                   required
+                                   minlength="4"
+                                   maxlength="50"
+                                   pattern="[a-zA-Z0-9_]+"
+                                   title="Chỉ chứa chữ cái, số và dấu gạch dưới" />
+                            <span asp-validation-for="NewStaffInput.Username" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <label asp-for="NewStaffInput.Email" class="form-label">
+                                Email <span class="text-danger">*</span>
+                            </label>
+                            <input type="email" 
+                                   asp-for="NewStaffInput.Email" 
+                                   class="form-control" 
+                                   placeholder="example@email.com"
+                                   required />
+                            <span asp-validation-for="NewStaffInput.Email" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="col-md-6">
+                            <label asp-for="NewStaffInput.Phone" class="form-label">
+                                Số điện thoại
+                            </label>
+                            <input type="tel" 
+                                   asp-for="NewStaffInput.Phone" 
+                                   class="form-control" 
+                                   placeholder="0901234567"
+                                   pattern="[0-9]{10,11}"
+                                   title="Nhập 10-11 số" />
+                            <span asp-validation-for="NewStaffInput.Phone" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="col-md-6">
+                            <label asp-for="NewStaffInput.Password" class="form-label">
+                                Mật khẩu <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       asp-for="NewStaffInput.Password" 
+                                       class="form-control" 
+                                       id="passwordInput"
+                                       placeholder="Tối thiểu 6 ký tự"
+                                       required
+                                       minlength="6"
+                                       maxlength="100" />
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="NewStaffInput.Password" class="text-danger small"></span>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="col-md-6">
+                            <label asp-for="NewStaffInput.ConfirmPassword" class="form-label">
+                                Xác nhận mật khẩu <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       asp-for="NewStaffInput.ConfirmPassword" 
+                                       class="form-control" 
+                                       id="confirmPasswordInput"
+                                       placeholder="Nhập lại mật khẩu"
+                                       required
+                                       minlength="6"
+                                       maxlength="100" />
+                                <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="NewStaffInput.ConfirmPassword" class="text-danger small"></span>
+                        </div>
+
+                        <!-- ❌ XÓA CHECKBOX "PHÂN CÔNG NGAY" -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Hủy
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Tạo nhân viên
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/staff-schedule-validation.js" asp-append-version="true"></script>
-    <script src="~/js/staff-schedule-notifications.js" asp-append-version="true"></script>
+    
+    <script>
+        // ✅ Toggle password visibility
+        document.getElementById('togglePassword')?.addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const icon = this.querySelector('i');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+
+        document.getElementById('toggleConfirmPassword')?.addEventListener('click', function() {
+            const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+            const icon = this.querySelector('i');
+            if (confirmPasswordInput.type === 'password') {
+                confirmPasswordInput.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                confirmPasswordInput.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+
+        // ✅ Password validation
+        document.getElementById('createStaffForm')?.addEventListener('submit', function(e) {
+            const password = document.getElementById('passwordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+            
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Mật khẩu xác nhận không khớp!');
+                return false;
+            }
+        });
+
+        // ✅ Auto-hide modal after successful submission
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage) && Model.SuccessMessage.Contains("Đã tạo nhân viên mới"))
+        {
+            <text>
+            var modal = bootstrap.Modal.getInstance(document.getElementById('createStaffModal'));
+            if (modal) {
+                modal.hide();
+            }
+            </text>
+        }
+    </script>
 }
 
 <style>
