@@ -12,6 +12,7 @@ public class SwapTransactionService : ISwapTransactionService
     private readonly IUserRepository _userRepository;
     private readonly IChangingStationRepository _stationRepository;
     private readonly IBatteryRepository _batteryRepository;
+    private readonly IPaymentService _paymentService;
     private readonly ILogger<SwapTransactionService> _logger;
 
     public SwapTransactionService(
@@ -19,12 +20,14 @@ public class SwapTransactionService : ISwapTransactionService
         IUserRepository userRepository,
         IChangingStationRepository stationRepository,
         IBatteryRepository batteryRepository,
+        IPaymentService paymentService,
         ILogger<SwapTransactionService> logger)
     {
         _swapTransactionRepository = swapRepository;
         _userRepository = userRepository;
         _stationRepository = stationRepository;
         _batteryRepository = batteryRepository;
+        _paymentService = paymentService;
         _logger = logger;
     }
 
@@ -148,6 +151,15 @@ public class SwapTransactionService : ISwapTransactionService
             };
 
             await _swapTransactionRepository.CreateAsync(transaction);
+            var payment = await _paymentService.CreateCustomPaymentAsync(
+                userId,
+                transaction.TotalCost,
+                PaymentMethod.Cash,
+                PaymentStatus.Pending,
+                $"SWAP:{transaction.TransactionId}");
+
+            transaction.PaymentId = payment.PaymentId;
+            await UpdateTransactionAsync(transaction);
 
             _logger.LogInformation("Pending swap transaction created: TransactionId={TransactionId}, UserId={UserId}, VehicleId={VehicleId}, StationId={StationId}, BatteryTaken={BatteryTakenId}",
                 transaction.TransactionId, userId, vehicleId, stationId, batteryTakenId);

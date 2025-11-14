@@ -107,6 +107,7 @@ public class SwapTransactionRepository : GenericRepository<SwapTransaction>, ISw
             .Include(st => st.Vehicle)
             .Include(st => st.Station)
             .Include(st => st.BatteryTaken)
+            .Include(st => st.Payment)
             .Include(st => st.BatteryReturned)
             .FirstOrDefaultAsync(st =>
                 st.UserId == userId &&

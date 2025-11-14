@@ -4,12 +4,15 @@ using BSMS.BusinessObjects.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using System.Security.Claims;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BSMS.WebApp.Pages.Driver
 {
     public class VnpayReturnModel : PageModel
     {
         private readonly IPaymentService _paymentService;
+        private readonly IUserPackageService _userPackageService;
         private readonly IVnpayService _vnpay;
         private readonly IConfiguration _config;
         private readonly ILogger<VnpayReturnModel> _logger;
@@ -19,11 +22,13 @@ namespace BSMS.WebApp.Pages.Driver
 
         public VnpayReturnModel(
             IPaymentService paymentService,
+            IUserPackageService userPackageService,
             IVnpayService vnpay,
             IConfiguration config,
             ILogger<VnpayReturnModel> logger)
         {
             _paymentService = paymentService;
+            _userPackageService = userPackageService;
             _vnpay = vnpay;
             _config = config;
             _logger = logger;
@@ -76,12 +81,57 @@ namespace BSMS.WebApp.Pages.Driver
                 {
                     if (int.TryParse(txnRef, out int paymentId))
                     {
-                        _logger.LogInformation($"Updating payment {paymentId} to Paid status");
-                        await _paymentService.UpdateStatusAsync(paymentId, PaymentStatus.Paid);
+                        _logger.LogInformation($"Processing successful payment: PaymentId={paymentId}");
+                        
+                        // Lấy payment để lấy thông tin packageId
+                        var payment = await _paymentService.GetByIdAsync(paymentId);
+                        if (payment == null)
+                        {
+                            _logger.LogError($"Payment not found: PaymentId={paymentId}");
+                            Message = "❌ Lỗi: Không tìm thấy thông tin thanh toán.";
+                            IsSuccess = false;
+                            return Page();
+                        }
 
-                        IsSuccess = true;
-                        Message = $"✅ Thanh toán thành công! Mã giao dịch: {transactionNo}. Gói đã được kích hoạt.";
-                        _logger.LogInformation("Payment updated successfully!");
+                        // Kiểm tra loại thanh toán: PACKAGE hoặc RESERVATION
+                        if (!string.IsNullOrEmpty(payment.InvoiceUrl) && payment.InvoiceUrl.StartsWith("PACKAGE_ID:"))
+                        {
+                            // Xử lý thanh toán gói thuê pin
+                            var packageIdStr = payment.InvoiceUrl.Replace("PACKAGE_ID:", "");
+                            if (int.TryParse(packageIdStr, out int packageId))
+                            {
+                                // Tạo UserPackage (method này sẽ tự động cập nhật payment status thành Paid)
+                                try
+                                {
+                                    await _userPackageService.CreateUserPackageAsync(payment.UserId, packageId, paymentId);
+                                    _logger.LogInformation($"UserPackage created: UserId={payment.UserId}, PackageId={packageId}");
+                                    
+                                    IsSuccess = true;
+                                    Message = $"✅ Thanh toán thành công! Mã giao dịch: {transactionNo}. Gói đã được kích hoạt.";
+                                    _logger.LogInformation("Payment and UserPackage processed successfully!");
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, $"Failed to create UserPackage: UserId={payment.UserId}, PackageId={packageId}");
+                                    Message = "⚠️ Thanh toán thành công nhưng có lỗi khi kích hoạt gói. Vui lòng liên hệ hỗ trợ.";
+                                    IsSuccess = false;
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogError($"Cannot parse packageId from InvoiceUrl: {payment.InvoiceUrl}");
+                                Message = "❌ Lỗi: Không thể xác định gói dịch vụ.";
+                                IsSuccess = false;
+                            }
+                        }
+                        else
+                        {
+                            // Chỉ cập nhật payment status nếu không có thông tin đặc biệt
+                            await _paymentService.UpdateStatusAsync(paymentId, PaymentStatus.Paid);
+                            IsSuccess = true;
+                            Message = $"✅ Thanh toán thành công! Mã giao dịch: {transactionNo}.";
+                            _logger.LogInformation("Payment processed successfully (no special handling)");
+                        }
                     }
                     else
                     {

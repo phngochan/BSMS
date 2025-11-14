@@ -109,5 +109,36 @@ namespace BSMS.BLL.Services.Implementations
 
         public async Task<Payment?> GetByIdAsync(int id)
             => await _context.Payments.FindAsync(id);
+
+        public async Task UpdatePaymentAsync(Payment payment)
+        {
+            var existing = await _context.Payments.FindAsync(payment.PaymentId);
+            if (existing != null)
+            {
+                existing.Amount = payment.Amount;
+                existing.Method = payment.Method;
+                existing.Status = payment.Status;
+                existing.InvoiceUrl = payment.InvoiceUrl;
+                existing.PaymentTime = payment.PaymentTime;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<Payment> CreateCustomPaymentAsync(int userId, decimal amount, PaymentMethod method, PaymentStatus status, string invoiceReference)
+        {
+            var payment = new Payment
+            {
+                UserId = userId,
+                Amount = amount,
+                Method = method,
+                Status = status,
+                PaymentTime = DateTime.Now,
+                InvoiceUrl = invoiceReference
+            };
+
+            _context.Payments.Add(payment);
+            await _context.SaveChangesAsync();
+            return payment;
+        }
     }
 }

@@ -144,6 +144,18 @@
                                 </ul>
                             </div>
 
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-cash-coin text-success"></i> Chi phí giao dịch (VND) <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₫</span>
+                                    <input type="number" asp-for="TotalCost" class="form-control" min="0" step="1000" placeholder="Nhập chi phí thu của khách" required />
+                                </div>
+                                <small class="form-text text-muted">Số tiền khách phải thanh toán cho lần đổi pin này.</small>
+                                <span asp-validation-for="TotalCost" class="text-danger"></span>
+                            </div>
+
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                                 <a asp-page="/Staff/ConfirmReservation" asp-route-id="@Model.Reservation.ReservationId" class="btn btn-outline-secondary">
                                     <i class="bi bi-arrow-left"></i> Quay Lại

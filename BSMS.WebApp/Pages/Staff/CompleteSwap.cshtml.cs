@@ -15,6 +15,7 @@ public class CompleteSwapModel : BasePageModel
     private readonly ISwapTransactionService _swapTransactionService;
     private readonly IBatteryService _batteryService;
     private readonly IUserService _userService;
+    private readonly IPaymentService _paymentService;
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly ILogger<CompleteSwapModel> _logger;
 
@@ -23,6 +24,7 @@ public class CompleteSwapModel : BasePageModel
         ISwapTransactionService swapTransactionService,
         IBatteryService batteryService,
         IUserService userService,
+        IPaymentService paymentService,
         IHubContext<NotificationHub> hubContext,
         ILogger<CompleteSwapModel> logger,
         IUserActivityLogService activityLogService) : base(activityLogService)
@@ -31,6 +33,7 @@ public class CompleteSwapModel : BasePageModel
         _swapTransactionService = swapTransactionService;
         _batteryService = batteryService;
         _userService = userService;
+        _paymentService = paymentService;
         _hubContext = hubContext;
         _logger = logger;
     }
@@ -49,6 +52,9 @@ public class CompleteSwapModel : BasePageModel
 
     [BindProperty]
     public string ReturnedBatteryStatus { get; set; } = "Charging";
+
+    [BindProperty]
+    public decimal TotalCost { get; set; }
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -101,6 +107,7 @@ public class CompleteSwapModel : BasePageModel
             ErrorMessage = "Đặt chỗ này chưa có pin được book.";
         }
 
+        TotalCost = 0m;
         return Page();
     }
 
@@ -127,6 +134,11 @@ public class CompleteSwapModel : BasePageModel
         if (!BatteryReturnedId.HasValue)
         {
             ModelState.AddModelError("BatteryReturnedId", "Vui lòng chọn pin nhận.");
+        }
+
+        if (TotalCost < 0)
+        {
+            ModelState.AddModelError(nameof(TotalCost), "Chi phí giao dịch phải lớn hơn hoặc bằng 0.");
         }
 
         if (!ModelState.IsValid)
@@ -237,15 +249,22 @@ public class CompleteSwapModel : BasePageModel
                 returnedBatteryStatus = BatteryStatus.Charging;
             }
 
-            var totalCost = 0m;
             var transaction = await _swapTransactionService.CompleteSwapTransactionAsync(
                 Reservation.UserId,
                 Reservation.VehicleId,
                 Reservation.StationId,
                 BatteryTakenId.Value,
                 BatteryReturnedId.Value,
-                totalCost,
+                TotalCost,
                 returnedBatteryStatus);
+
+            if (transaction.TotalCost > 0 && transaction.Payment != null)
+            {
+                var payment = transaction.Payment;
+                payment.Amount = TotalCost;
+                payment.Status = PaymentStatus.Paid;
+                await _paymentService.UpdatePaymentAsync(payment);
+            }
 
             // Complete reservation
             await _reservationService.CompleteReservationAsync(id);

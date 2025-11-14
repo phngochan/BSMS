@@ -22,5 +22,7 @@ namespace BSMS.BLL.Services
         Task<Payment> CreatePaymentAsync(int userId, int packageId, PaymentMethod method);
         Task<Payment?> GetByIdAsync(int id);
         Task UpdateStatusAsync(int paymentId, PaymentStatus status);
+        Task UpdatePaymentAsync(Payment payment);
+        Task<Payment> CreateCustomPaymentAsync(int userId, decimal amount, PaymentMethod method, PaymentStatus status, string invoiceReference);
     }
 }

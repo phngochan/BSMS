@@ -1,8 +1,8 @@
 using BSMS.BusinessObjects.Enums;
 using BSMS.BusinessObjects.Models;
 using BSMS.DAL.Repositories;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace BSMS.BLL.Services.Implementations;
 
@@ -48,7 +48,7 @@ public class ReservationService : IReservationService
 
             var user = await _userService.GetUserWithVehiclesAsync(userId);
             var vehicle = user?.Vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
-            
+
             if (vehicle == null)
             {
                 throw new InvalidOperationException("Xe không tồn tại.");
@@ -56,7 +56,7 @@ public class ReservationService : IReservationService
 
             var availableBatteries = await _batteryService.GetAvailableBatteriesAsync(stationId);
             var compatibleBatteries = new List<Battery>();
-            
+
             foreach (var battery in availableBatteries)
             {
                 if (battery.Model == vehicle.BatteryModel)
@@ -96,7 +96,8 @@ public class ReservationService : IReservationService
                 userId,
                 vehicleId,
                 stationId,
-                selectedBattery.BatteryId);
+                selectedBattery.BatteryId
+                );
 
             _logger.LogInformation("Reservation created: UserId={UserId}, StationId={StationId}, BatteryId={BatteryId}, TimeSlot={TimeSlot}",
                 userId, stationId, selectedBattery.BatteryId, timeSlot);
@@ -335,7 +336,7 @@ public class ReservationService : IReservationService
                 if (reservation.BatteryId.HasValue)
                 {
                     await _batteryService.UpdateBatteryStatusAsync(reservation.BatteryId.Value, BatteryStatus.Full);
-                    _logger.LogInformation("Battery status reset to Full after auto-cancel: BatteryId={BatteryId}", 
+                    _logger.LogInformation("Battery status reset to Full after auto-cancel: BatteryId={BatteryId}",
                         reservation.BatteryId.Value);
 
                     // Cập nhật swap transaction thành Cancelled
@@ -400,7 +401,7 @@ public class ReservationService : IReservationService
 
             var user = await _userService.GetUserWithVehiclesAsync(userId);
             var vehicle = user?.Vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
-            
+
             if (vehicle == null)
             {
                 return (false, "Xe không tồn tại.");

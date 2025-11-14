@@ -1,7 +1,7 @@
 using BSMS.BLL.Services;
 using BSMS.WebApp.Helpers;
-using BSMS.WebApp.ViewModels.Driver;
 using BSMS.WebApp.Hubs;
+using BSMS.WebApp.ViewModels.Driver;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -15,14 +15,19 @@ public class StationDetailsModel : BasePageModel
     private readonly IStationService _stationService;
     private readonly IBatteryService _batteryService;
     private readonly IUserService _userService;
+    private readonly IPaymentService _paymentService;
     private readonly IHubContext<NotificationHub> _hubContext;
     private readonly ILogger<StationDetailsModel> _logger;
 
+    // Phí đặt chỗ đổi pin (có thể lấy từ Config sau)
+    private const decimal ReservationFee = 50000m; // 50,000 VND
+
     public StationDetailsModel(
-        IReservationService reservationService, 
-        IStationService stationService, 
+        IReservationService reservationService,
+        IStationService stationService,
         IBatteryService batteryService,
         IUserService userService,
+        IPaymentService paymentService,
         IHubContext<NotificationHub> hubContext,
         ILogger<StationDetailsModel> logger,
         IUserActivityLogService activityLogService) : base(activityLogService)
@@ -31,6 +36,7 @@ public class StationDetailsModel : BasePageModel
         _stationService = stationService;
         _batteryService = batteryService;
         _userService = userService;
+        _paymentService = paymentService;
         _hubContext = hubContext;
         _logger = logger;
     }
@@ -41,7 +47,7 @@ public class StationDetailsModel : BasePageModel
 
     [TempData]
     public string? ErrorMessage { get; set; }
-    
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
@@ -115,21 +121,21 @@ public class StationDetailsModel : BasePageModel
 
             var station = await _stationService.GetStationDetailsAsync(stationId);
             var (canCreate, errorMessage) = await _reservationService.ValidateReservationAsync(CurrentUserId, vehicleId, stationId, scheduledTimeUtc);
-            
+
             if (!canCreate)
             {
                 ErrorMessage = errorMessage;
                 return RedirectToPage(new { id = stationId });
             }
 
+            // Tạo reservation sau khi ghi nhận phí
             var reservation = await _reservationService.CreateReservationAsync(CurrentUserId, vehicleId, stationId, scheduledTimeUtc);
 
-            await LogActivityAsync("CREATE_RESERVATION", 
-                $"Đã tạo đặt chỗ #{reservation.ReservationId} tại trạm {station?.Name ?? "N/A"} cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}");
+            await LogActivityAsync("CREATE_RESERVATION",
+                $"Đã tạo đặt chỗ #{reservation.ReservationId} (phí {ReservationFee:N0}đ thu tiền mặt) tại trạm {station?.Name ?? "N/A"} cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}");
 
             try
             {
-                // Gửi notification cho driver
                 await _hubContext.Clients.User(CurrentUserId.ToString()).SendAsync("ReceiveNotification", new
                 {
                     message = $"Đã tạo đặt chỗ #{reservation.ReservationId} tại trạm {station?.Name ?? "N/A"} cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}",
@@ -137,7 +143,6 @@ public class StationDetailsModel : BasePageModel
                     timestamp = DateTime.UtcNow
                 });
 
-                // Gửi notification cho nhân viên trạm
                 await _hubContext.Clients.Group($"Station_{stationId}").SendAsync("ReceiveNotification", new
                 {
                     message = $"Có đặt chỗ mới #{reservation.ReservationId} tại trạm {station?.Name ?? "N/A"} cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}",
@@ -145,19 +150,32 @@ public class StationDetailsModel : BasePageModel
                     timestamp = DateTime.UtcNow
                 });
 
-                _logger.LogInformation("SignalR notification sent for created reservation {ReservationId} by user {UserId}", reservation.ReservationId, CurrentUserId);
+                await _hubContext.Clients.Group($"Station_{stationId}").SendAsync("CREATE_RESERVATION", new
+                {
+                    reservationId = reservation.ReservationId,
+                    stationId,
+                    vehicleId,
+                    vehicleVin = reservation.Vehicle?.Vin ?? string.Empty,
+                    batteryModel = reservation.Vehicle?.BatteryModel ?? string.Empty,
+                    userName = reservation.User?.FullName ?? "Khách hàng",
+                    status = reservation.Status.ToString(),
+                    scheduledTime = scheduledTimeLocal,
+                    createdAt = reservation.CreatedAt.ToLocalTime(),
+                    message = $"Đặt chỗ mới #{reservation.ReservationId} lúc {scheduledTimeLocal:HH:mm dd/MM}."
+                });
             }
-            catch (Exception ex)
+            catch (Exception notifyEx)
             {
-                _logger.LogError(ex, "Failed to send SignalR notification for created reservation {ReservationId}", reservation.ReservationId);
+                _logger.LogError(notifyEx, "Failed to send notification for reservation {ReservationId}", reservation.ReservationId);
             }
 
-            SuccessMessage = $"Đặt chỗ thành công cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}!";
+            TempData["SuccessMessage"] = $"Đặt chỗ thành công cho {scheduledTimeLocal:dd/MM/yyyy HH:mm}! Phí {ReservationFee:N0}đ đã được ghi nhận.";
             return RedirectToPage("/Driver/MyReservations");
         }
         catch (Exception ex)
         {
             ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Error creating reservation payment");
             return RedirectToPage(new { id = stationId });
         }
     }

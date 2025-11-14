@@ -1,5 +1,21 @@
 @using System.Security.Claims;
 @using BSMS.BusinessObjects.Enums;
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    var roleString = User.FindFirst(ClaimTypes.Role)?.Value;
+
+    var userRole = Enum.TryParse<UserRole>(roleString, out var parsedRole)
+        ? parsedRole
+        : (UserRole?)null;
+
+    var currentPath = Context.Request.Path.Value?.ToLower() ?? "";
+    var isDriverDashboardActive = currentPath.Contains("/driver/index") || currentPath == "/driver" || currentPath == "/driver/";
+    var isDriverStationsActive = currentPath.Contains("/driver/findstations");
+    var isDriverReservationsActive = currentPath.Contains("/driver/myreservations");
+    var isDriverSupportActive = currentPath.Contains("/driver/support");
+    var isAdminOperationsActive = currentPath.Contains("/admin/operations/index");
+    var isAdminStaffScheduleActive = currentPath.Contains("/admin/operations/staffschedule");
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,30 +29,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body class="ev-theme-body">
+<body class="ev-theme-body" data-user-role="@(userRole?.ToString() ?? "Guest")">
     <!-- Updated header with EV theme styling -->
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark ev-navbar bg-gradient-ev border-0 shadow-sm">
             <div class="container-fluid px-4">
                 <!-- Logo redirects based on user role -->
-                @{
-                    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
-                    var roleString = User.FindFirst(ClaimTypes.Role)?.Value;
-
-                    var userRole = Enum.TryParse<UserRole>(roleString, out var parsedRole)
-                    ? parsedRole
-                    : (UserRole?)null;
-
-                    // Determine active nav items for Driver
-                    var currentPath = Context.Request.Path.Value?.ToLower() ?? "";
-                    var isDriverDashboardActive = currentPath.Contains("/driver/index") || currentPath == "/driver" || currentPath == "/driver/";
-                    var isDriverStationsActive = currentPath.Contains("/driver/findstations");
-                    var isDriverReservationsActive = currentPath.Contains("/driver/myreservations");
-                    var isDriverSupportActive = currentPath.Contains("/driver/support");
-                    var isAdminOperationsActive = currentPath.Contains("/admin/operations/index");
-                    var isAdminStaffScheduleActive = currentPath.Contains("/admin/operations/staffschedule"); // ✅ NEW
-                }
-                <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="Index">
+                <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="./Index">
                     <div class="ev-logo">
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="4" y="8" width="24" height="16" rx="2" fill="none" stroke="#00C853" stroke-width="2" />
@@ -209,6 +208,10 @@
         <script src="~/js/reservation-notifications.js" asp-append-version="true"></script>
         <script src="~/js/transfer-notifications.js" asp-append-version="true"></script>
         <script src="~/js/staff-schedule-notifications.js" asp-append-version="true"></script>
+        @if (userRole == UserRole.StationStaff)
+        {
+            <script src="~/js/staff-reservation-notifications.js" asp-append-version="true"></script>
+        }
     }
 
     <!-- Request location permission on page load (only for Driver role) -->
