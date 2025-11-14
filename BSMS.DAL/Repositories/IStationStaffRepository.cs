@@ -8,6 +8,7 @@ public interface IStationStaffRepository : IGenericRepository<StationStaff>
     Task<IEnumerable<StationStaff>> GetAssignmentsAsync();
     Task<IEnumerable<StationStaff>> GetAssignmentsByStationAsync(int stationId);
     Task<StationStaff?> GetAssignmentByUserAsync(int userId);
+    Task<IEnumerable<StationStaff>> GetAssignmentsByUserAsync(int userId);
     Task<StationStaff?> GetAssignmentWithDetailsAsync(int staffId);
     Task<IEnumerable<StationStaff>> GetActiveStaffByStationAsync(int stationId, TimeSpan currentTime);
     

@@ -133,6 +133,18 @@ public class StationStaffService : IStationStaffService
             assignment.ShiftEnd,
             assignment.AssignedAt);
         
+        _logger?.LogInformation(
+            "[StaffSchedule] ASSIGNMENT VALIDATION - User: {UserName} ({UserId}), Station: {StationName} ({StationId}), " +
+            "Shift: {ShiftStart:hh\\:mm}-{ShiftEnd:hh\\:mm}, CurrentStaffCount: {CurrentStaffCount}/{MaxStaff}",
+            user.FullName,
+            assignment.UserId,
+            station.Name,
+            assignment.StationId,
+            assignment.ShiftStart,
+            assignment.ShiftEnd,
+            currentStaffCount,
+            MAX_STAFF_PER_SHIFT);
+        
         return createdAssignment;
     }
 

@@ -38,6 +38,15 @@ public class StationStaffRepository : GenericRepository<StationStaff>, IStationS
             .FirstOrDefaultAsync(ss => ss.UserId == userId);
     }
 
+    public async Task<IEnumerable<StationStaff>> GetAssignmentsByUserAsync(int userId)
+    {
+        return await _context.StationStaffs
+            .Include(ss => ss.Station)
+            .Where(ss => ss.UserId == userId)
+            .OrderByDescending(ss => ss.AssignedAt)
+            .ToListAsync();
+    }
+
     public async Task<StationStaff?> GetAssignmentWithDetailsAsync(int staffId)
     {
         return await _context.StationStaffs

@@ -33,7 +33,8 @@
                     var isDriverStationsActive = currentPath.Contains("/driver/findstations");
                     var isDriverReservationsActive = currentPath.Contains("/driver/myreservations");
                     var isDriverSupportActive = currentPath.Contains("/driver/support");
-                    var isAdminOperationsActive = currentPath.Contains("/admin/operations");
+                    var isAdminOperationsActive = currentPath.Contains("/admin/operations/index");
+                    var isAdminStaffScheduleActive = currentPath.Contains("/admin/operations/staffschedule"); // ✅ NEW
                 }
                 <a class="navbar-brand d-flex align-items-center gap-2" asp-area="" asp-page="Index">
                     <div class="ev-logo">
@@ -99,6 +100,12 @@
                             <li class="nav-item">
                                 <a class="nav-link@(isAdminOperationsActive ? " active" : string.Empty)" asp-area="" asp-page="/Admin/Operations/Index">
                                     <i class="bi bi-activity me-1"></i> Operations
+                                </a>
+                            </li>
+                            <!-- ✅ NEW: Staff Schedule Link -->
+                            <li class="nav-item">
+                                <a class="nav-link@(isAdminStaffScheduleActive ? " active" : string.Empty)" asp-area="" asp-page="/Admin/Operations/StaffSchedule">
+                                    <i class="bi bi-calendar-check me-1"></i> Phân ca trực
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -195,7 +202,8 @@
         <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
         <script src="~/js/signalr-client.js" asp-append-version="true"></script>
         <script src="~/js/reservation-notifications.js" asp-append-version="true"></script>
-        <script src="~/js/transfer-notifications.js" asp-append-version="true"></script> @* ✅ THÊM *@
+        <script src="~/js/transfer-notifications.js" asp-append-version="true"></script>
+        <script src="~/js/staff-schedule-notifications.js" asp-append-version="true"></script>
     }
 
     <!-- Request location permission on page load (only for authenticated users) -->

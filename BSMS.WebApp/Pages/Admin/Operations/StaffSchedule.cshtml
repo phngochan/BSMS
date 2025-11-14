@@ -1,0 +1,396 @@
+﻿@page
+@model BSMS.WebApp.Pages.Admin.Operations.StaffScheduleModel
+@{
+    ViewData["Title"] = "Quản lý lịch làm việc nhân viên";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold mb-0">
+            <i class="bi bi-calendar-check me-2"></i>Quản lý lịch làm việc nhân viên
+        </h2>
+        
+        <!-- ✅ Real-time Status Badge -->
+        <div class="d-flex gap-2">
+            <span class="badge bg-success fs-6">
+                <i class="bi bi-person-check me-1"></i>
+                @Model.CurrentlyWorkingStaff.Count Nhân viên đang làm việc
+            </span>
+            @if (Model.TotalEmptyShifts > 0)
+            {
+                <span class="badge bg-danger fs-6">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    @Model.TotalEmptyShifts Ca trống
+                </span>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>@Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- ✅ Shift Coverage Dashboard -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>Phân ca theo trạm
+                </h5>
+                <small class="text-muted">Sáng: 6:00-14:00 | Chiều: 14:00-22:00</small>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                @foreach (var coverage in Model.ShiftCoverageByStation)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 @(coverage.IsFullyCovered ? "border-success" : coverage.HasAnyCoverage ? "border-warning" : "border-danger")">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">@coverage.StationName</h6>
+                                        <small class="text-muted">@coverage.StationAddress</small>
+                                    </div>
+                                    @if (coverage.IsFullyCovered)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                    }
+                                    else if (coverage.EmptyShiftCount == 2)
+                                    {
+                                        <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-exclamation-circle-fill text-warning fs-4"></i>
+                                    }
+                                </div>
+
+                                <!-- Morning Shift -->
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="bi bi-sunrise me-2 text-warning"></i>
+                                        <strong class="small">Ca sáng</strong>
+                                    </div>
+                                    @if (coverage.HasMorningCoverage)
+                                    {
+                                        <div class="ms-4">
+                                            @foreach (var staff in coverage.MorningShiftStaff)
+                                            {
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <span class="badge bg-success text-white">
+                                                        @staff.User?.FullName
+                                                    </span>
+                                                    <small class="text-muted">
+                                                        @staff.ShiftStart.ToString(@"hh\:mm")-@staff.ShiftEnd.ToString(@"hh\:mm")
+                                                    </small>
+                                                    @if (staff.IsCurrentlyWorking)
+                                                    {
+                                                        <span class="badge bg-success text-white">
+                                                            <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> Đang làm
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="ms-4">
+                                            <span class="badge bg-danger text-white">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Chưa có nhân viên
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Afternoon Shift -->
+                                <div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="bi bi-sunset me-2 text-info"></i>
+                                        <strong class="small">Ca chiều</strong>
+                                    </div>
+                                    @if (coverage.HasAfternoonCoverage)
+                                    {
+                                        <div class="ms-4">
+                                            @foreach (var staff in coverage.AfternoonShiftStaff)
+                                            {
+                                                <div class="d-flex align-items-center gap-2 mb-1">
+                                                    <span class="badge bg-info text-white">
+                                                        @staff.User?.FullName
+                                                    </span>
+                                                    <small class="text-muted">
+                                                        @staff.ShiftStart.ToString(@"hh\:mm")-@staff.ShiftEnd.ToString(@"hh\:mm")
+                                                    </small>
+                                                    @if (staff.IsCurrentlyWorking)
+                                                    {
+                                                        <span class="badge bg-success text-white">
+                                                            <i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> Đang làm
+                                                        </span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="ms-4">
+                                            <span class="badge bg-danger text-white">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Chưa có nhân viên
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (!Model.ShiftCoverageByStation.Any())
+            {
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">Không tìm thấy trạm nào</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Assign/Edit Staff Form -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0">
+            <h5 class="mb-0">
+                @(Model.IsEditMode ? "Chỉnh sửa phân ca" : "Phân công nhân viên vào trạm")
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="post" asp-page-handler="AssignStaff" id="staffAssignmentForm" autocomplete="off">
+                <input type="hidden" asp-for="Input.StaffId" />
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Input.UserId" class="form-label">
+                            Nhân viên <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="Input.UserId" class="form-select" required id="staffSelect">
+                            <option value="">-- Chọn nhân viên --</option>
+                            @foreach (var staff in Model.AvailableStaff)
+                            {
+                                var isWorking = Model.CurrentlyWorkingStaff.Any(s => s.UserId == staff.UserId);
+                                var workingText = isWorking ? " ✓ Đang làm việc" : "";
+                                <option value="@staff.UserId">@staff.FullName (@staff.Username)@workingText</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Input.UserId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Input.StationId" class="form-label">
+                            Trạm <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="Input.StationId" class="form-select" required>
+                            <option value="">-- Chọn trạm --</option>
+                            @foreach (var station in Model.Stations)
+                            {
+                                <option value="@station.StationId">@station.Name - @station.Address</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Input.StationId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Input.ShiftStart" class="form-label">
+                            Giờ bắt đầu ca <span class="text-danger">*</span>
+                        </label>
+                        <input type="time" 
+                               asp-for="Input.ShiftStart" 
+                               class="form-control" 
+                               min="06:00" 
+                               max="22:00"
+                               required
+                               data-val="true"
+                               data-val-timerange="Ca làm việc phải trong khoảng 6:00 sáng đến 10:00 tối"
+                               data-val-timerange-min="06:00"
+                               data-val-timerange-max="22:00" />
+                        <small class="text-muted">Từ 6:00 sáng - 10:00 tối</small>
+                        <span asp-validation-for="Input.ShiftStart" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Input.ShiftEnd" class="form-label">
+                            Giờ kết thúc ca <span class="text-danger">*</span>
+                        </label>
+                        <input type="time" 
+                               asp-for="Input.ShiftEnd" 
+                               class="form-control" 
+                               min="06:00" 
+                               max="22:00"
+                               required
+                               data-val="true"
+                               data-val-timerange="Ca làm việc phải trong khoảng 6:00 sáng đến 10:00 tối"
+                               data-val-timerange-min="06:00"
+                               data-val-timerange-max="22:00" />
+                        <small class="text-muted">Từ 6:00 sáng - 10:00 tối</small>
+                        <span asp-validation-for="Input.ShiftEnd" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Input.AssignedAt" class="form-label">
+                            Ngày phân công
+                        </label>
+                        <div class="input-group">
+                            <input type="datetime-local" 
+                                   asp-for="Input.AssignedAt" 
+                                   class="form-control" 
+                                   id="assignedAtInput"
+                                   disabled />
+                            <button type="button" class="btn btn-outline-secondary" id="toggleManualDate" title="Cho phép chỉnh sửa">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Tự động điền ngày/giờ hiện tại</small>
+                        <span asp-validation-for="Input.AssignedAt" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            <input type="checkbox" asp-for="Input.IsActive" class="form-check-input" id="isActiveCheck" />
+                            <label class="form-check-label" for="isActiveCheck">
+                                Phân ca hoạt động
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-2"></i>@(Model.IsEditMode ? "Cập nhật phân ca" : "Phân công nhân viên")
+                    </button>
+                    @if (Model.IsEditMode)
+                    {
+                        <a asp-page="/Admin/Operations/StaffSchedule" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Hủy chỉnh sửa
+                        </a>
+                    }
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Current Assignments Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0">
+            <h5 class="mb-0">Tất cả phân ca nhân viên</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Tên nhân viên</th>
+                            <th>Trạm</th>
+                            <th>Ca làm</th>
+                            <th>Thời lượng</th>
+                            <th>Ngày phân</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var assignment in Model.Assignments)
+                        {
+                            <tr class="@(assignment.IsCurrentlyWorking ? "table-success" : "")">
+                                <td>@assignment.StaffId</td>
+                                <td>
+                                    <strong>@assignment.User?.FullName</strong>
+                                    <div class="small text-muted">@assignment.User?.Username</div>
+                                </td>
+                                <td>@assignment.Station?.Name</td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        @assignment.ShiftStart.ToString(@"hh\:mm") - @assignment.ShiftEnd.ToString(@"hh\:mm")
+                                    </span>
+                                </td>
+                                <td>@assignment.ShiftDuration.TotalHours.ToString("0.0")h</td>
+                                <td>@assignment.AssignedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @if (assignment.IsActive)
+                                    {
+                                        <span class="badge bg-success">Hoạt động</span>
+                                        @if (assignment.IsCurrentlyWorking)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">
+                                                <i class="bi bi-circle-fill" style="font-size: 0.5rem; animation: pulse 2s infinite;"></i>
+                                                Đang làm
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary ms-1">Ngoài ca</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Không hoạt động</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-page="/Admin/Operations/StaffSchedule" 
+                                           asp-route-staffId="@assignment.StaffId" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="post" asp-page-handler="RemoveAssignment" class="d-inline">
+                                            <input type="hidden" name="staffId" value="@assignment.StaffId" />
+                                            <button type="submit" 
+                                                    class="btn btn-outline-danger"
+                                                    onclick="return confirm('Xóa phân ca này?');">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/staff-schedule-validation.js" asp-append-version="true"></script>
+    <script src="~/js/staff-schedule-notifications.js" asp-append-version="true"></script>
+}
+
+<style>
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+    }
+    
+    .table-success {
+        background-color: rgba(25, 135, 84, 0.05) !important;
+    }
+    
+    .card.border-success {
+        border-width: 2px !important;
+    }
+    
+    .card.border-warning {
+        border-width: 2px !important;
+    }
+    
+    .card.border-danger {
+        border-width: 2px !important;
+    }
+</style>

@@ -2,10 +2,9 @@
 @using BSMS.BusinessObjects.Enums
 @using BSMS.BusinessObjects.Models
 @model BSMS.WebApp.Pages.Staff.IndexModel
-@using BSMS.BusinessObjects.Enums
 @using BSMS.WebApp.Helpers
 @{
-    ViewData["Title"] = "Station Operations";
+    ViewData["Title"] = "Vận hành trạm";
 }
 
 @functions {
@@ -39,30 +38,30 @@
         var span = DateTime.Now - local;
         if (span.TotalMinutes < 1)
         {
-            return "just now";
+            return "vừa xong";
         }
 
         if (span.TotalHours < 1)
         {
-            return $"{Math.Floor(span.TotalMinutes)}m ago";
+            return $"{Math.Floor(span.TotalMinutes)} phút trước";
         }
 
         if (span.TotalDays < 1)
         {
-            return $"{Math.Floor(span.TotalHours)}h ago";
+            return $"{Math.Floor(span.TotalHours)} giờ trước";
         }
 
-        return $"{Math.Floor(span.TotalDays)}d ago";
+        return $"{Math.Floor(span.TotalDays)} ngày trước";
     }
 
     public static string FormatDuration(TimeSpan span)
     {
         if (span.TotalHours >= 1)
         {
-            return $"{Math.Floor(span.TotalHours)}h {span.Minutes}m";
+            return $"{Math.Floor(span.TotalHours)}h {span.Minutes}p";
         }
 
-        return $"{span.Minutes}m";
+        return $"{span.Minutes}p";
     }
 
     public static bool RequiresSlaAttention(Support ticket)
@@ -75,24 +74,42 @@
     {
         if (span <= TimeSpan.Zero)
         {
-            return "Handover now";
+            return "Đã đến giờ bàn giao";
         }
 
         if (span.TotalHours >= 1)
         {
-            return $"{Math.Floor(span.TotalHours)}h {span.Minutes}m remaining";
+            return $"Còn {Math.Floor(span.TotalHours)}h {span.Minutes}p";
         }
 
-        return $"{span.Minutes}m remaining";
+        return $"Còn {span.Minutes}p";
     }
+    
+    public static string GetBatteryStatusVietnamese(BatteryStatus status) => status switch
+    {
+        BatteryStatus.Full => "Đầy",
+        BatteryStatus.Charging => "Đang sạc",
+        BatteryStatus.Taken => "Đã lấy",
+        BatteryStatus.Booked => "Đã đặt",
+        BatteryStatus.Defective => "Lỗi",
+        _ => status.ToString()
+    };
+    
+    public static string GetSupportStatusVietnamese(SupportStatus status) => status switch
+    {
+        SupportStatus.Open => "Mở",
+        SupportStatus.InProgress => "Đang xử lý",
+        SupportStatus.Closed => "Đã đóng",
+        _ => status.ToString()
+    };
 }
 
 <div class="container-fluid py-3">
-    <h2 class="fw-bold mb-3">Station staff workspace</h2>
+    <h2 class="fw-bold mb-3">Không gian làm việc nhân viên trạm</h2>
     @if (!Model.HasStation)
     {
         <div class="alert alert-warning">
-            <strong>No assignment yet.</strong> Please ask an admin to assign you to a swap station before using these tools.
+            <strong>Chưa được phân công.</strong> Vui lòng liên hệ quản trị viên để được phân công vào trạm đổi pin trước khi sử dụng các công cụ này.
         </div>
     }
     else
@@ -103,13 +120,13 @@
                 <div class="card-body">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                         <div>
-                            <p class="text-uppercase text-muted small mb-1">Current shift</p>
+                            <p class="text-uppercase text-muted small mb-1">CA LÀM VIỆC HIỆN TẠI</p>
                             <h3 class="fw-bold mb-1">@Model.ShiftInfo.ShiftName</h3>
                             <small class="text-muted">@Model.ShiftInfo.Window · @Model.ShiftInfo.StationName</small>
                         </div>
                         <div class="text-md-end mt-3 mt-md-0">
                             <span class="badge bg-success-subtle text-success-emphasis mb-1">
-                                <i class="bi bi-clock-history me-1"></i>Since @Model.ShiftInfo.ShiftStart.ToString("dd/MM HH:mm")
+                                <i class="bi bi-clock-history me-1"></i>Bắt đầu từ @Model.ShiftInfo.ShiftStart.ToString("dd/MM HH:mm")
                             </span>
                             <div class="small text-muted">@FormatTimeRemaining(Model.ShiftInfo.TimeRemaining)</div>
                         </div>
@@ -119,7 +136,7 @@
                     </div>
                     <div class="row mt-3 g-3">
                         <div class="col-12 col-md-7">
-                            <p class="text-muted small mb-2">Focus items</p>
+                            <p class="text-muted small mb-2">Công việc cần tập trung</p>
                             <ul class="list-unstyled mb-0 small">
                                 @foreach (var item in Model.ShiftInfo.Checklist)
                                 {
@@ -132,9 +149,9 @@
                         </div>
                         <div class="col-12 col-md-5">
                             <div class="border rounded-3 p-3 h-100 bg-light-subtle">
-                                <p class="text-muted small mb-1">Assignment</p>
+                                <p class="text-muted small mb-1">Phân công</p>
                                 <div class="fw-semibold">@Model.StationInfo?.Name</div>
-                                <small class="text-muted">Assigned since @Model.ShiftInfo.AssignedAtLocal.ToString("dd/MM/yyyy")</small>
+                                <small class="text-muted">Được phân từ @Model.ShiftInfo.AssignedAtLocal.ToString("dd/MM/yyyy")</small>
                             </div>
                         </div>
                     </div>
@@ -149,7 +166,7 @@
                 <div class="col-12 col-sm-6 col-lg-3">
                     <div class="card shadow-sm border-0 h-100">
                         <div class="card-body">
-                            <p class="text-muted text-uppercase small mb-1">@status</p>
+                            <p class="text-muted text-uppercase small mb-1">@GetBatteryStatusVietnamese(status)</p>
                             <div class="fs-3 fw-semibold">@count</div>
                         </div>
                     </div>
@@ -162,8 +179,8 @@
                     <div class="card-header bg-white border-0">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h5 class="mb-0">Battery inventory at @Model.StationInfo?.Name</h5>
-                                <small class="text-muted">Update each battery status directly.</small>
+                                <h5 class="mb-0">Kho pin tại @Model.StationInfo?.Name</h5>
+                                <small class="text-muted">Cập nhật trạng thái từng pin trực tiếp.</small>
                             </div>
                         </div>
                     </div>
@@ -172,52 +189,75 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Battery ID</th>
+                                        <th>Mã pin</th>
                                         <th>Model</th>
                                         <th>SoH</th>
-                                        <th>Status</th>
+                                        <th>Trạng thái</th>
                                         <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var battery in Model.Batteries)
                                     {
-                                        <tr>
+                                        <tr data-battery-id="@battery.BatteryId">
                                             <td>#@battery.BatteryId</td>
                                             <td>@battery.Model</td>
-                                            <td>@battery.Soh %</td>
-                                        <td>
-                                            <div class="d-flex flex-column gap-2">
-                                                <span class="@GetBatteryBadgeClass(battery.Status)">@battery.Status</span>
-                                                @if (!string.IsNullOrWhiteSpace(battery.DefectNote))
-                                                {
-                                                    <small class="text-danger fst-italic">Reason: @battery.DefectNote</small>
-                                                }
-                                                <form method="post" asp-page-handler="UpdateBatteryStatus" class="d-flex flex-column gap-2 align-items-start align-items-md-center flex-md-row" data-defect-form="true">
-                                                    <input type="hidden" name="batteryId" value="@battery.BatteryId" />
-                                                    <select name="status" class="form-select form-select-sm" style="min-width:150px;">
-                                                        @foreach (var option in Model.GetSelectableStatuses(battery.Status))
-                                                        {
-                                                            <option value="@option.Value" selected="@(option.Selected)">@option.Text</option>
-                                                        }
-                                                    </select>
-                                                    <input type="text"
-                                                           name="defectReason"
-                                                           class="form-control form-control-sm defect-reason-input d-none"
-                                                           style="min-width:200px;"
-                                                           value="@battery.DefectNote"
-                                                           placeholder="Reason for defect" />
-                                                    <button class="btn btn-sm btn-outline-primary" type="submit">Save</button>
-                                                </form>
-                                            </div>
-                                        </td>
+                                            <td class="battery-soh">@battery.Soh %</td>
+                                            <td>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="battery-status @GetBatteryBadgeClass(battery.Status)">
+                                                            @GetBatteryStatusVietnamese(battery.Status)
+                                                        </span>
+                                                        <button type="button" 
+                                                                class="btn btn-sm btn-outline-info"
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#batteryDetailModal"
+                                                                data-battery-id="@battery.BatteryId"
+                                                                data-battery-model="@battery.Model"
+                                                                data-battery-soh="@battery.Soh"
+                                                                data-battery-status="@battery.Status"
+                                                                data-battery-station="@Model.StationInfo?.Name"
+                                                                data-battery-capacity="@battery.Capacity"
+                                                                data-battery-updated="@battery.UpdatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")"
+                                                                data-battery-defect="@battery.DefectNote"
+                                                                data-battery-maintenance="@(battery.LastMaintenance?.ToLocalTime().ToString("dd/MM/yyyy") ?? "Chưa bảo trì")">
+                                                            <i class="bi bi-eye me-1"></i>Chi tiết
+                                                        </button>
+                                                    </div>
+                                                    
+                                                    @if (!string.IsNullOrWhiteSpace(battery.DefectNote))
+                                                    {
+                                                        <small class="text-danger fst-italic">Lý do: @battery.DefectNote</small>
+                                                    }
+                                                    
+                                                    <form method="post" asp-page-handler="UpdateBatteryStatus" class="d-flex gap-2 align-items-center" data-defect-form="true">
+                                                        <input type="hidden" name="batteryId" value="@battery.BatteryId" />
+                                                        <select name="status" class="form-select form-select-sm" style="max-width:150px;">
+                                                            @foreach (var option in Model.GetSelectableStatuses(battery.Status))
+                                                            {
+                                                                <option value="@option.Value" selected="@(option.Selected)">@option.Text</option>
+                                                            }
+                                                        </select>
+                                                        <input type="text"
+                                                               name="defectReason"
+                                                               class="form-control form-control-sm defect-reason-input d-none"
+                                                               style="max-width:200px;"
+                                                               value="@battery.DefectNote"
+                                                               placeholder="Lý do lỗi" />
+                                                        <button class="btn btn-sm btn-primary" type="submit">
+                                                            <i class="bi bi-save me-1"></i>Lưu
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
                                             <td class="text-muted small">@battery.UpdatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
                                         </tr>
                                     }
                                     @if (!Model.Batteries.Any())
                                     {
                                         <tr>
-                                            <td colspan="5" class="text-center text-muted py-4">No batteries in this station yet.</td>
+                                            <td colspan="5" class="text-center text-muted py-4">Chưa có pin tại trạm này.</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -229,11 +269,11 @@
             <div class="col-12 col-xl-4">
                 <div class="card shadow-sm border-0 mb-3">
                     <div class="card-body">
-                        <h5 class="mb-1">Station information</h5>
+                        <h5 class="mb-1">Thông tin trạm</h5>
                         <p class="text-muted mb-3">@Model.StationInfo?.Address</p>
                         <ul class="list-unstyled mb-0">
-                            <li>Capacity: <strong>@Model.StationInfo?.Capacity</strong></li>
-                            <li>Status: <strong>@Model.StationInfo?.Status</strong></li>
+                            <li>Sức chứa: <strong>@Model.StationInfo?.Capacity</strong></li>
+                            <li>Trạng thái: <strong>@Model.StationInfo?.Status</strong></li>
                         </ul>
                     </div>
                 </div>
@@ -254,7 +294,7 @@
                 @foreach (var transfer in Model.IncomingTransfers)
                 {
                     var battery = transfer.Battery;
-                    var fromStation = transfer.FromStation?.Name ?? $"Station #{transfer.FromStationId}";
+                    var fromStation = transfer.FromStation?.Name ?? $"Trạm #{transfer.FromStationId}";
                     var timeRemaining = transfer.TransferTime - DateTime.UtcNow;
                     var isOverdue = timeRemaining < TimeSpan.Zero;
                     
@@ -275,11 +315,11 @@
                                         Dự kiến: @transfer.TransferTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                                         @if (isOverdue)
                                         {
-                                            <span class="badge bg-danger-subtle text-danger-emphasis ms-2">Quá hạn</span>
+                                            <span class="badge bg-danger text-white ms-2">Quá hạn</span>
                                         }
                                         else if (timeRemaining < TimeSpan.FromHours(1))
                                         {
-                                            <span class="badge bg-warning-subtle text-warning-emphasis ms-2">Sắp đến</span>
+                                            <span class="badge bg-warning text-dark ms-2">Sắp đến</span>
                                         }
                                     </div>
                                 </div>
@@ -313,10 +353,10 @@
                 <div class="card shadow-sm border-0">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Swap workflow</h5>
-                            <span class="badge bg-primary-subtle text-primary-emphasis">Last 12 swaps</span>
+                            <h5 class="mb-0">Quy trình đổi pin</h5>
+                            <span class="badge bg-primary-subtle text-primary-emphasis">12 giao dịch gần nhất</span>
                         </div>
-                        <p class="text-muted small mt-1 mb-0">Theo dõi luồng công việc và chốt giao dịch đang Pending trực tiếp tại đây.</p>
+                        <p class="text-muted small mt-1 mb-0">Theo dõi luồng công việc và chốt giao dịch đang chờ xử lý trực tiếp tại đây.</p>
                         <div class="d-flex flex-wrap gap-2 mt-3">
                             @foreach (var kv in Model.SwapWorkflow.StatusCounts.OrderBy(k => k.Key))
                             {
@@ -344,8 +384,8 @@
                                 </div>
                             }
                         </div>
-                        <div class="mt-4">
-                            <p class="text-muted small mb-2">Recent activity</p>
+                        <div class="mt-4">          
+                            <p class="text-muted small mb-2">Hoạt động gần đây</p>
                             @if (Model.SwapWorkflow.Timeline.Any())
                             {
                                 <ul class="list-unstyled small mb-0">
@@ -365,18 +405,18 @@
                                                       asp-page-handler="HandleSwapAction"
                                                       class="d-flex flex-wrap gap-2 mt-2 align-items-center">
                                                     <input type="hidden" name="transactionId" value="@log.TransactionId" />
-                                                    <div class="small text-muted me-1">Action:</div>
+                                                    <div class="small text-muted me-1">Hành động:</div>
                                                     <button type="submit"
                                                             name="status"
                                                             value="Completed"
                                                             class="btn btn-success btn-sm">
-                                                        <i class="bi bi-check2 me-1"></i>Complete
+                                                        <i class="bi bi-check2 me-1"></i>Hoàn thành
                                                     </button>
                                                     <button type="submit"
                                                             name="status"
                                                             value="Cancelled"
                                                             class="btn btn-outline-warning btn-sm">
-                                                        <i class="bi bi-x-circle me-1"></i>Cancel
+                                                        <i class="bi bi-x-circle me-1"></i>Hủy
                                                     </button>
                                                 </form>
                                             }
@@ -386,7 +426,7 @@
                             }
                             else
                             {
-                                <div class="text-muted small fst-italic">No swap activity recorded yet.</div>
+                                <div class="text-muted small fst-italic">Chưa có hoạt động đổi pin nào được ghi nhận.</div>
                             }
                         </div>
                     </div>
@@ -397,8 +437,8 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-0">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Station support tickets</h5>
-                        <small class="text-muted">Keep riders informed by updating progress.</small>
+                        <h5 class="mb-0">Yêu cầu hỗ trợ tại trạm</h5>
+                        <small class="text-muted">Cập nhật tiến độ để thông tin cho khách hàng.</small>
                     </div>
                 </div>
                 <div class="card-body">
@@ -410,13 +450,13 @@
                         </div>
                     }
                     <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-danger-subtle text-danger-emphasis">Open: @Model.SupportSummary.Open</span>
-                        <span class="badge bg-warning-subtle text-warning-emphasis">In progress: @Model.SupportSummary.InProgress</span>
-                        <span class="badge bg-success-subtle text-success-emphasis">Closed: @Model.SupportSummary.Closed</span>
-                        <span class="badge bg-secondary-subtle text-secondary-emphasis">Total: @Model.SupportSummary.Total</span>
+                        <span class="badge bg-danger text-white">Mở: @Model.SupportSummary.Open</span>
+                        <span class="badge bg-warning text-dark">Đang xử lý: @Model.SupportSummary.InProgress</span>
+                        <span class="badge bg-success text-white">Đã đóng: @Model.SupportSummary.Closed</span>
+                        <span class="badge bg-secondary text-white">Tổng: @Model.SupportSummary.Total</span>
                         @if (Model.SupportSummary.OldestActiveAge.HasValue)
                         {
-                            <span class="badge bg-light text-muted border">Oldest active: @FormatDuration(Model.SupportSummary.OldestActiveAge.Value)</span>
+                            <span class="badge bg-light text-muted border">Cũ nhất: @FormatDuration(Model.SupportSummary.OldestActiveAge.Value)</span>
                         }
                     </div>
                 </div>
@@ -426,12 +466,12 @@
                             <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>Customer</th>
-                            <th>Category</th>
-                            <th>Description</th>
-                            <th>Age</th>
-                            <th>Status</th>
-                            <th>Rating</th>
+                            <th>Khách hàng</th>
+                            <th>Loại</th>
+                            <th>Mô tả</th>
+                            <th>Thời gian</th>
+                            <th>Trạng thái</th>
+                            <th>Đánh giá</th>
                             <th></th>
                         </tr>
                             </thead>
@@ -447,11 +487,11 @@
                                             <div>@FormatRelativeTime(ticket.CreatedAt)</div>
                                             @if (RequiresSlaAttention(ticket))
                                             {
-                                                <span class="badge bg-danger-subtle text-danger-emphasis mt-1">SLA risk</span>
+                                                <span class="badge bg-danger text-white mt-1">Nguy cơ quá hạn</span>
                                             }
                                         </td>
                                     <td>
-                                        <span class="@GetSupportBadgeClass(ticket.Status)">@ticket.Status</span>
+                                        <span class="@GetSupportBadgeClass(ticket.Status)">@GetSupportStatusVietnamese(ticket.Status)</span>
                                     </td>
                                     <td>
                                         @if (ticket.Rating.HasValue)
@@ -479,13 +519,13 @@
                                                         style="min-width:140px;">
                                                     @if (ticket.Status == SupportStatus.Open)
                                                     {
-                                                        <option value="Open" selected disabled>Open</option>
+                                                        <option value="Open" selected disabled>Mở</option>
                                                     }
-                                                    <option value="InProgress" selected="@ticket.Status == SupportStatus.InProgress">InProgress</option>
-                                                    <option value="Closed" selected="@ticket.Status == SupportStatus.Closed">Closed</option>
+                                                    <option value="InProgress" selected="@(ticket.Status == SupportStatus.InProgress)">Đang xử lý</option>
+                                                    <option value="Closed" selected="@(ticket.Status == SupportStatus.Closed)">Đã đóng</option>
                                                 </select>
-                                                <textarea name="staffNote" class="form-control form-control-sm mt-2 support-note-input" rows="2" placeholder="Ghi chú cho driver">@ticket.StaffNote</textarea>
-                                                <button class="btn btn-sm btn-outline-primary" type="submit">Update</button>
+                                                <textarea name="staffNote" class="form-control form-control-sm mt-2 support-note-input" rows="2" placeholder="Ghi chú cho khách hàng">@ticket.StaffNote</textarea>
+                                                <button class="btn btn-sm btn-outline-primary" type="submit">Cập nhật</button>
                                             </form>
                                         }
                                     </td>
@@ -494,7 +534,7 @@
                                 @if (!Model.SupportTickets.Any())
                                 {
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-4">No tickets yet.</td>
+                                        <td colspan="8" class="text-center text-muted py-4">Chưa có yêu cầu hỗ trợ nào.</td>
                                     </tr>
                                 }
                             </tbody>
@@ -506,6 +546,7 @@
     }
 </div>
 
+<!-- Modals giữ nguyên như cũ -->
 @* ✅ MODAL TỪ CHỐI *@
 <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -547,13 +588,88 @@
     </div>
 </div>
 
+<!-- ✅ MODAL CHI TIẾT PIN -->
+<div class="modal fade" id="batteryDetailModal" tabindex="-1" aria-labelledby="batteryDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="batteryDetailModalLabel">
+                    <i class="bi bi-battery-charging me-2"></i>Thông tin chi tiết pin
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <label class="text-muted small">Mã pin</label>
+                                <div class="fw-bold fs-4">#<span id="detail-battery-id"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <label class="text-muted small">Trạng thái</label>
+                                <div id="detail-battery-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Model pin</label>
+                        <div id="detail-battery-model" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Dung lượng</label>
+                        <div id="detail-battery-capacity" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Sức khỏe pin (SoH)</label>
+                        <div>
+                            <span id="detail-battery-soh" class="fs-4 fw-bold text-success"></span>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div id="detail-battery-soh-bar" class="progress-bar bg-success" role="progressbar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Trạm hiện tại</label>
+                        <div id="detail-battery-station" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Lần bảo trì cuối</label>
+                        <div id="detail-battery-maintenance" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Cập nhật lần cuối</label>
+                        <div id="detail-battery-updated" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="col-12" id="detail-defect-section" style="display:none;">
+                        <div class="alert alert-danger mb-0">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Ghi chú lỗi
+                            </label>
+                            <div id="detail-battery-defect"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // ✅ XỬ LÝ MODAL TỪ CHỐI
-            const rejectModal = document.getElementById('rejectModal');
-            if (rejectModal) {
-                rejectModal.addEventListener('show.bs.modal', function (event) {
+            const rejectModalEl = document.getElementById('rejectModal');
+            if (rejectModalEl) {
+                rejectModalEl.addEventListener('show.bs.modal', function (event) {
                     const button = event.relatedTarget;
                     const transferId = button.getAttribute('data-transfer-id');
                     const batteryId = button.getAttribute('data-battery-id');
@@ -564,7 +680,76 @@
                 });
             }
 
-            // ✅ XỬ LÝ FORM DEFECT (existing code)
+            const batteryDetailModalEl = document.getElementById('batteryDetailModal');
+            if (batteryDetailModalEl) {
+                batteryDetailModalEl.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    
+                    const id = button.getAttribute('data-battery-id');
+                    const model = button.getAttribute('data-battery-model');
+                    const soh = parseFloat(button.getAttribute('data-battery-soh'));
+                    const status = button.getAttribute('data-battery-status');
+                    const station = button.getAttribute('data-battery-station');
+                    const capacity = button.getAttribute('data-battery-capacity');
+                    const updated = button.getAttribute('data-battery-updated');
+                    const defect = button.getAttribute('data-battery-defect');
+                    const maintenance = button.getAttribute('data-battery-maintenance');
+                    
+                    document.getElementById('detail-battery-id').textContent = id;
+                    document.getElementById('detail-battery-model').textContent = model;
+                    document.getElementById('detail-battery-capacity').textContent = capacity + ' mAh';
+                    document.getElementById('detail-battery-soh').textContent = soh + '%';
+                    document.getElementById('detail-battery-station').textContent = station;
+                    document.getElementById('detail-battery-updated').textContent = updated;
+                    document.getElementById('detail-battery-maintenance').textContent = maintenance;
+                    
+                    const sohBar = document.getElementById('detail-battery-soh-bar');
+                    sohBar.style.width = soh + '%';
+                    sohBar.setAttribute('aria-valuenow', soh);
+                    
+                    sohBar.className = 'progress-bar';
+                    if (soh >= 80) {
+                        sohBar.classList.add('bg-success');
+                    } else if (soh >= 50) {
+                        sohBar.classList.add('bg-warning');
+                    } else {
+                        sohBar.classList.add('bg-danger');
+                    }
+                    
+                    const statusBadges = {
+                        'Full': '<span class="badge bg-success text-white fs-5">Đầy</span>',
+                        'Charging': '<span class="badge bg-info text-white fs-5">Đang sạc</span>',
+                        'Taken': '<span class="badge bg-warning text-dark fs-5">Đã lấy</span>',
+                        'Booked': '<span class="badge bg-primary text-white fs-5">Đã đặt</span>',
+                        'Defective': '<span class="badge bg-danger text-white fs-5">Lỗi</span>'
+                    };
+                    document.getElementById('detail-battery-status').innerHTML = statusBadges[status] || status;
+                    
+                    const defectSection = document.getElementById('detail-defect-section');
+                    if (defect && defect !== 'null' && defect.trim() !== '') {
+                        document.getElementById('detail-battery-defect').textContent = defect;
+                        defectSection.style.display = 'block';
+                    } else {
+                        defectSection.style.display = 'none';
+                    }
+                });
+                
+                batteryDetailModalEl.addEventListener('hidden.bs.modal', function () {
+                    setTimeout(() => {
+                        document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                            backdrop.remove();
+                        });
+                        
+                        const openModals = document.querySelectorAll('.modal.show');
+                        if (openModals.length === 0) {
+                            document.body.classList.remove('modal-open');
+                            document.body.style.overflow = '';
+                            document.body.style.paddingRight = '';
+                        }
+                    }, 100);
+                });
+            }
+
             document.querySelectorAll('form[data-defect-form="true"]').forEach(form => {
                 const select = form.querySelector('select[name="status"]');
                 const reasonInput = form.querySelector('.defect-reason-input');
@@ -584,4 +769,25 @@
             });
         });
     </script>
+}
+
+@section Styles {
+    <style>
+        .modal-backdrop {
+            z-index: 1040 !important;
+        }
+        
+        .modal {
+            z-index: 1050 !important;
+        }
+        
+        .modal-dialog {
+            z-index: 1055 !important;
+        }
+        
+        .modal-content {
+            position: relative;
+            pointer-events: auto;
+        }
+    </style>
 }
