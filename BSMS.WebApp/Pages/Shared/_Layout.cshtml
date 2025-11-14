@@ -82,11 +82,16 @@
                                 </a>
                             </li>
                         }
-                        @if (isAuthenticated && (userRole == UserRole.StationStaff || userRole == UserRole.Admin))
+                        @if (isAuthenticated && userRole == UserRole.StationStaff)
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-area="" asp-page="/Staff/Index">
                                     <i class="bi bi-speedometer2 me-1"></i> Bảng điều khiển
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-page="/Staff/Batteries/Index">
+                                    <i class="bi bi-battery-charging me-1"></i> Quản lý Pin
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -206,8 +211,8 @@
         <script src="~/js/staff-schedule-notifications.js" asp-append-version="true"></script>
     }
 
-    <!-- Request location permission on page load (only for authenticated users) -->
-    @if (User.Identity?.IsAuthenticated ?? false)
+    <!-- Request location permission on page load (only for Driver role) -->
+    @if (isAuthenticated && userRole == UserRole.Driver)
     {
         <script>
             (function() {

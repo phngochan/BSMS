@@ -1,0 +1,304 @@
+@page
+@using BSMS.BusinessObjects.Enums
+@using BSMS.BusinessObjects.Models
+@model BSMS.WebApp.Pages.Staff.Batteries.IndexModel
+@{
+    ViewData["Title"] = "Quản lý Pin";
+}
+
+@functions {
+    public static string GetBatteryBadgeClass(BatteryStatus status) => status switch
+    {
+        BatteryStatus.Full => "badge bg-success text-white fw-semibold",
+        BatteryStatus.Charging => "badge bg-info text-white fw-semibold",
+        BatteryStatus.Taken => "badge bg-warning text-dark fw-semibold",
+        BatteryStatus.Booked => "badge bg-primary text-white fw-semibold",
+        BatteryStatus.Defective => "badge bg-danger text-white fw-semibold",
+        _ => "badge bg-secondary text-white fw-semibold"
+    };
+
+    public static string GetStatusDisplayName(BatteryStatus status) => status switch
+    {
+        BatteryStatus.Full => "Đầy",
+        BatteryStatus.Charging => "Đang sạc",
+        BatteryStatus.Taken => "Đã lấy",
+        BatteryStatus.Booked => "Đã đặt",
+        BatteryStatus.Defective => "Lỗi",
+        _ => status.ToString()
+    };
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">
+            <i class="bi bi-battery-charging me-2"></i>Quản lý Pin
+        </h2>
+        @if (Model.StationInfo != null)
+        {
+            <span class="text-muted">
+                <i class="bi bi-geo-alt me-1"></i>@Model.StationInfo.Name
+            </span>
+        }
+    </div>
+
+    @if (!Model.HasStation)
+    {
+        <div class="alert alert-warning">
+            <strong><i class="bi bi-exclamation-triangle me-2"></i>Chưa được phân công.</strong> 
+            Vui lòng yêu cầu admin phân công bạn vào một trạm đổi pin trước khi sử dụng tính năng này.
+        </div>
+    }
+    else
+    {
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-2 col-sm-4 col-6 mb-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="text-muted small mb-1">Tổng số pin</div>
+                        <div class="h4 mb-0 fw-bold">@Model.BatterySummary.Values.Sum()</div>
+                    </div>
+                </div>
+            </div>
+            @foreach (var status in Enum.GetValues<BatteryStatus>())
+            {
+                var count = Model.BatterySummary.ContainsKey(status) ? Model.BatterySummary[status] : 0;
+                <div class="col-md-2 col-sm-4 col-6 mb-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small mb-1">@GetStatusDisplayName(status)</div>
+                            <div class="h4 mb-0 fw-bold">
+                                <span class="@GetBatteryBadgeClass(status)">@count</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Tìm kiếm</label>
+                        <input type="text" class="form-control" name="SearchTerm" 
+                               value="@Model.SearchTerm" 
+                               placeholder="ID pin, Model...">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Lọc theo trạng thái</label>
+                        <select class="form-select" name="StatusFilter" asp-items="Model.StatusFilterOptions">
+                            <option value="">Tất cả</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i>Tìm kiếm
+                        </button>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <a href="@Url.Page("/Staff/Batteries/Index")" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Làm mới
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Batteries Table -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0">
+                    <i class="bi bi-list-ul me-2"></i>Danh sách Pin (@Model.Batteries.Count)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.Batteries.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID Pin</th>
+                                    <th>Model</th>
+                                    <th>Dung lượng</th>
+                                    <th>SOH (%)</th>
+                                    <th>Trạng thái</th>
+                                    <th>Bảo trì cuối</th>
+                                    <th>Ghi chú lỗi</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var battery in Model.Batteries)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">#@battery.BatteryId</td>
+                                        <td>@battery.Model</td>
+                                        <td>@battery.Capacity mAh</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress" style="width: 60px; height: 8px;" role="progressbar">
+                                                    <div class="progress-bar @(battery.Soh >= 80 ? "bg-success" : battery.Soh >= 50 ? "bg-warning" : "bg-danger")" 
+                                                         style="width: @battery.Soh%"></div>
+                                                </div>
+                                                <span class="ms-2 small">@battery.Soh%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="@GetBatteryBadgeClass(battery.Status)">
+                                                @GetStatusDisplayName(battery.Status)
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (battery.LastMaintenance.HasValue)
+                                            {
+                                                <small class="text-muted">
+                                                    @battery.LastMaintenance.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                                                </small>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(battery.DefectNote))
+                                            {
+                                                <span class="text-danger small" title="@battery.DefectNote">
+                                                    <i class="bi bi-exclamation-circle"></i>
+                                                    @(battery.DefectNote.Length > 30 ? battery.DefectNote.Substring(0, 30) + "..." : battery.DefectNote)
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#updateModal_@battery.BatteryId">
+                                                <i class="bi bi-pencil"></i> Cập nhật
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Update Modal -->
+                                    <div class="modal fade" id="updateModal_@battery.BatteryId" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form method="post" asp-page-handler="UpdateBatteryStatus">
+                                                    <input type="hidden" name="batteryId" value="@battery.BatteryId" />
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">
+                                                            <i class="bi bi-battery-charging me-2"></i>Cập nhật Pin #@battery.BatteryId
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Model</label>
+                                                            <input type="text" class="form-control" value="@battery.Model" disabled>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label">Dung lượng</label>
+                                                                <input type="text" class="form-control" value="@battery.Capacity mAh" disabled>
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label class="form-label">SOH</label>
+                                                                <input type="text" class="form-control" value="@battery.Soh%" disabled>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Trạng thái hiện tại</label>
+                                                            <div>
+                                                                <span class="@GetBatteryBadgeClass(battery.Status)">
+                                                                    @GetStatusDisplayName(battery.Status)
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Cập nhật trạng thái <span class="text-danger">*</span></label>
+                                                            <select class="form-select" name="status" required>
+                                                                @foreach (var item in Model.GetSelectableStatuses(battery.Status))
+                                                                {
+                                                                    <option value="@item.Value" selected="@item.Selected">@GetStatusDisplayName(Enum.Parse<BatteryStatus>(item.Value))</option>
+                                                                }
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3" id="defectReason_@battery.BatteryId" style="display: none;">
+                                                            <label class="form-label">Lý do lỗi <span class="text-danger">*</span></label>
+                                                            <textarea class="form-control" name="defectReason" rows="3" 
+                                                                      placeholder="Nhập lý do pin bị lỗi..."></textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                                        <button type="submit" class="btn btn-primary">
+                                                            <i class="bi bi-check-circle me-1"></i>Cập nhật
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox display-4 text-muted"></i>
+                        <p class="text-muted mt-3">Không tìm thấy pin nào.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Show/hide defect reason field based on selected status
+        document.addEventListener('DOMContentLoaded', function() {
+            const modals = document.querySelectorAll('[id^="updateModal_"]');
+            modals.forEach(modal => {
+                const batteryId = modal.id.split('_')[1];
+                const statusSelect = modal.querySelector('select[name="status"]');
+                const defectReasonDiv = document.getElementById('defectReason_' + batteryId);
+                const defectReasonTextarea = defectReasonDiv?.querySelector('textarea[name="defectReason"]');
+                
+                if (statusSelect && defectReasonDiv) {
+                    statusSelect.addEventListener('change', function() {
+                        if (this.value === 'Defective') {
+                            defectReasonDiv.style.display = 'block';
+                            if (defectReasonTextarea) {
+                                defectReasonTextarea.required = true;
+                            }
+                        } else {
+                            defectReasonDiv.style.display = 'none';
+                            if (defectReasonTextarea) {
+                                defectReasonTextarea.required = false;
+                                defectReasonTextarea.value = '';
+                            }
+                        }
+                    });
+                    
+                    // Trigger on load if already selected
+                    if (statusSelect.value === 'Defective') {
+                        defectReasonDiv.style.display = 'block';
+                        if (defectReasonTextarea) {
+                            defectReasonTextarea.required = true;
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
+
