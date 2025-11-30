@@ -1,0 +1,146 @@
+﻿@page
+@using BSMS.BusinessObjects.Enums
+@model BSMS.WebApp.Pages.Driver.RentBatteryModel
+@{
+    ViewData["Title"] = "Gói thuê pin";
+    var swapLimit = Model.ActivePackage?.Package.DurationDays / 3 ?? 0;
+    var remaining = swapLimit - Model.UsedSwaps;
+    var isFirstTime = Model.UsedSwaps == 0;
+    var isActive = Model.ActivePackage?.Status == PackageStatus.Active;
+    var isExpired = Model.ActivePackage?.Status == PackageStatus.Expired;
+}
+<!-- THÔNG BÁO -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+<h2 class="mb-4">@ViewData["Title"]</h2>
+
+<!-- DANH SÁCH GÓI -->
+<div class="row">
+    @foreach (var pkg in Model.Packages)
+    {
+        var pkgLimit = pkg.DurationDays / 3;
+        var isCurrentPackage = Model.ActivePackage?.PackageId == pkg.PackageId;
+        var isActivePackage = isCurrentPackage && Model.ActivePackage.Status == PackageStatus.Active;
+        var isExpiredPackage = isCurrentPackage && Model.ActivePackage.Status == PackageStatus.Expired;
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm @(isCurrentPackage ? "border-primary" : "")">
+                <div class="card-body text-center">
+                    <!-- RIBBON: Đang dùng / Hết hạn -->
+                    @if (isCurrentPackage)
+                    {
+                        <div class="ribbon ribbon-top-right">
+                            <span class="@(isActivePackage ? "bg-success" : "bg-danger")">
+                                @(isActivePackage ? "Đang dùng" : "Hết hạn")
+                            </span>
+                        </div>
+                    }
+
+                    <h5 class="card-title text-primary">@pkg.Name</h5>
+                    <p class="card-text text-muted small">@pkg.Description</p>
+                    <h4 class="text-danger fw-bold">@pkg.Price:N0 đ</h4>
+                    <p><small>Thời hạn: @pkg.DurationDays ngày</small></p>
+
+                    <!-- NÚT: ẨN "MUA NGAY" NẾU ĐÃ CÓ GÓI -->
+                    @if (isCurrentPackage)
+                    {
+                        <form method="post" asp-route-packageId="@pkg.PackageId">
+                            <button type="submit"
+                                    asp-page-handler="Renew"
+                                    class="btn @(isActivePackage ? "btn-outline-warning" : "btn-warning") btn-lg w-100">
+                                @(isActivePackage ? "Gia hạn gói" : "Gia hạn ngay")
+                            </button>
+                        </form>
+                    }
+                    else if (Model.ActivePackage == null || Model.ActivePackage.Status == PackageStatus.Expired)
+                    {
+                        <!-- CHỈ HIỆN "MUA NGAY" NẾU KHÔNG CÓ GÓI HOẶC GÓI ĐÃ HẾT HẠN -->
+                        <form method="post" asp-route-packageId="@pkg.PackageId">
+                            <button type="submit"
+                                    asp-page-handler="Buy"
+                                    class="btn btn-success btn-lg w-100">
+                                Mua ngay
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <!-- ĐÃ CÓ GÓI KHÁC → HIỆN "ĐÃ MUA" -->
+                        <button class="btn btn-secondary btn-lg w-100" disabled>
+                            Đã mua gói khác
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .ribbon {
+        position: absolute;
+        right: -5px;
+        top: -5px;
+        z-index: 1;
+        overflow: hidden;
+        width: 75px;
+        height: 75px;
+    }
+
+        .ribbon span {
+            font-size: 10px;
+            font-weight: bold;
+            color: #FFF;
+            text-align: center;
+            line-height: 20px;
+            transform: rotate(45deg);
+            width: 100px;
+            display: block;
+            position: absolute;
+            top: 19px;
+            right: -21px;
+        }
+
+            .ribbon span.bg-success {
+                background: linear-gradient(#34ce57 0%, #28a745 100%);
+            }
+
+            .ribbon span.bg-danger {
+                background: linear-gradient(#e4606d 0%, #dc3545 100%);
+            }
+
+            .ribbon span::before, .ribbon span::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                z-index: -1;
+                border: 3px solid;
+                border-left-color: transparent;
+                border-right-color: transparent;
+            }
+
+            .ribbon span.bg-success::before, .ribbon span.bg-success::after {
+                border-top-color: #28a745;
+            }
+
+            .ribbon span.bg-danger::before, .ribbon span.bg-danger::after {
+                border-top-color: #dc3545;
+            }
+
+            .ribbon span::before {
+                left: 0;
+            }
+
+            .ribbon span::after {
+                right: 0;
+            }
+
+    .border-dashed {
+        border: 2px dashed #dee2e6 !important;
+    }
+</style>

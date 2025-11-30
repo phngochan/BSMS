@@ -1,4 +1,4 @@
-using BSMS.BLL.Services;
+﻿using BSMS.BLL.Services;
 using BSMS.BLL.Services.Implementations;
 using BSMS.BusinessObjects.Configurations;
 using BSMS.DAL.Base;
@@ -8,6 +8,7 @@ using BSMS.DAL.Repositories;
 using BSMS.DAL.Repositories.Implementations;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,8 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserActivityLogRepository, UserActivityLogRepository>();
 builder.Services.AddScoped<IAlertRepository, AlertRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPackageRepository, PackageRepository>();
 
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -35,10 +38,13 @@ builder.Services.AddScoped<IUserActivityLogService, UserActivityLogService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IUserPackageService, UserPackageService>();
+builder.Services.AddScoped<IVnpayService, VnpayService>();
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
-
+builder.Services.AddHttpContextAccessor();
 // Authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
