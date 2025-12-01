@@ -1,4 +1,5 @@
-﻿using BSMS.BLL.Services;
+using BSMS.BLL.Services;
+using BSMS.BLL.Services.Background;
 using BSMS.BLL.Services.Implementations;
 using BSMS.BusinessObjects.Configurations;
 using BSMS.DAL.Base;
@@ -30,6 +31,16 @@ builder.Services.AddScoped<IUserActivityLogRepository, UserActivityLogRepository
 builder.Services.AddScoped<IAlertRepository, AlertRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPackageRepository, PackageRepository>();
+builder.Services.AddScoped<IChangingStationRepository, ChangingStationRepository>();
+builder.Services.AddScoped<IBatteryRepository, BatteryRepository>();
+builder.Services.AddScoped<IBatteryTransferRepository, BatteryTransferRepository>();
+builder.Services.AddScoped<IStationStaffRepository, StationStaffRepository>();
+builder.Services.AddScoped<ISupportRepository, SupportRepository>();
+builder.Services.AddScoped<ISwapTransactionRepository, SwapTransactionRepository>();
+builder.Services.AddScoped<IConfigRepository, ConfigRepository>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+builder.Services.AddScoped<IStationRepository, StationRepository>();
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -41,6 +52,19 @@ builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IUserPackageService, UserPackageService>();
 builder.Services.AddScoped<IVnpayService, VnpayService>();
+builder.Services.AddScoped<IChangingStationService, ChangingStationService>();
+builder.Services.AddScoped<IBatteryService, BatteryService>();
+builder.Services.AddScoped<IBatteryTransferService, BatteryTransferService>();
+builder.Services.AddScoped<IStationStaffService, StationStaffService>();
+builder.Services.AddScoped<ISupportService, SupportService>();
+builder.Services.AddScoped<ISwapTransactionService, SwapTransactionService>();
+builder.Services.AddScoped<IConfigService, ConfigService>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IStationService, StationService>();
+builder.Services.AddScoped<IVehicleService, VehicleService>();
+
+// Background Services
+builder.Services.AddHostedService<ReservationAutoCancelService>();
 // Email
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();

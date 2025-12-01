@@ -1,0 +1,269 @@
+@page
+@using BSMS.WebApp.Helpers
+@model BSMS.WebApp.Pages.Driver.SwapHistoryModel
+@{
+    ViewData["Title"] = "Lịch Sử Đổi Pin";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="bi bi-clock-history text-primary"></i> Lịch Sử Đổi Pin
+                </h2>
+                <a asp-page="/Profile" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay Lại Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Lọc theo Trạng Thái</label>
+                    <select name="filterStatus" class="form-select" onchange="this.form.submit()">
+                        <option value="">Tất Cả</option>
+                        <option value="Pending" selected="@(Model.FilterStatus == "Pending")">Pending</option>
+                        <option value="Completed" selected="@(Model.FilterStatus == "Completed")">Completed</option>
+                        <option value="Cancelled" selected="@(Model.FilterStatus == "Cancelled")">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Tìm Kiếm Trạm</label>
+                    <input type="text" name="filterStation" class="form-control" 
+                           value="@Model.FilterStation" placeholder="Nhập tên hoặc địa chỉ trạm...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Tìm
+                    </button>
+                </div>
+                @if (!string.IsNullOrEmpty(Model.FilterStatus) || !string.IsNullOrEmpty(Model.FilterStation))
+                {
+                    <div class="col-12">
+                        <a asp-page="/Driver/SwapHistory" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-x-circle"></i> Xóa Bộ Lọc
+                        </a>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="mb-3">
+        <p class="text-muted mb-0">
+            Tìm thấy <strong>@Model.TotalCount</strong> giao dịch
+            @if (Model.TotalPages > 1)
+            {
+                <span> - Trang @Model.PageNumber / @Model.TotalPages</span>
+            }
+        </p>
+    </div>
+
+    <!-- Swap Transactions List -->
+    @if (Model.SwapTransactions.Any())
+    {
+        <div class="row">
+            @foreach (var transaction in Model.SwapTransactions)
+            {
+                <div class="col-12 mb-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-lg-4">
+                                    <div class="mb-3">
+                                        <p class="text-muted small mb-1">Mã Giao Dịch</p>
+                                        <p class="fw-bold fs-5 mb-0">#@transaction.TransactionId</p>
+                                    </div>
+                                    <div class="border-top pt-3">
+                                        <h5 class="mb-2">
+                                            <i class="bi bi-geo-alt text-primary"></i> @transaction.StationName
+                                        </h5>
+                                        <p class="text-muted mb-1 small">
+                                            <i class="bi bi-geo-alt-fill"></i> @transaction.StationAddress
+                                        </p>
+                                        <p class="text-muted mb-2 small">
+                                            <i class="bi bi-calendar"></i> @transaction.SwapTime.ToLocalDateTimeString()
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4">
+                                    <div class="mb-3">
+                                        <label class="text-muted small mb-1 d-block">
+                                            <i class="bi bi-car-front"></i> Xe
+                                        </label>
+                                        <div class="border rounded p-3 bg-light">
+                                            <strong>@transaction.VehicleVin</strong>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small mb-1 d-block">
+                                            <i class="bi bi-arrow-down-circle text-success"></i> Pin Nhận
+                                        </label>
+                                        <div class="border rounded p-2 bg-light">
+                                            <strong class="text-success">
+                                                @transaction.BatteryTakenModel
+                                                @if (!string.IsNullOrEmpty(transaction.BatteryTakenSerialNumber))
+                                                {
+                                                    <span class="text-muted">(#@transaction.BatteryTakenSerialNumber)</span>
+                                                }
+                                            </strong>
+                                        </div>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(transaction.BatteryReturnedModel))
+                                    {
+                                        <div>
+                                            <label class="text-muted small mb-1 d-block">
+                                                <i class="bi bi-arrow-up-circle text-danger"></i> Pin Trả
+                                            </label>
+                                            <div class="border rounded p-2 bg-light">
+                                                <strong class="text-danger">
+                                                    @transaction.BatteryReturnedModel
+                                                    @if (!string.IsNullOrEmpty(transaction.BatteryReturnedSerialNumber))
+                                                    {
+                                                        <span class="text-muted">(#@transaction.BatteryReturnedSerialNumber)</span>
+                                                    }
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="col-lg-4">
+                                    @if (transaction.TotalCost > 0)
+                                    {
+                                        <div class="mb-3">
+                                            <label class="text-muted small mb-1 d-block">
+                                                <i class="bi bi-currency-dollar"></i> Chi Phí
+                                            </label>
+                                            <div class="border rounded p-3 bg-warning bg-opacity-10">
+                                                <strong class="text-warning fs-5">
+                                                    @transaction.TotalCost.ToString("N0") đ
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (transaction.Status == "Completed")
+                                    {
+                                        <div class="text-center mt-3">
+                                            <span class="badge bg-success fs-6 px-3 py-2">
+                                                <i class="bi bi-check-circle"></i> Hoàn Thành
+                                            </span>
+                                        </div>
+                                    }
+                                    else if (transaction.Status == "Pending")
+                                    {
+                                        <div class="text-center mt-3">
+                                            <span class="badge bg-warning fs-6 px-3 py-2">
+                                                <i class="bi bi-clock"></i> Đang Chờ
+                                            </span>
+                                        </div>
+                                    }
+                                    else if (transaction.Status == "Cancelled")
+                                    {
+                                        <div class="text-center mt-3">
+                                            <span class="badge bg-danger fs-6 px-3 py-2">
+                                                <i class="bi bi-x-circle"></i> Đã Hủy
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Pagination -->
+        @if (Model.TotalPages > 1)
+        {
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    @if (Model.PageNumber > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" 
+                               asp-page="/Driver/SwapHistory" 
+                               asp-route-pageNumber="@(Model.PageNumber - 1)"
+                               asp-route-filterStatus="@Model.FilterStatus"
+                               asp-route-filterStation="@Model.FilterStation">
+                                <i class="bi bi-chevron-left"></i> Trước
+                            </a>
+                        </li>
+                    }
+
+                    @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" 
+                               asp-page="/Driver/SwapHistory" 
+                               asp-route-pageNumber="@i"
+                               asp-route-filterStatus="@Model.FilterStatus"
+                               asp-route-filterStation="@Model.FilterStation">
+                                @i
+                            </a>
+                        </li>
+                    }
+
+                    @if (Model.PageNumber < Model.TotalPages)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" 
+                               asp-page="/Driver/SwapHistory" 
+                               asp-route-pageNumber="@(Model.PageNumber + 1)"
+                               asp-route-filterStatus="@Model.FilterStatus"
+                               asp-route-filterStation="@Model.FilterStation">
+                                Sau <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-clock-history fs-1 text-muted"></i>
+                <p class="text-muted mt-3">
+                    @if (!string.IsNullOrEmpty(Model.FilterStatus) || !string.IsNullOrEmpty(Model.FilterStation))
+                    {
+                        <span>Không tìm thấy giao dịch nào với bộ lọc hiện tại.</span>
+                    }
+                    else
+                    {
+                        <span>Chưa có giao dịch đổi pin nào.</span>
+                    }
+                </p>
+                @if (!string.IsNullOrEmpty(Model.FilterStatus) || !string.IsNullOrEmpty(Model.FilterStation))
+                {
+                    <a asp-page="/Driver/SwapHistory" class="btn btn-outline-primary">
+                        <i class="bi bi-x-circle"></i> Xóa Bộ Lọc
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Completed" => "bg-success",
+            "Cancelled" => "bg-danger",
+            "Pending" => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+}
+

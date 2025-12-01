@@ -8,7 +8,7 @@ public class SwapTransaction
     public int VehicleId { get; set; }
     public int StationId { get; set; }
     public int BatteryTakenId { get; set; }
-    public int BatteryReturnedId { get; set; }
+    public int? BatteryReturnedId { get; set; }
     public int? PaymentId { get; set; }
     public DateTime SwapTime { get; set; }
     public decimal TotalCost { get; set; }
@@ -18,6 +18,6 @@ public class SwapTransaction
     public Vehicle Vehicle { get; set; }
     public ChangingStation Station { get; set; }
     public Battery BatteryTaken { get; set; }
-    public Battery BatteryReturned { get; set; }
-    public Payment Payment { get; set; }
+    public Battery? BatteryReturned { get; set; }
+    public Payment? Payment { get; set; }
 }

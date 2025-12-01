@@ -1,6 +1,6 @@
 using BSMS.BLL.Services;
-using BSMS.BusinessObjects.DTOs.Auth;
 using BSMS.WebApp.Helpers;
+using BSMS.WebApp.ViewModels.Auth;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
@@ -59,11 +59,30 @@ public class VerifyOtpModel : BasePageModel
             HttpContext.Session.RemoveOtp("register");
 
             // Proceed to register
-            var result = await _authService.RegisterAsync(pending);
+            var result = await _authService.RegisterAsync(
+                pending.Username,
+                pending.Email,
+                pending.FullName,
+                pending.Phone,
+                pending.Password);
             if (!result.Success)
             {
                 ModelState.AddModelError(string.Empty, result.Message);
                 return RedirectToPage("/Auth/Register");
+            }
+
+            if (result.User != null && _activityLogService != null)
+            {
+                try
+                {
+                    var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                    await _activityLogService.LogActivityAsync(
+                        result.User.UserId, 
+                        "REGISTER", 
+                        $"Người dùng mới đăng ký: {result.User.Username} ({result.User.Email})", 
+                        ipAddress);
+                }
+                catch { }
             }
 
             HttpContext.Session.ClearPendingRegistration();

@@ -73,6 +73,10 @@ namespace BSMS.DAL.Migrations
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
 
+                    b.Property<string>("DefectNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<DateTime?>("LastMaintenance")
                         .HasColumnType("datetime2");
 
@@ -286,6 +290,9 @@ namespace BSMS.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReservationId"));
 
+                    b.Property<int?>("BatteryId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -309,6 +316,8 @@ namespace BSMS.DAL.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("ReservationId");
+
+                    b.HasIndex("BatteryId");
 
                     b.HasIndex("StationId");
 
@@ -741,6 +750,11 @@ namespace BSMS.DAL.Migrations
 
             modelBuilder.Entity("BSMS.BusinessObjects.Models.Reservation", b =>
                 {
+                    b.HasOne("BSMS.BusinessObjects.Models.Battery", "Battery")
+                        .WithMany()
+                        .HasForeignKey("BatteryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("BSMS.BusinessObjects.Models.ChangingStation", "Station")
                         .WithMany("Reservations")
                         .HasForeignKey("StationId")
@@ -758,6 +772,8 @@ namespace BSMS.DAL.Migrations
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Battery");
 
                     b.Navigation("Station");
 

@@ -11,6 +11,7 @@ public class Battery
     public int StationId { get; set; }
     public DateTime? LastMaintenance { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public string? DefectNote { get; set; }
 
     public ChangingStation Station { get; set; }
 }

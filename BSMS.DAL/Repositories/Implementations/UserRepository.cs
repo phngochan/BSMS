@@ -48,6 +48,7 @@ public class UserRepository : GenericRepository<User>, IUserRepository
         return await _dbSet
             .AsNoTracking()
             .Include(u => u.Vehicles)
+            .Include(u => u.StationStaffs)
             .FirstOrDefaultAsync(u => u.UserId == userId);
     }
 
@@ -66,6 +67,10 @@ public class UserRepository : GenericRepository<User>, IUserRepository
             .AsNoTracking()
             .Include(u => u.SwapTransactions)
                 .ThenInclude(st => st.Station)
+            .Include(u => u.SwapTransactions)
+                .ThenInclude(st => st.BatteryTaken)
+            .Include(u => u.SwapTransactions)
+                .ThenInclude(st => st.BatteryReturned)
             .Include(u => u.Payments)
             .FirstOrDefaultAsync(u => u.UserId == userId);
     }

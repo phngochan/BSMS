@@ -43,6 +43,11 @@ public class UserService : IUserService
         return await _userRepository.CreateAsync(user);
     }
 
+    public async Task<int> CountUsersAsync()
+    {
+        return await _userRepository.CountAsync();
+    }
+
     public async Task UpdateUserAsync(User user)
     {
         await _userRepository.UpdateAsync(user);
@@ -56,5 +61,25 @@ public class UserService : IUserService
 
         user.PasswordHash = newPasswordHash;
         await _userRepository.UpdateAsync(user);
+    }
+
+    public async Task<User?> GetUserWithTransactionsAsync(int userId)
+    {
+        return await _userRepository.GetUserWithTransactionsAsync(userId);
+    }
+
+    public async Task<User?> GetUserWithVehiclesAsync(int userId)
+    {
+        return await _userRepository.GetUserWithVehiclesAsync(userId);
+    }
+
+    public async Task<IEnumerable<User>> GetAllUsersAsync()
+    {
+        return await _userRepository.GetAllAsync();
+    }
+
+    public async Task<User?> GetUserByIdAsync(int userId)
+    {
+        return await _userRepository.GetByIdAsync(userId);
     }
 }

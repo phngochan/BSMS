@@ -1,103 +1,227 @@
-@page
+﻿@page
+@using BSMS.BusinessObjects.Enums
 @model BSMS.WebApp.Pages.Staff.IndexModel
+@using BSMS.BusinessObjects.Enums
+@using BSMS.WebApp.Helpers
 @{
-    ViewData["Title"] = "Battery Swap Station Staff";
+    ViewData["Title"] = "Station Operations";
 }
 
-<link rel="stylesheet" href="~/css/ev-theme.css" />
+@functions {
+    public static string GetBatteryBadgeClass(BatteryStatus status) => status switch
+    {
+        BatteryStatus.Full => "badge bg-success text-white fw-semibold",
+        BatteryStatus.Charging => "badge bg-info text-white fw-semibold",
+        BatteryStatus.Taken => "badge bg-warning text-dark fw-semibold",
+        BatteryStatus.Booked => "badge bg-primary text-white fw-semibold",
+        BatteryStatus.Defective => "badge bg-danger text-white fw-semibold",
+        _ => "badge bg-secondary text-white fw-semibold"
+    };
+
+    public static string GetSupportBadgeClass(SupportStatus status) => status switch
+    {
+        SupportStatus.Open => "badge bg-danger text-white fw-semibold",
+        SupportStatus.InProgress => "badge bg-warning text-dark fw-semibold",
+        SupportStatus.Closed => "badge bg-success text-white fw-semibold",
+        _ => "badge bg-secondary text-white fw-semibold"
+    };
+}
 
 <div class="container-fluid py-3">
-    <!-- Battery Inventory: Summary cards -->
-    <div class="row g-3 mb-3">
-        <div class="col-12 col-md-4">
-            <div class="card-ev p-3 h-100" style="border-left:6px solid #00C853;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="fw-bold text-ev-primary">Full Batteries</div>
-                        <div class="fs-4 fw-bold">@Model.FullCount</div>
+    <h2 class="fw-bold mb-3">Station staff workspace</h2>
+    @if (!Model.HasStation)
+    {
+        <div class="alert alert-warning">
+            <strong>No assignment yet.</strong> Please ask an admin to assign you to a swap station before using these tools.
+        </div>
+    }
+    else
+    {
+        <div class="row g-3 mb-4">
+            @foreach (var status in Enum.GetValues(typeof(BSMS.BusinessObjects.Enums.BatteryStatus)).Cast<BSMS.BusinessObjects.Enums.BatteryStatus>())
+            {
+                var count = Model.BatterySummary.TryGetValue(status, out var value) ? value : 0;
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body">
+                            <p class="text-muted text-uppercase small mb-1">@status</p>
+                            <div class="fs-3 fw-semibold">@count</div>
+                        </div>
                     </div>
-                    <div class="text-ev-primary" aria-hidden="true">
-                        <i class="bi bi-battery-full" style="font-size:1.75rem;"></i>
+                </div>
+            }
+        </div>
+        <div class="row g-4">
+            <div class="col-12 col-xl-8">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">Battery inventory at @Model.StationInfo?.Name</h5>
+                                <small class="text-muted">Update each battery status directly.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Battery ID</th>
+                                        <th>Model</th>
+                                        <th>SoH</th>
+                                        <th>Status</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var battery in Model.Batteries)
+                                    {
+                                        <tr>
+                                            <td>#@battery.BatteryId</td>
+                                            <td>@battery.Model</td>
+                                            <td>@battery.Soh %</td>
+                                        <td>
+                                            <div class="d-flex flex-column gap-2">
+                                                <span class="@GetBatteryBadgeClass(battery.Status)">@battery.Status</span>
+                                                @if (!string.IsNullOrWhiteSpace(battery.DefectNote))
+                                                {
+                                                    <small class="text-danger fst-italic">Reason: @battery.DefectNote</small>
+                                                }
+                                                <form method="post" asp-page-handler="UpdateBatteryStatus" class="d-flex flex-column gap-2 align-items-start align-items-md-center flex-md-row" data-defect-form="true">
+                                                    <input type="hidden" name="batteryId" value="@battery.BatteryId" />
+                                                    <select name="status" class="form-select form-select-sm" style="min-width:150px;">
+                                                        @foreach (var option in Model.GetSelectableStatuses(battery.Status))
+                                                        {
+                                                            <option value="@option.Value" selected="@(option.Selected)">@option.Text</option>
+                                                        }
+                                                    </select>
+                                                    <input type="text"
+                                                           name="defectReason"
+                                                           class="form-control form-control-sm defect-reason-input d-none"
+                                                           style="min-width:200px;"
+                                                           value="@battery.DefectNote"
+                                                           placeholder="Reason for defect" />
+                                                    <button class="btn btn-sm btn-outline-primary" type="submit">Save</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                            <td class="text-muted small">@battery.UpdatedAt.ToLocalTime().ToString("dd/MM HH:mm")</td>
+                                        </tr>
+                                    }
+                                    @if (!Model.Batteries.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">No batteries in this station yet.</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <h5 class="mb-1">Station information</h5>
+                        <p class="text-muted mb-3">@Model.StationInfo?.Address</p>
+                        <ul class="list-unstyled mb-0">
+                            <li>Capacity: <strong>@Model.StationInfo?.Capacity</strong></li>
+                            <li>Status: <strong>@Model.StationInfo?.Status</strong></li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-4">
-            <div class="card-ev p-3 h-100" style="border-left:6px solid #F1C40F;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="fw-bold" style="color:#C49600;">Charging</div>
-                        <div class="fs-4 fw-bold">@Model.ChargingCount</div>
+        <div class="mt-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Station support tickets</h5>
+                        <small class="text-muted">Keep riders informed by updating progress.</small>
                     </div>
-                    <div style="color:#F1C40F;" aria-hidden="true">
-                        <i class="bi bi-lightning-charge" style="font-size:1.75rem;"></i>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Customer</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ticket in Model.SupportTickets)
+                                {
+                                    <tr>
+                                        <td>@ticket.SupportId</td>
+                                        <td>@ticket.User?.FullName</td>
+                                        <td>@ticket.Type</td>
+                                        <td>@ticket.Description</td>
+                                        <td>
+                                            <span class="@GetSupportBadgeClass(ticket.Status)">@ticket.Status</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <form method="post"
+                                                  asp-page-handler="ProcessSupport"
+                                                  class="d-flex flex-column flex-sm-row gap-2 align-items-sm-center">
+                                                <input type="hidden" name="supportId" value="@ticket.SupportId" />
+                                                <select name="status"
+                                                        class="form-select form-select-sm support-status-select"
+                                                        style="min-width:140px;">
+                                                    @if (ticket.Status == SupportStatus.Open)
+                                                    {
+                                                        <option value="Open" selected disabled>Open</option>
+                                                    }
+                                                    <option value="InProgress" selected="@ticket.Status == SupportStatus.InProgress">InProgress</option>
+                                                    <option value="Closed" selected="@ticket.Status == SupportStatus.Closed">Closed</option>
+                                                </select>
+                                                <button class="btn btn-sm btn-outline-primary" type="submit">Update</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!Model.SupportTickets.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">No tickets yet.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-4">
-            <div class="card-ev p-3 h-100" style="border-left:6px solid #E74C3C;">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="fw-bold" style="color:#B33A2D;">Maintenance</div>
-                        <div class="fs-4 fw-bold">@Model.MaintenanceCount</div>
-                    </div>
-                    <div style="color:#E74C3C;" aria-hidden="true">
-                        <i class="bi bi-tools" style="font-size:1.75rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Battery Inventory: Detailed table -->
-    <div class="card-ev p-3">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-            <h5 class="mb-0">Battery Inventory</h5>
-            <div class="d-flex gap-2">
-                <a class="btn btn-ev btn-sm" href="#"><i class="bi bi-arrow-repeat me-1"></i>Refresh</a>
-                <a class="btn btn-ev-outline btn-sm" href="#"><i class="bi bi-download me-1"></i>Export</a>
-            </div>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Battery ID</th>
-                        <th>Model</th>
-                        <th>Capacity</th>
-                        <th>SoH</th>
-                        <th>Status</th>
-                        <th>Last Updated</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var b in Model.Batteries)
-                {
-                    <tr>
-                        <td>@b.BatteryId</td>
-                        <td>@b.Model</td>
-                        <td>@b.Capacity</td>
-                        <td>@b.Soh%</td>
-                        <td>
-                            @if (b.Status == "Full")
-                            {
-                                <span class="badge" style="background-color:#00C853;">Full</span>
-                            }
-                            else if (b.Status == "Charging")
-                            {
-                                <span class="badge" style="background-color:#F1C40F; color:#2C3E50;">Charging</span>
-                            }
-                            else
-                            {
-                                <span class="badge" style="background-color:#E74C3C;">Maintenance</span>
-                            }
-                        </td>
-                        <td>@b.LastUpdated.ToString("yyyy-MM-dd HH:mm")</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </div>
+    }
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('form[data-defect-form="true"]').forEach(form => {
+                const select = form.querySelector('select[name="status"]');
+                const reasonInput = form.querySelector('.defect-reason-input');
+                if (!select || !reasonInput) return;
+
+                const toggleReason = () => {
+                    const isDefective = select.value === 'Defective';
+                    reasonInput.classList.toggle('d-none', !isDefective);
+                    reasonInput.required = isDefective;
+                    if (!isDefective) {
+                        reasonInput.value = '';
+                    }
+                };
+
+                select.addEventListener('change', toggleReason);
+                toggleReason();
+            });
+
+        });
+    </script>
+}

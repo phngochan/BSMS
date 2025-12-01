@@ -1,0 +1,274 @@
+@page
+@using BSMS.WebApp.Helpers
+@model BSMS.WebApp.Pages.Admin.Vehicles.IndexModel
+@{
+    ViewData["Title"] = "Quản Lý Xe";
+}
+
+<div class="container-fluid py-4">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="bi bi-car-front text-primary"></i> Quản Lý Xe
+                </h2>
+                <a asp-page="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Thêm Xe Mới
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel"></i> Bộ Lọc
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="FilterUserId" class="form-label">Chủ Xe</label>
+                    <div class="position-relative">
+                        <input type="text" id="filterDriverSearch" class="form-control" placeholder="Nhập tên hoặc email..." autocomplete="off" value="@(Model.FilterUserId.HasValue ? Model.Drivers.FirstOrDefault(d => d.UserId == Model.FilterUserId.Value)?.FullName : "")" />
+                        <input type="hidden" asp-for="FilterUserId" id="filterSelectedUserId" />
+                        <div id="filterDriverDropdown" class="list-group position-absolute w-100" style="display: none; z-index: 1000; max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);"></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="FilterVin" class="form-label">VIN</label>
+                    <div class="position-relative">
+                        <input asp-for="FilterVin" id="filterVin" class="form-control" placeholder="Nhập VIN..." autocomplete="off" list="vinsList" />
+                        <datalist id="vinsList">
+                            @foreach (var vin in Model.AllVins)
+                            {
+                                <option value="@vin">@vin</option>
+                            }
+                        </datalist>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="FilterBatteryModel" class="form-label">Loại Pin</label>
+                    <div class="position-relative">
+                        <input asp-for="FilterBatteryModel" id="filterBatteryModel" class="form-control" placeholder="Nhập loại pin..." autocomplete="off" list="batteryModelsList" />
+                        <datalist id="batteryModelsList">
+                            @foreach (var batteryModel in Model.AllBatteryModels)
+                            {
+                                <option value="@batteryModel">@batteryModel</option>
+                            }
+                        </datalist>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Tìm Kiếm
+                        </button>
+                    </div>
+                </div>
+            </form>
+            @if (Model.FilterUserId.HasValue || !string.IsNullOrWhiteSpace(Model.FilterVin) || !string.IsNullOrWhiteSpace(Model.FilterBatteryModel))
+            {
+                <div class="mt-3">
+                    <a asp-page="Index" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-x-circle"></i> Xóa Bộ Lọc
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (Model.Vehicles.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Danh Sách Xe (@Model.Vehicles.Count)</h5>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>VIN</th>
+                                <th>Chủ Xe</th>
+                                <th>Loại Pin</th>
+                                <th>Kiểu Pin</th>
+                                <th>Ngày Tạo</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var vehicle in Model.Vehicles)
+                            {
+                                <tr>
+                                    <td><strong>@vehicle.Vin</strong></td>
+                                    <td>@vehicle.UserName</td>
+                                    <td>@vehicle.BatteryModel</td>
+                                    <td>@vehicle.BatteryType</td>
+                                    <td>@vehicle.CreatedAt.ToLocalDateString()</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-page="Edit" asp-route-id="@vehicle.VehicleId" class="btn btn-outline-primary">
+                                                <i class="bi bi-pencil"></i> Sửa
+                                            </a>
+                                            <a asp-page="Delete" asp-route-id="@vehicle.VehicleId" class="btn btn-outline-danger">
+                                                <i class="bi bi-trash"></i> Xóa
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-car-front fs-1 text-muted"></i>
+                <h5 class="mt-3">Không tìm thấy xe nào</h5>
+                <p class="text-muted">
+                    @if (Model.FilterUserId.HasValue || !string.IsNullOrWhiteSpace(Model.FilterVin) || !string.IsNullOrWhiteSpace(Model.FilterBatteryModel))
+                    {
+                        <text>Không có xe nào phù hợp với bộ lọc. Hãy thử điều chỉnh bộ lọc hoặc </text>
+                        <a asp-page="Index" class="text-decoration-none">xóa bộ lọc</a>
+                        <text>.</text>
+                    }
+                    else
+                    {
+                        <text>Chưa có xe nào. Thêm xe đầu tiên để bắt đầu.</text>
+                    }
+                </p>
+                @if (!Model.FilterUserId.HasValue && string.IsNullOrWhiteSpace(Model.FilterVin) && string.IsNullOrWhiteSpace(Model.FilterBatteryModel))
+                {
+                    <a asp-page="Create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Thêm Xe Mới
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterDriverSearch = document.getElementById('filterDriverSearch');
+            const filterSelectedUserId = document.getElementById('filterSelectedUserId');
+            const filterDriverDropdown = document.getElementById('filterDriverDropdown');
+            const drivers = [
+                @foreach (var driver in Model.Drivers)
+                {
+                    var name = System.Text.Json.JsonSerializer.Serialize(driver.FullName);
+                    var email = System.Text.Json.JsonSerializer.Serialize(driver.Email);
+                    <text>{ id: @driver.UserId, name: @Html.Raw(name), email: @Html.Raw(email) },</text>
+                }
+            ];
+
+            let selectedDriver = null;
+
+            // Set initial value if filter is active
+            @if (Model.FilterUserId.HasValue)
+            {
+                var currentDriver = Model.Drivers.FirstOrDefault(d => d.UserId == Model.FilterUserId.Value);
+                if (currentDriver != null)
+                {
+                    var name = System.Text.Json.JsonSerializer.Serialize(currentDriver.FullName);
+                    var email = System.Text.Json.JsonSerializer.Serialize(currentDriver.Email);
+                    <text>
+                    selectedDriver = { id: @currentDriver.UserId, name: @Html.Raw(name), email: @Html.Raw(email) };
+                    filterSelectedUserId.value = "@currentDriver.UserId";
+                    filterDriverSearch.value = @Html.Raw(name) + " (" + @Html.Raw(email) + ")";
+                    </text>
+                }
+            }
+
+            filterDriverSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                if (searchTerm.length === 0) {
+                    filterDriverDropdown.style.display = 'none';
+                    if (!selectedDriver) {
+                        filterSelectedUserId.value = '';
+                    }
+                    return;
+                }
+
+                const filtered = drivers.filter(d => 
+                    d.name.toLowerCase().includes(searchTerm) || 
+                    d.email.toLowerCase().includes(searchTerm)
+                );
+
+                if (filtered.length > 0) {
+                    filterDriverDropdown.innerHTML = filtered.map(d => 
+                        `<a href="#" class="list-group-item list-group-item-action" data-id="${d.id}" data-name="${d.name}" data-email="${d.email}">
+                            <strong>${d.name}</strong><br>
+                            <small class="text-muted">${d.email}</small>
+                        </a>`
+                    ).join('');
+                    filterDriverDropdown.style.display = 'block';
+                } else {
+                    filterDriverDropdown.innerHTML = '<div class="list-group-item text-muted">Không tìm thấy</div>';
+                    filterDriverDropdown.style.display = 'block';
+                }
+            });
+
+            filterDriverDropdown.addEventListener('click', function(e) {
+                e.preventDefault();
+                const item = e.target.closest('.list-group-item-action');
+                if (item) {
+                    const id = item.dataset.id;
+                    const name = item.dataset.name;
+                    const email = item.dataset.email;
+                    
+                    filterSelectedUserId.value = id;
+                    filterDriverSearch.value = `${name} (${email})`;
+                    filterDriverDropdown.style.display = 'none';
+                    selectedDriver = { id: parseInt(id), name, email };
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!filterDriverSearch.contains(e.target) && !filterDriverDropdown.contains(e.target)) {
+                    filterDriverDropdown.style.display = 'none';
+                }
+            });
+
+            filterDriverSearch.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (!selectedDriver || filterDriverSearch.value !== `${selectedDriver.name} (${selectedDriver.email})`) {
+                        if (selectedDriver) {
+                            filterDriverSearch.value = `${selectedDriver.name} (${selectedDriver.email})`;
+                        } else {
+                            filterDriverSearch.value = '';
+                            filterSelectedUserId.value = '';
+                        }
+                    }
+                }, 200);
+            });
+        });
+    </script>
+}

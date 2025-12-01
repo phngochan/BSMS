@@ -1,0 +1,109 @@
+@page
+@using BSMS.WebApp.Helpers
+@model BSMS.WebApp.Pages.Driver.MyVehiclesModel
+@{
+    ViewData["Title"] = "Xe Của Tôi";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">
+                    <i class="bi bi-car-front text-primary"></i> Xe Của Tôi
+                </h2>
+                <a asp-page="/Profile" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay Lại Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Vehicles.Any())
+    {
+        <div class="row mb-3">
+            <div class="col-12">
+                <p class="text-muted mb-0">
+                    Tổng cộng <strong>@Model.Vehicles.Count</strong> xe
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            @foreach (var vehicle in Model.Vehicles)
+            {
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-info text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-car-front"></i> Xe #@vehicle.VehicleId
+                                </h5>
+                                <i class="bi bi-check-circle fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-upc-scan text-primary fs-5 me-2"></i>
+                                    <div class="flex-grow-1">
+                                        <small class="text-muted d-block">VIN (Số Khung)</small>
+                                        <strong class="fs-6">@vehicle.Vin</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">
+                                    <i class="bi bi-battery-charging"></i> Thông Tin Pin
+                                </h6>
+                                <div class="ps-3">
+                                    <div class="mb-2">
+                                        <small class="text-muted d-block">Loại Pin</small>
+                                        <strong>@vehicle.BatteryModel</strong>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Kiểu Pin</small>
+                                        <strong>@vehicle.BatteryType</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="small text-muted">
+                                <i class="bi bi-calendar"></i> 
+                                Đăng ký: @vehicle.CreatedAt.ToLocalDateString()
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Đã Duyệt
+                                </span>
+                                <small class="text-muted">
+                                    ID: #@vehicle.VehicleId
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-car-front fs-1 text-muted"></i>
+                <p class="text-muted mt-3">Bạn chưa có xe nào được đăng ký.</p>
+                <p class="text-muted small">
+                    Liên hệ Admin để đăng ký xe mới.
+                </p>
+            </div>
+        </div>
+    }
+</div>
+

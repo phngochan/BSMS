@@ -1,0 +1,177 @@
+@page
+@using BSMS.WebApp.Helpers
+@model BSMS.WebApp.Pages.Driver.ReservationDetailsModel
+@{
+    ViewData["Title"] = "Chi Tiết Đặt Chỗ";
+}
+
+@if (Model.Reservation == null)
+{
+    <div class="container-fluid py-4">
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Không tìm thấy đặt chỗ.
+        </div>
+    </div>
+}
+else
+{
+    <div class="container-fluid py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">
+                        <i class="bi bi-calendar-check text-primary"></i> Chi Tiết Đặt Chỗ
+                    </h2>
+                    <a asp-page="/Driver/MyReservations" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Quay Lại
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i> Thông Tin Đặt Chỗ
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-calendar3 text-primary fs-4 me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Ngày & Giờ Hẹn</small>
+                                        <strong>@Model.Reservation.ScheduledTime.ToLocalDateTimeString()</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-patch-check text-success fs-4 me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Trạng Thái</small>
+                                        <span class="badge @GetStatusBadgeClass(Model.Reservation.Status)">
+                                            @Model.Reservation.Status
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-clock-history text-info fs-4 me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Ngày Tạo</small>
+                                        <strong>@Model.Reservation.CreatedAt.ToLocalDateTimeString()</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            @if (Model.Reservation.BatteryId.HasValue)
+                            {
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-battery-charging text-warning fs-4 me-3"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Pin Đã Đặt</small>
+                                            <strong>#@Model.Reservation.BatteryId</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-geo-alt"></i> Thông Tin Trạm
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="fw-bold">@Model.Reservation.StationName</h6>
+                        <p class="text-muted mb-2">
+                            <i class="bi bi-geo-alt-fill"></i> @Model.Reservation.StationAddress
+                        </p>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=@Model.Reservation.StationLatitude,@Model.Reservation.StationLongitude" 
+                           target="_blank" class="btn btn-success">
+                            <i class="bi bi-map"></i> Chỉ Đường
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-car-front"></i> Thông Tin Xe
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">VIN (Số Khung)</small>
+                                <strong>@Model.Reservation.VehicleVin</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">Loại Pin</small>
+                                <strong>@Model.Reservation.BatteryModel</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted d-block">Kiểu Pin</small>
+                                <strong>@Model.Reservation.BatteryType</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-tools"></i> Thao Tác
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Reservation.Status == "Active" && Model.Reservation.CanCancel)
+                        {
+                            <a asp-page="/Driver/CancelReservation" asp-route-id="@Model.Reservation.ReservationId" 
+                               class="btn btn-danger w-100 mb-2"
+                               onclick="return confirm('Bạn có chắc chắn muốn hủy đặt chỗ này không?');">
+                                <i class="bi bi-x-circle"></i> Hủy Đặt Chỗ
+                            </a>
+                        }
+                        else if (Model.Reservation.Status == "Active" && !Model.Reservation.CanCancel)
+                        {
+                            <button class="btn btn-secondary w-100 mb-2" disabled>
+                                <i class="bi bi-x-circle"></i> Không Thể Hủy
+                            </button>
+                            <small class="text-muted d-block text-center">
+                                <i class="bi bi-info-circle"></i> Không thể hủy trong vòng 1 giờ trước giờ hẹn
+                            </small>
+                        }
+                        <a asp-page="/Driver/MyReservations" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-left"></i> Quay Lại Danh Sách
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@functions {
+    string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Completed" => "bg-success",
+            "Cancelled" => "bg-danger",
+            "Active" => "bg-primary",
+            _ => "bg-secondary"
+        };
+    }
+}
+
